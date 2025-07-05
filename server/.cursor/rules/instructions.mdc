@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This project is a fork of Immich, a self-hosted photo library.
+
+This project already does a lot of things I need, but it miss one major feature for me.
+
+The project has an "Albums" feature, where users can create albums and add photos to them.
+The project has an "Tags" feature, where users add tags to pictures and see all pictures that contains them.
+
+I am heavily relying on tags, and I would like to share albums based on them, instead of having to manually having to add pictures to albums. 
+
+I want to add a "dynamic albums" feature, where users can create albums based on tags. When creating an album, the user can select a list of tags, and the album will be populated with all pictures that contains this tag. 
+The pictures in the albums should not be stored in the database, but dynamically fetched from the database. Everytime a dynamic album is displayed, it should show an updated list of the pictures that contains the tags that were used to create the album.
+
+You have access to the source code of the server. 
+
+- A summary package of the codebase is available at `./agent/repomix-server-src.md` .
+
+Always respect the existing coding rules and how the software has been architected when writing code. 
+  
+- User specifications are available at `./agent/dynamic-albums-user-specification.md`.
+
+- Technical specifications are available at `./agent/dynamic-albums-specification.md`.
+
+- Everytime you edit the code, please write a short summary of what you've done in `./agent/agent-memory.md` file.
+
+### What to do
+
+You have to implement the requested feature, while following the specifications. Analyse the code base and the agent memory to know where we are in the steps. 
+
+Don't go too far in the feature, we are just doing an mvp for now. 
