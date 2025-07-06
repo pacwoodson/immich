@@ -43,6 +43,9 @@ import { TrashRepository } from 'src/repositories/trash.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { ViewRepository } from 'src/repositories/view-repository';
+import { DynamicAlbumRepository } from 'src/repositories/dynamic-album.repository';
+import { DynamicAlbumFilterRepository } from 'src/repositories/dynamic-album-filter.repository';
+import { DynamicAlbumShareRepository } from 'src/repositories/dynamic-album-share.repository';
 
 export const repositories = [
   AccessRepository,
@@ -59,6 +62,9 @@ export const repositories = [
   DatabaseRepository,
   DownloadRepository,
   DuplicateRepository,
+  DynamicAlbumRepository,
+  DynamicAlbumFilterRepository,
+  DynamicAlbumShareRepository,
   EmailRepository,
   EventRepository,
   JobRepository,

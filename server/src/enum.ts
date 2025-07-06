@@ -675,3 +675,23 @@ export enum AssetVisibility {
   HIDDEN = 'hidden',
   LOCKED = 'locked',
 }
+
+export enum DynamicAlbumFilterType {
+  TAG = 'tag',
+  PERSON = 'person',
+  LOCATION = 'location',
+  DATE_RANGE = 'date_range',
+  ASSET_TYPE = 'asset_type',
+  METADATA = 'metadata',
+}
+
+export enum DynamicAlbumFilterOperator {
+  AND = 'and',
+  OR = 'or',
+}
+
+export enum DynamicAlbumUserRole {
+  VIEWER = 'viewer',
+  EDITOR = 'editor',
+  ADMIN = 'admin',
+}

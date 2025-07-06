@@ -15,9 +15,11 @@ I am heavily relying on tags, and I would like to share albums based on them, in
 I want to add a "dynamic albums" feature, where users can create albums based on tags. When creating an album, the user can select a list of tags, and the album will be populated with all pictures that contains this tag. 
 The pictures in the albums should not be stored in the database, but dynamically fetched from the database. Everytime a dynamic album is displayed, it should show an updated list of the pictures that contains the tags that were used to create the album.
 
-You have access to the source code of the server. 
+The files that you should use are located in the folders ./server and ./web. Do not read/edit files in other folders. 
 
-- A summary package of the codebase is available at `./agent/repomix-server-src.md` .
+- A summary of the server codebase is available at `./agent/repomix-server-src.md` .
+
+- A summary of the frontend codebase is available at `./agent/repomix-web-src.md` .
 
 Always respect the existing coding rules and how the software has been architected when writing code. 
   
