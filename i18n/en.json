@@ -404,6 +404,7 @@
   "album_with_link_access": "Let anyone with the link see photos and people in this album.",
   "albums": "Albums",
   "albums_count": "{count, plural, one {{count, number} Album} other {{count, number} Albums}}",
+  "dynamic_albums": "Dynamic Albums",
   "albums_default_sort_order": "Default album sort order",
   "albums_default_sort_order_description": "Initial asset sort order when creating new albums.",
   "albums_feature_description": "Collections of assets that can be shared with other users.",

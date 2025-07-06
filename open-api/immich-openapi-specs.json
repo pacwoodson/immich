@@ -10805,6 +10805,7 @@
             "type": "string"
           },
           "value": {
+            "additionalProperties": true,
             "type": "object"
           }
         },

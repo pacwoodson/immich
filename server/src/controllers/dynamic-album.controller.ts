@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthDto } from 'src/dtos/auth.dto';
 import {
   CreateDynamicAlbumDto,
   DynamicAlbumResponseDto,
-  UpdateDynamicAlbumDto,
   ShareDynamicAlbumDto,
+  UpdateDynamicAlbumDto,
   UpdateDynamicAlbumShareDto,
 } from 'src/dtos/dynamic-album.dto';
-import { AuthDto } from 'src/dtos/auth.dto';
 import { Permission } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
 import { DynamicAlbumService } from 'src/services/dynamic-album.service';
@@ -24,6 +24,12 @@ export class DynamicAlbumController {
     return this.service.getAll(auth);
   }
 
+  @Get('shared')
+  @Authenticated({ permission: Permission.ALBUM_READ })
+  getSharedDynamicAlbums(@Auth() auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
+    return this.service.getShared(auth);
+  }
+
   @Post()
   @Authenticated({ permission: Permission.ALBUM_CREATE })
   createDynamicAlbum(@Auth() auth: AuthDto, @Body() dto: CreateDynamicAlbumDto): Promise<DynamicAlbumResponseDto> {
@@ -32,10 +38,7 @@ export class DynamicAlbumController {
 
   @Authenticated({ permission: Permission.ALBUM_READ })
   @Get(':id')
-  getDynamicAlbumInfo(
-    @Auth() auth: AuthDto,
-    @Param() { id }: UUIDParamDto,
-  ): Promise<DynamicAlbumResponseDto> {
+  getDynamicAlbumInfo(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<DynamicAlbumResponseDto> {
     return this.service.get(auth, id);
   }
 
@@ -68,10 +71,7 @@ export class DynamicAlbumController {
 
   @Get(':id/assets/count')
   @Authenticated({ permission: Permission.ALBUM_READ })
-  getDynamicAlbumAssetCount(
-    @Auth() auth: AuthDto,
-    @Param() { id }: UUIDParamDto,
-  ): Promise<number> {
+  getDynamicAlbumAssetCount(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<number> {
     return this.service.getAssetCount(auth, id);
   }
 
@@ -105,10 +105,4 @@ export class DynamicAlbumController {
   ): Promise<void> {
     return this.service.removeShare(auth, id, userId);
   }
-
-  @Get('shared')
-  @Authenticated({ permission: Permission.ALBUM_READ })
-  getSharedDynamicAlbums(@Auth() auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
-    return this.service.getAll(auth); // This will include both owned and shared
-  }
-} 
+}

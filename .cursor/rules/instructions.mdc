@@ -34,3 +34,19 @@ Always respect the existing coding rules and how the software has been architect
 You have to implement the requested feature, while following the specifications. Analyse the code base and the agent memory to know where we are in the steps. 
 
 Don't go too far in the feature, we are just doing an mvp for now. 
+
+
+### How to do
+
+At the beggining of any conversation, make a git diff between main an current branch to know what file have been added/edited to know where we are in the development.
+
+The application is runned inside a docker container for which you don't have access. 
+Do not try to start server yourself.
+Do not try to run migrations. 
+Server api is available at http://localhost:2283
+
+
+With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
+Always use $t('...') for texts in the frontend, even if there is linting errors because the translation do not exist. It will be added later
+
+I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 

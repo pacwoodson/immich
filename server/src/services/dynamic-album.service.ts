@@ -61,6 +61,40 @@ export class DynamicAlbumService {
     }));
   }
 
+  async getShared(auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
+    const sharedAlbums = await this.dynamicAlbumRepository.getShared(auth.user.id);
+
+    const results = await this.dynamicAlbumRepository.getMetadataForIds(sharedAlbums.map((album) => album.id));
+    const albumMetadata: Record<string, any> = {};
+    for (const metadata of results) {
+      albumMetadata[metadata.dynamicAlbumId] = metadata;
+    }
+
+    return sharedAlbums.map((album) => ({
+      id: album.id,
+      name: album.name,
+      description: album.description,
+      ownerId: album.ownerId,
+      filters: (album.filters || []).map((filter: any) => ({
+        type: filter.filterType,
+        value: filter.filterValue,
+      })),
+      assetCount: albumMetadata[album.id]?.assetCount ?? 0,
+      startDate: albumMetadata[album.id]?.startDate ?? undefined,
+      endDate: albumMetadata[album.id]?.endDate ?? undefined,
+      albumThumbnailAssetId: album.albumThumbnailAssetId ?? undefined,
+      order: album.order,
+      isActivityEnabled: album.isActivityEnabled,
+      createdAt: album.createdAt,
+      updatedAt: album.updatedAt,
+      sharedUsers: (album.sharedUsers || []).map((share: any) => ({
+        userId: share.user?.id,
+        role: share.role,
+        createdAt: share.createdAt,
+      })),
+    }));
+  }
+
   async get(auth: AuthDto, id: string): Promise<DynamicAlbumResponseDto> {
     const album = await this.dynamicAlbumRepository.getById(id);
     if (!album) {

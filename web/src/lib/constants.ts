@@ -24,6 +24,7 @@ export enum AppRoute {
   ADMIN_REPAIR = '/admin/repair',
 
   ALBUMS = '/albums',
+  DYNAMIC_ALBUMS = '/dynamic-albums',
   LIBRARIES = '/libraries',
   ARCHIVE = '/archive',
   FAVORITES = '/favorites',
