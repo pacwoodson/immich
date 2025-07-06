@@ -1,20 +1,32 @@
 import { authenticate } from '$lib/utils/auth';
-import { getAllDynamicAlbums, getSharedDynamicAlbums } from '$lib/utils/dynamic-album-api';
 import { getFormatter } from '$lib/utils/i18n';
+import * as sdk from '@immich/sdk';
 import type { PageLoad } from './$types';
 
-export const load = (async ({ url }) => {
+export const load = (async ({ url, fetch }) => {
   await authenticate(url);
 
-  const [dynamicAlbums, sharedDynamicAlbums] = await Promise.all([getAllDynamicAlbums(), getSharedDynamicAlbums()]);
+  // Set SDK fetch for SvelteKit compatibility
+  const originalFetch = sdk.defaults.fetch;
+  sdk.defaults.fetch = fetch;
 
-  const $t = await getFormatter();
+  try {
+    const [dynamicAlbums, sharedDynamicAlbums] = await Promise.all([
+      sdk.getAllDynamicAlbums(),
+      sdk.getSharedDynamicAlbums(),
+    ]);
 
-  return {
-    dynamicAlbums,
-    sharedDynamicAlbums,
-    meta: {
-      title: $t('dynamic_albums'),
-    },
-  };
+    const $t = await getFormatter();
+
+    return {
+      dynamicAlbums,
+      sharedDynamicAlbums,
+      meta: {
+        title: $t('dynamic_albums'),
+      },
+    };
+  } finally {
+    // Restore original fetch
+    sdk.defaults.fetch = originalFetch;
+  }
 }) satisfies PageLoad;

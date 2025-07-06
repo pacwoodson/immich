@@ -122,26 +122,100 @@
 - Added "dynamic_albums" translation key to English translation file
 - Button links to `/(user)/dynamic-albums` route
 
-## Current Status
-- ✅ **Backend Implementation Complete** - All server-side components implemented
-- ✅ **Frontend Implementation Complete** - All UI components implemented
-- ✅ Database schema and data layer complete and migrated
-- ✅ DTOs created for dynamic albums
-- ✅ Repositories created for dynamic albums, filters, and shares
-- ✅ Service created with basic CRUD operations and sharing functionality
-- ✅ Controller created with all necessary endpoints
-- ✅ Asset filtering logic implemented with support for tags, people, location, date ranges, and asset types
-- ✅ Dynamic album repositories integrated with filtering logic
-- ✅ All components registered in app module (controllers, repositories, services)
-- ✅ All linting issues resolved
-- ✅ API endpoints ready for testing
-- ✅ Frontend API integration complete
-- ✅ Frontend routes and pages implemented
-- ✅ Frontend components created with proper UI/UX
-- ✅ Frontend utilities and helpers implemented
-- ✅ **API URL Issue Fixed** - Frontend can now properly communicate with backend
-- ✅ **Route Ordering Issue Fixed** - `/shared` endpoint now works correctly without UUID validation errors
-- ✅ **Sidebar Navigation Added** - Dynamic albums button now available in sidebar for easy access
+### 20. Dynamic Albums Modals Implemented ✅
+- Created `CreateDynamicAlbumModal.svelte` for creating new dynamic albums
+- Created `EditDynamicAlbumModal.svelte` for editing existing dynamic albums
+- Created `ShareDynamicAlbumModal.svelte` for sharing dynamic albums with users
+- Integrated modals with dynamic album list and controls
+- **Simplified to focus on tag-based filtering** using existing Combobox component
+- **Tag selection interface** with search, multi-select, and remove functionality
+- **Proper tag management** using existing tag system from Immich
+- Added comprehensive translation keys for all modal functionality
+- **Modal integration** with dynamic album creation and editing workflows
+
+### 21. Filter Value Structure Fix ✅
+- Fixed filter value structure to match backend expectations
+- Changed from string tag IDs to object structure: `{ tagIds: [string], operator: 'and' }`
+- Updated both create and edit modals to use correct filter format
+- Fixed initialization of selected tags in edit modal to handle object structure
+- Resolved "filters.0.value must be an object" validation error
+
+### 22. Enum Value Case Fix ✅
+- Fixed enum value case mismatch between frontend and backend
+- Changed filter type from uppercase 'TAG' to lowercase 'tag' to match backend enum
+- Updated frontend DynamicAlbumFilterDto interface to match backend structure
+- Removed top-level operator field from frontend interface
+- Resolved "invalid input value for enum dynamic_album_filter_type_enum: 'TAG'" error
+
+### 23. Dynamic Album Page Display Fix ✅
+- Fixed "Cannot read properties of undefined (reading 'toLowerCase')" error on dynamic album page
+- Issue was trying to access `filter.operator.toLowerCase()` when operator was inside `filter.value` object
+- Updated filter display logic to handle proper object structure and show tag count instead of raw JSON
+- Added proper null checks and conditional rendering for filter value display
+- Added missing translation keys: items, by, created, no_assets_found, showing_first_n_items, filter_type_tag, operator_and, operator_or, tags
+
+### 24. SvelteKit Fetch Integration ✅  
+- Refactored dynamic-album-api.ts to follow same pattern as album-utils.ts using SDK-style approach
+- Removed custom `makeRequest` function and replaced with `apiCall` function that properly handles SvelteKit fetch
+- Changed all API functions to accept optional `fetch?: typeof window.fetch` parameter instead of `customFetch`
+- Updated page load functions to pass SvelteKit's `fetch` parameter to API calls
+- Fixed SvelteKit warning about using `window.fetch` instead of load function fetch
+- Now properly follows Immich codebase patterns and SvelteKit best practices
+- Added all missing error translation keys for proper internationalization support
+
+### 25. Full SDK Integration ✅
+- Regenerated @immich/sdk using `make open-api` to include dynamic album endpoints
+- Completely replaced custom API implementation with proper SDK function calls
+- Now using generated SDK functions: `getAllDynamicAlbums()`, `createDynamicAlbum()`, `getDynamicAlbumInfo()`, etc.
+- Re-exported types from SDK for convenience (DynamicAlbumResponseDto, CreateDynamicAlbumDto, etc.)
+- Maintained SvelteKit fetch compatibility by setting `sdk.defaults.fetch` when needed
+- Removed all custom type definitions in favor of generated SDK types
+- API is now fully consistent with rest of Immich codebase using the official SDK
+- Dynamic album functionality now properly integrated with Immich's architecture
+
+### 26. Dynamic Album Modals Recreated ✅
+- Recreated `CreateDynamicAlbumModal.svelte` following Immich patterns with tag selection using Combobox
+- Recreated `EditDynamicAlbumModal.svelte` with pre-populated form data for editing existing dynamic albums  
+- Recreated `ShareDynamicAlbumModal.svelte` based on AlbumShareModal pattern for user sharing
+- **Proper tag selection interface** using existing Combobox component with search, multi-select, and remove functionality
+- **Comprehensive error handling** using handleError utility and proper try/catch blocks
+- **Notification integration** using notificationController for success/error messages
+- **SDK integration** using generated SDK functions for all API calls
+- **Complete translation support** with all necessary i18n keys added to en.json
+- **Consistent UI/UX** following existing Immich modal patterns and styling
+- All modals properly integrated with dynamic album management workflow
+
+### 27. Fixed SDK Import Error for Dynamic Album Update ✅  
+- **Fixed incorrect import** in `EditDynamicAlbumModal.svelte` - changed `updateDynamicAlbum` to `updateDynamicAlbumInfo`
+- **Root cause**: The SDK exports the function as `updateDynamicAlbumInfo`, not `updateDynamicAlbum`
+- **Error message resolved**: "The requested module does not provide an export named 'updateDynamicAlbum'"
+- **Import fixed**: Now correctly imports `updateDynamicAlbumInfo` from `@immich/sdk`
+- **Function call updated**: Changed `updateDynamicAlbum({...})` to `updateDynamicAlbumInfo({...})`
+
+### 28. Dynamic Album Card Component Fixed ✅
+- **Fixed DynamicAlbumCard component** to properly handle DynamicAlbumResponseDto structure
+- **Updated component interface** to match regular AlbumCard pattern with proper props (showOwner, showDateRange, showItemCount, preload, onShowContextMenu)
+- **Fixed context menu integration** using proper IconButton and getContextMenuPositionFromEvent utility
+- **Improved styling** to match regular album cards with consistent hover effects and layout
+- **Added proper computed properties** for hasFilters, hasSharedUsers, and isOwner
+- **Fixed translation key** - added missing "dynamic_album" key to en.json
+- **Restored DynamicAlbumCard usage** in DynamicAlbumsList component with proper props
+- **Removed debug boxes** and restored full component functionality
+- **Component now properly displays** dynamic album information with filters, sharing status, and proper navigation
+- **Fixed prop name mismatch** - changed from 'album' to 'dynamicAlbum' to match parent component usage
+- **Added null safety checks** to prevent undefined errors during rendering
+- **Cleaned up all debug output** for production-ready interface
+- **Dynamic album cards now render correctly** with beautiful gradient covers, proper information display, and full functionality
+
+### 29. Dynamic Album Page Image Display Fixed ✅
+- **Fixed broken image display** on dynamic album detail page
+- **Root cause**: Assets returned from backend were raw database objects without proper mapping
+- **Backend fix**: Updated `DynamicAlbumService.getAssets()` to use `mapAsset()` function for proper asset response formatting
+- **Frontend fix**: Updated dynamic album page to use `getAssetThumbnailUrl(asset.id)` instead of expecting `thumbnailUrl` property
+- **Added proper imports**: Added `mapAsset` import to service and `getAssetThumbnailUrl` import to frontend page
+- **Fixed linter errors**: Added proper TypeScript typing for assets and fixed translation key usage
+- **Result**: Images now display properly with thumbnails instead of broken image icons
+- **Translation keys**: All required translation keys were already present in en.json
 
 ## Next Steps (Priority Order)
 
@@ -195,6 +269,9 @@
 - **Fixed API URL construction to avoid double `/api` prefix**
 - **Fixed NestJS route ordering to prevent `/shared` being treated as UUID parameter**
 - **Added dynamic albums button to sidebar navigation with proper translation**
+- **Implemented simplified tag-based modal system using existing Combobox component for better UX**
+- **Fixed filter value structure to use proper object format with tagIds and operator**
+- **Fixed enum value case to use lowercase 'tag' instead of uppercase 'TAG'**
 
 ## API Endpoints Available
 - `GET /api/dynamic-albums` - Get all dynamic albums (owned and shared)

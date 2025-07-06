@@ -1,27 +1,36 @@
 import { authenticate } from '$lib/utils/auth';
-import { getDynamicAlbum, getDynamicAlbumAssetCount, getDynamicAlbumAssets } from '$lib/utils/dynamic-album-api';
 import { getFormatter } from '$lib/utils/i18n';
+import * as sdk from '@immich/sdk';
 import type { PageLoad } from './$types';
 
-export const load = (async ({ url, params }) => {
+export const load = (async ({ url, params, fetch }) => {
   await authenticate(url);
 
   const { dynamicAlbumId } = params;
 
-  const [dynamicAlbum, assets, assetCount] = await Promise.all([
-    getDynamicAlbum(dynamicAlbumId),
-    getDynamicAlbumAssets(dynamicAlbumId, { skip: 0, take: 50 }),
-    getDynamicAlbumAssetCount(dynamicAlbumId),
-  ]);
+  // Set SDK fetch for SvelteKit compatibility
+  const originalFetch = sdk.defaults.fetch;
+  sdk.defaults.fetch = fetch;
 
-  const $t = await getFormatter();
+  try {
+    const [dynamicAlbum, assets, assetCount] = await Promise.all([
+      sdk.getDynamicAlbumInfo({ id: dynamicAlbumId }),
+      sdk.getDynamicAlbumAssets({ id: dynamicAlbumId, skip: 0, take: 50 }),
+      sdk.getDynamicAlbumAssetCount({ id: dynamicAlbumId }),
+    ]);
 
-  return {
-    dynamicAlbum,
-    assets,
-    assetCount,
-    meta: {
-      title: dynamicAlbum.name,
-    },
-  };
+    const $t = await getFormatter();
+
+    return {
+      dynamicAlbum,
+      assets,
+      assetCount,
+      meta: {
+        title: dynamicAlbum.name,
+      },
+    };
+  } finally {
+    // Restore original fetch
+    sdk.defaults.fetch = originalFetch;
+  }
 }) satisfies PageLoad;

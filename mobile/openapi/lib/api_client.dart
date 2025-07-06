@@ -302,6 +302,8 @@ class ApiClient {
           return ColorspaceTypeTransformer().decode(value);
         case 'CreateAlbumDto':
           return CreateAlbumDto.fromJson(value);
+        case 'CreateDynamicAlbumDto':
+          return CreateDynamicAlbumDto.fromJson(value);
         case 'CreateLibraryDto':
           return CreateLibraryDto.fromJson(value);
         case 'CreateProfileImageResponseDto':
@@ -322,6 +324,12 @@ class ApiClient {
           return DuplicateDetectionConfig.fromJson(value);
         case 'DuplicateResponseDto':
           return DuplicateResponseDto.fromJson(value);
+        case 'DynamicAlbumFilterDto':
+          return DynamicAlbumFilterDto.fromJson(value);
+        case 'DynamicAlbumResponseDto':
+          return DynamicAlbumResponseDto.fromJson(value);
+        case 'DynamicAlbumShareDto':
+          return DynamicAlbumShareDto.fromJson(value);
         case 'EmailNotificationsResponse':
           return EmailNotificationsResponse.fromJson(value);
         case 'EmailNotificationsUpdate':
@@ -520,6 +528,8 @@ class ApiClient {
           return SessionResponseDto.fromJson(value);
         case 'SessionUnlockDto':
           return SessionUnlockDto.fromJson(value);
+        case 'ShareDynamicAlbumDto':
+          return ShareDynamicAlbumDto.fromJson(value);
         case 'SharedLinkCreateDto':
           return SharedLinkCreateDto.fromJson(value);
         case 'SharedLinkEditDto':
@@ -696,6 +706,10 @@ class ApiClient {
           return UpdateAlbumUserDto.fromJson(value);
         case 'UpdateAssetDto':
           return UpdateAssetDto.fromJson(value);
+        case 'UpdateDynamicAlbumDto':
+          return UpdateDynamicAlbumDto.fromJson(value);
+        case 'UpdateDynamicAlbumShareDto':
+          return UpdateDynamicAlbumShareDto.fromJson(value);
         case 'UpdateLibraryDto':
           return UpdateLibraryDto.fromJson(value);
         case 'UpdatePartnerDto':

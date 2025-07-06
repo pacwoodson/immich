@@ -45,8 +45,15 @@ Do not try to start server yourself.
 Do not try to run migrations. 
 Server api is available at http://localhost:2283
 
+#### Backend
 
+When new endpoints are added or DTOs are edited, run 'make open-api' to update @immich/sdk package with open-api
+
+#### Frontend
 With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
-Always use $t('...') for texts in the frontend, even if there is linting errors because the translation do not exist. It will be added later
+
+Always use $t('...') for texts in the frontend, and add translations accordingly.
 
 I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 
+
+When working on new components of the frontend, always check how other similar components have been created (like comparing with normal albums features)

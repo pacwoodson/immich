@@ -31,7 +31,7 @@ prod-scale:
 
 .PHONY: open-api
 open-api:
-	cd ./open-api && bash ./bin/generate-open-api.sh
+	cd ./open-api && bash ./bin/generate-open-api.sh typescript
 
 open-api-dart:
 	cd ./open-api && bash ./bin/generate-open-api.sh dart

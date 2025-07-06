@@ -4,6 +4,7 @@
   import UserPageLayout from '$lib/components/layouts/user-page-layout.svelte';
   import { AppRoute } from '$lib/constants';
   import { user } from '$lib/stores/user.store';
+  import { getAssetThumbnailUrl } from '$lib/utils';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
 
@@ -75,7 +76,7 @@
             <span>{assetCount} {$t('items')}</span>
 
             {#if !isOwner}
-              <span>{$t('by')} {dynamicAlbum.owner.name}</span>
+              <span>{$t('by')} {dynamicAlbum.ownerId}</span>
             {/if}
 
             <span>{$t('created')} {new Date(dynamicAlbum.createdAt).toLocaleDateString()}</span>
@@ -96,37 +97,43 @@
           {/if}
         </div>
       </div>
-    </div>
+      <!-- Filters Section -->
+      {#if dynamicAlbum.filters.length > 0}
+        <div class="mt-4">
+          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+            {$t('filters')}
+          </h2>
 
-    <!-- Filters Section -->
-    {#if dynamicAlbum.filters.length > 0}
-      <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-          {$t('filters')}
-        </h2>
-
-        <div class="space-y-3">
-          {#each dynamicAlbum.filters as filter, index}
-            <div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-              <div
-                class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
-              >
-                {index + 1}
-              </div>
-
-              <div class="flex-1">
-                <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  {$t(`filter_type_${filter.type.toLowerCase()}`)}
+          <div class="space-y-3">
+            {#each dynamicAlbum.filters as filter, index}
+              <div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                <div
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
+                >
+                  {index + 1}
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  {$t(`operator_${filter.operator.toLowerCase()}`)}: {JSON.stringify(filter.value)}
+
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white">
+                    {$t('filter_type_tag')}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    {#if filter.value && typeof filter.value === 'object' && filter.value.operator}
+                      {$t(filter.value.operator === 'and' ? 'operator_and' : 'operator_or')}:
+                    {/if}
+                    {#if filter.value && typeof filter.value === 'object' && filter.value.tagIds}
+                      {filter.value.tagIds.length} {$t('tags')}
+                    {:else}
+                      {JSON.stringify(filter.value)}
+                    {/if}
+                  </div>
                 </div>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
 
     <!-- Assets Section -->
     <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
@@ -152,7 +159,7 @@
           {#each assets as asset (asset.id)}
             <div class="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
               <img
-                src={asset.thumbnailUrl || '/placeholder-image.jpg'}
+                src={getAssetThumbnailUrl(asset.id)}
                 alt={asset.originalFileName || 'Asset'}
                 class="h-full w-full object-cover"
                 loading="lazy"

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
   CreateDynamicAlbumDto,
@@ -217,7 +218,8 @@ export class DynamicAlbumService {
   }
 
   async getAssets(auth: AuthDto, id: string, options: { skip?: number; take?: number } = {}): Promise<any[]> {
-    return this.dynamicAlbumRepository.getAssets(id, options);
+    const assets = await this.dynamicAlbumRepository.getAssets(id, options);
+    return assets.map((asset) => mapAsset(asset, { auth }));
   }
 
   async getAssetCount(auth: AuthDto, id: string): Promise<number> {

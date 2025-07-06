@@ -125,6 +125,17 @@ Class | Method | HTTP request | Description
 *DuplicatesApi* | [**deleteDuplicate**](doc//DuplicatesApi.md#deleteduplicate) | **DELETE** /duplicates/{id} | 
 *DuplicatesApi* | [**deleteDuplicates**](doc//DuplicatesApi.md#deleteduplicates) | **DELETE** /duplicates | 
 *DuplicatesApi* | [**getAssetDuplicates**](doc//DuplicatesApi.md#getassetduplicates) | **GET** /duplicates | 
+*DynamicAlbumsApi* | [**createDynamicAlbum**](doc//DynamicAlbumsApi.md#createdynamicalbum) | **POST** /dynamic-albums | 
+*DynamicAlbumsApi* | [**deleteDynamicAlbum**](doc//DynamicAlbumsApi.md#deletedynamicalbum) | **DELETE** /dynamic-albums/{id} | 
+*DynamicAlbumsApi* | [**getAllDynamicAlbums**](doc//DynamicAlbumsApi.md#getalldynamicalbums) | **GET** /dynamic-albums | 
+*DynamicAlbumsApi* | [**getDynamicAlbumAssetCount**](doc//DynamicAlbumsApi.md#getdynamicalbumassetcount) | **GET** /dynamic-albums/{id}/assets/count | 
+*DynamicAlbumsApi* | [**getDynamicAlbumAssets**](doc//DynamicAlbumsApi.md#getdynamicalbumassets) | **GET** /dynamic-albums/{id}/assets | 
+*DynamicAlbumsApi* | [**getDynamicAlbumInfo**](doc//DynamicAlbumsApi.md#getdynamicalbuminfo) | **GET** /dynamic-albums/{id} | 
+*DynamicAlbumsApi* | [**getSharedDynamicAlbums**](doc//DynamicAlbumsApi.md#getshareddynamicalbums) | **GET** /dynamic-albums/shared | 
+*DynamicAlbumsApi* | [**removeDynamicAlbumShare**](doc//DynamicAlbumsApi.md#removedynamicalbumshare) | **DELETE** /dynamic-albums/{id}/share/{userId} | 
+*DynamicAlbumsApi* | [**shareDynamicAlbum**](doc//DynamicAlbumsApi.md#sharedynamicalbum) | **POST** /dynamic-albums/{id}/share | 
+*DynamicAlbumsApi* | [**updateDynamicAlbumInfo**](doc//DynamicAlbumsApi.md#updatedynamicalbuminfo) | **PATCH** /dynamic-albums/{id} | 
+*DynamicAlbumsApi* | [**updateDynamicAlbumShare**](doc//DynamicAlbumsApi.md#updatedynamicalbumshare) | **PUT** /dynamic-albums/{id}/share/{userId} | 
 *FacesApi* | [**createFace**](doc//FacesApi.md#createface) | **POST** /faces | 
 *FacesApi* | [**deleteFace**](doc//FacesApi.md#deleteface) | **DELETE** /faces/{id} | 
 *FacesApi* | [**getFaces**](doc//FacesApi.md#getfaces) | **GET** /faces | 
@@ -340,6 +351,7 @@ Class | Method | HTTP request | Description
  - [CheckExistingAssetsResponseDto](doc//CheckExistingAssetsResponseDto.md)
  - [Colorspace](doc//Colorspace.md)
  - [CreateAlbumDto](doc//CreateAlbumDto.md)
+ - [CreateDynamicAlbumDto](doc//CreateDynamicAlbumDto.md)
  - [CreateLibraryDto](doc//CreateLibraryDto.md)
  - [CreateProfileImageResponseDto](doc//CreateProfileImageResponseDto.md)
  - [DatabaseBackupConfig](doc//DatabaseBackupConfig.md)
@@ -350,6 +362,9 @@ Class | Method | HTTP request | Description
  - [DownloadUpdate](doc//DownloadUpdate.md)
  - [DuplicateDetectionConfig](doc//DuplicateDetectionConfig.md)
  - [DuplicateResponseDto](doc//DuplicateResponseDto.md)
+ - [DynamicAlbumFilterDto](doc//DynamicAlbumFilterDto.md)
+ - [DynamicAlbumResponseDto](doc//DynamicAlbumResponseDto.md)
+ - [DynamicAlbumShareDto](doc//DynamicAlbumShareDto.md)
  - [EmailNotificationsResponse](doc//EmailNotificationsResponse.md)
  - [EmailNotificationsUpdate](doc//EmailNotificationsUpdate.md)
  - [ExifResponseDto](doc//ExifResponseDto.md)
@@ -449,6 +464,7 @@ Class | Method | HTTP request | Description
  - [SessionCreateResponseDto](doc//SessionCreateResponseDto.md)
  - [SessionResponseDto](doc//SessionResponseDto.md)
  - [SessionUnlockDto](doc//SessionUnlockDto.md)
+ - [ShareDynamicAlbumDto](doc//ShareDynamicAlbumDto.md)
  - [SharedLinkCreateDto](doc//SharedLinkCreateDto.md)
  - [SharedLinkEditDto](doc//SharedLinkEditDto.md)
  - [SharedLinkResponseDto](doc//SharedLinkResponseDto.md)
@@ -537,6 +553,8 @@ Class | Method | HTTP request | Description
  - [UpdateAlbumDto](doc//UpdateAlbumDto.md)
  - [UpdateAlbumUserDto](doc//UpdateAlbumUserDto.md)
  - [UpdateAssetDto](doc//UpdateAssetDto.md)
+ - [UpdateDynamicAlbumDto](doc//UpdateDynamicAlbumDto.md)
+ - [UpdateDynamicAlbumShareDto](doc//UpdateDynamicAlbumShareDto.md)
  - [UpdateLibraryDto](doc//UpdateLibraryDto.md)
  - [UpdatePartnerDto](doc//UpdatePartnerDto.md)
  - [UsageByUserDto](doc//UsageByUserDto.md)

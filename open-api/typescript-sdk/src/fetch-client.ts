@@ -587,6 +587,54 @@ export type DuplicateResponseDto = {
     assets: AssetResponseDto[];
     duplicateId: string;
 };
+export type DynamicAlbumFilterDto = {
+    "type": Type;
+    value: {
+        [key: string]: any;
+    };
+};
+export type DynamicAlbumShareDto = {
+    createdAt: string;
+    role: Role;
+    userId: string;
+};
+export type DynamicAlbumResponseDto = {
+    albumThumbnailAssetId?: string;
+    assetCount: number;
+    createdAt: string;
+    description: string;
+    endDate?: string;
+    filters: DynamicAlbumFilterDto[];
+    id: string;
+    isActivityEnabled: boolean;
+    name: string;
+    order: Order;
+    ownerId: string;
+    sharedUsers: DynamicAlbumShareDto[];
+    startDate?: string;
+    updatedAt: string;
+};
+export type CreateDynamicAlbumDto = {
+    description?: string;
+    filters: DynamicAlbumFilterDto[];
+    isActivityEnabled?: boolean;
+    name: string;
+    order?: Order;
+};
+export type UpdateDynamicAlbumDto = {
+    description?: string;
+    filters?: DynamicAlbumFilterDto[];
+    isActivityEnabled?: boolean;
+    name?: string;
+    order?: Order;
+};
+export type ShareDynamicAlbumDto = {
+    role: Role;
+    userId: string;
+};
+export type UpdateDynamicAlbumShareDto = {
+    role: Role;
+};
 export type PersonResponseDto = {
     birthDate: string | null;
     /** This property was added in v1.126.0 */
@@ -2311,6 +2359,120 @@ export function deleteDuplicate({ id }: {
         method: "DELETE"
     }));
 }
+export function getAllDynamicAlbums(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: DynamicAlbumResponseDto[];
+    }>("/dynamic-albums", {
+        ...opts
+    }));
+}
+export function createDynamicAlbum({ createDynamicAlbumDto }: {
+    createDynamicAlbumDto: CreateDynamicAlbumDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: DynamicAlbumResponseDto;
+    }>("/dynamic-albums", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: createDynamicAlbumDto
+    })));
+}
+export function getSharedDynamicAlbums(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: DynamicAlbumResponseDto[];
+    }>("/dynamic-albums/shared", {
+        ...opts
+    }));
+}
+export function deleteDynamicAlbum({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+export function getDynamicAlbumInfo({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: DynamicAlbumResponseDto;
+    }>(`/dynamic-albums/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
+}
+export function updateDynamicAlbumInfo({ id, updateDynamicAlbumDto }: {
+    id: string;
+    updateDynamicAlbumDto: UpdateDynamicAlbumDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: DynamicAlbumResponseDto;
+    }>(`/dynamic-albums/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "PATCH",
+        body: updateDynamicAlbumDto
+    })));
+}
+export function getDynamicAlbumAssets({ id, skip, take }: {
+    id: string;
+    skip: number;
+    take: number;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: object[];
+    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets${QS.query(QS.explode({
+        skip,
+        take
+    }))}`, {
+        ...opts
+    }));
+}
+export function getDynamicAlbumAssetCount({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: number;
+    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets/count`, {
+        ...opts
+    }));
+}
+export function shareDynamicAlbum({ id, shareDynamicAlbumDto }: {
+    id: string;
+    shareDynamicAlbumDto: ShareDynamicAlbumDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: shareDynamicAlbumDto
+    })));
+}
+export function removeDynamicAlbumShare({ id, userId }: {
+    id: string;
+    userId: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share/${encodeURIComponent(userId)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+export function updateDynamicAlbumShare({ id, userId, updateDynamicAlbumShareDto }: {
+    id: string;
+    userId: string;
+    updateDynamicAlbumShareDto: UpdateDynamicAlbumShareDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share/${encodeURIComponent(userId)}`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: updateDynamicAlbumShareDto
+    })));
+}
 export function getFaces({ id }: {
     id: string;
 }, opts?: Oazapfts.RequestOpts) {
@@ -4004,6 +4166,23 @@ export enum AssetMediaSize {
     Fullsize = "fullsize",
     Preview = "preview",
     Thumbnail = "thumbnail"
+}
+export enum Type {
+    Tag = "tag",
+    Person = "person",
+    Location = "location",
+    DateRange = "date_range",
+    AssetType = "asset_type",
+    Metadata = "metadata"
+}
+export enum Order {
+    Asc = "asc",
+    Desc = "desc"
+}
+export enum Role {
+    Viewer = "viewer",
+    Editor = "editor",
+    Admin = "admin"
 }
 export enum ManualJobName {
     PersonCleanup = "person-cleanup",

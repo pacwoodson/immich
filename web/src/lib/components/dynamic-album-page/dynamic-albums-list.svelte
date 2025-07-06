@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import DynamicAlbumCard from '$lib/components/dynamic-album-page/dynamic-album-card.svelte';
   import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import RightClickContextMenu from '$lib/components/shared-components/context-menu/right-click-context-menu.svelte';
   import {
@@ -8,18 +7,23 @@
     notificationController,
   } from '$lib/components/shared-components/notification/notification';
   import { AppRoute } from '$lib/constants';
+  import { modalManager } from '$lib/managers/modal-manager.svelte';
+  import EditDynamicAlbumModal from '$lib/modals/EditDynamicAlbumModal.svelte';
+  import ShareDynamicAlbumModal from '$lib/modals/ShareDynamicAlbumModal.svelte';
   import { user } from '$lib/stores/user.store';
   import type { ContextMenuPosition } from '$lib/utils/context-menu';
-  import { deleteDynamicAlbum, type DynamicAlbumResponseDto } from '$lib/utils/dynamic-album-api';
   import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
   import { normalizeSearchString } from '$lib/utils/string-utils';
+  import * as sdk from '@immich/sdk';
   import { mdiDeleteOutline, mdiRenameOutline, mdiShareVariantOutline } from '@mdi/js';
   import { type Snippet } from 'svelte';
   import { t } from 'svelte-i18n';
+  import { run } from 'svelte/legacy';
+  import DynamicAlbumCard from './dynamic-album-card.svelte';
 
   interface Props {
-    ownedDynamicAlbums?: DynamicAlbumResponseDto[];
-    sharedDynamicAlbums?: DynamicAlbumResponseDto[];
+    ownedDynamicAlbums?: sdk.DynamicAlbumResponseDto[];
+    sharedDynamicAlbums?: sdk.DynamicAlbumResponseDto[];
     searchQuery?: string;
     allowEdit?: boolean;
     empty?: Snippet;
@@ -33,32 +37,43 @@
     empty,
   }: Props = $props();
 
-  let allDynamicAlbums = $derived(() => {
-    const userId = $user.id;
+  let allDynamicAlbums: sdk.DynamicAlbumResponseDto[] = $state([]);
+  let filteredDynamicAlbums: sdk.DynamicAlbumResponseDto[] = $state([]);
+
+  let contextMenuPosition: ContextMenuPosition = $state({ x: 0, y: 0 });
+  let contextMenuTargetAlbum: sdk.DynamicAlbumResponseDto | undefined = $state();
+  let isOpen = $state(false);
+
+  // Step 1: Combine owned and shared albums
+  run(() => {
+    const userId = $user?.id;
+
+    if (!userId) {
+      allDynamicAlbums = ownedDynamicAlbums;
+      return;
+    }
+
     const nonOwnedAlbums = sharedDynamicAlbums.filter((album) => album.ownerId !== userId);
-    return nonOwnedAlbums.length > 0 ? ownedDynamicAlbums.concat(nonOwnedAlbums) : ownedDynamicAlbums;
+    allDynamicAlbums = nonOwnedAlbums.length > 0 ? ownedDynamicAlbums.concat(nonOwnedAlbums) : ownedDynamicAlbums;
   });
 
-  let filteredDynamicAlbums = $derived(() => {
+  // Step 2: Filter using search query
+  run(() => {
     if (searchQuery) {
       const searchQueryNormalized = normalizeSearchString(searchQuery);
-      return allDynamicAlbums.filter((album) => {
+      filteredDynamicAlbums = allDynamicAlbums.filter((album) => {
         return normalizeSearchString(album.name).includes(searchQueryNormalized);
       });
     } else {
-      return allDynamicAlbums;
+      filteredDynamicAlbums = allDynamicAlbums;
     }
   });
 
-  let contextMenuPosition: ContextMenuPosition = $state({ x: 0, y: 0 });
-  let contextMenuTargetAlbum: DynamicAlbumResponseDto | undefined = $state();
-  let isOpen = $state(false);
-
   let showFullContextMenu = $derived(
-    allowEdit && contextMenuTargetAlbum && contextMenuTargetAlbum.ownerId === $user.id,
+    allowEdit && contextMenuTargetAlbum && contextMenuTargetAlbum.ownerId === $user?.id,
   );
 
-  const showDynamicAlbumContextMenu = (contextMenuDetail: ContextMenuPosition, album: DynamicAlbumResponseDto) => {
+  const showDynamicAlbumContextMenu = (contextMenuDetail: ContextMenuPosition, album: sdk.DynamicAlbumResponseDto) => {
     contextMenuTargetAlbum = album;
     contextMenuPosition = {
       x: contextMenuDetail.x,
@@ -71,9 +86,9 @@
     isOpen = false;
   };
 
-  const handleDeleteDynamicAlbum = async (albumToDelete: DynamicAlbumResponseDto) => {
+  const handleDeleteDynamicAlbum = async (albumToDelete: sdk.DynamicAlbumResponseDto) => {
     try {
-      await deleteDynamicAlbum(albumToDelete.id);
+      await sdk.deleteDynamicAlbum({ id: albumToDelete.id });
       ownedDynamicAlbums = ownedDynamicAlbums.filter(({ id }) => id !== albumToDelete.id);
       sharedDynamicAlbums = sharedDynamicAlbums.filter(({ id }) => id !== albumToDelete.id);
     } catch (error) {
@@ -96,38 +111,54 @@
     }
   };
 
-  const handleEdit = async (album: DynamicAlbumResponseDto) => {
+  const handleEdit = async (album: sdk.DynamicAlbumResponseDto) => {
     closeDynamicAlbumContextMenu();
-    // TODO: Implement edit modal
-    console.log('Edit dynamic album modal not implemented yet');
+    const editedAlbum = await modalManager.show(EditDynamicAlbumModal, { album });
+    if (editedAlbum) {
+      // Update the album in the list
+      const updateAlbumInList = (list: sdk.DynamicAlbumResponseDto[]) => {
+        const index = list.findIndex((a) => a.id === editedAlbum.id);
+        if (index !== -1) {
+          list[index] = editedAlbum;
+        }
+      };
+      updateAlbumInList(ownedDynamicAlbums);
+      updateAlbumInList(sharedDynamicAlbums);
+    }
   };
 
-  const handleShare = async (album: DynamicAlbumResponseDto) => {
+  const handleShare = async (album: sdk.DynamicAlbumResponseDto) => {
     closeDynamicAlbumContextMenu();
-    // TODO: Implement share modal
-    console.log('Share dynamic album modal not implemented yet');
+    const result = await modalManager.show(ShareDynamicAlbumModal, { album });
+    if (result?.action === 'sharedUsers') {
+      notificationController.show({
+        message: $t('dynamic_album_shared_successfully'),
+        type: NotificationType.Info,
+      });
+    }
   };
 
-  const handleDynamicAlbumClick = (album: DynamicAlbumResponseDto) => {
+  const handleDynamicAlbumClick = (album: sdk.DynamicAlbumResponseDto) => {
     goto(`${AppRoute.DYNAMIC_ALBUMS}/${album.id}`);
   };
 </script>
 
-{#if filteredDynamicAlbums.length === 0}
-  {#if empty}
-    {@render empty()}
-  {/if}
-{:else}
+{#if filteredDynamicAlbums.length > 0}
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-    {#each filteredDynamicAlbums as dynamicAlbum (dynamicAlbum.id)}
+    {#each filteredDynamicAlbums as dynamicAlbum, index (dynamicAlbum.id)}
       <DynamicAlbumCard
         {dynamicAlbum}
-        {allowEdit}
-        onContextMenu={(detail) => showDynamicAlbumContextMenu(detail, dynamicAlbum)}
+        showOwner={allowEdit}
+        showDateRange={true}
+        showItemCount={true}
+        preload={index < 20}
+        onShowContextMenu={allowEdit ? (position) => showDynamicAlbumContextMenu(position, dynamicAlbum) : undefined}
         onClick={() => handleDynamicAlbumClick(dynamicAlbum)}
       />
     {/each}
   </div>
+{:else}
+  {@render empty?.()}
 {/if}
 
 <RightClickContextMenu {isOpen} {contextMenuPosition} onClose={closeDynamicAlbumContextMenu}>
