@@ -134,7 +134,7 @@ export class DynamicAlbumRepository {
       const filters = await this.dynamicAlbumFilterRepository.getByDynamicAlbumId(id);
       const dynamicFilters: DynamicAlbumFilter[] = filters.map((filter) => ({
         type: filter.filterType,
-        value: JSON.parse(filter.filterValue),
+        value: filter.filterValue,
       }));
 
       const result = await buildDynamicAlbumAssetCountQuery(this.db, dynamicFilters, album.ownerId).execute();
@@ -142,7 +142,7 @@ export class DynamicAlbumRepository {
 
       results.push({
         dynamicAlbumId: id,
-        assetCount: metadata?.assetCount || 0,
+        assetCount: Number(metadata?.assetCount) || 0,
         startDate: metadata?.startDate || null,
         endDate: metadata?.endDate || null,
       });
@@ -169,7 +169,7 @@ export class DynamicAlbumRepository {
     const filters = await this.dynamicAlbumFilterRepository.getByDynamicAlbumId(dynamicAlbumId);
     const dynamicFilters: DynamicAlbumFilter[] = filters.map((filter) => ({
       type: filter.filterType,
-      value: JSON.parse(filter.filterValue),
+      value: filter.filterValue,
     }));
 
     const query = buildDynamicAlbumAssetQuery(this.db, dynamicFilters, {
@@ -192,11 +192,11 @@ export class DynamicAlbumRepository {
     const filters = await this.dynamicAlbumFilterRepository.getByDynamicAlbumId(dynamicAlbumId);
     const dynamicFilters: DynamicAlbumFilter[] = filters.map((filter) => ({
       type: filter.filterType,
-      value: JSON.parse(filter.filterValue),
+      value: filter.filterValue,
     }));
 
     const result = await buildDynamicAlbumAssetCountQuery(this.db, dynamicFilters, album.ownerId).execute();
-    return result[0]?.assetCount || 0;
+    return Number(result[0]?.assetCount) || 0;
   }
 
   create(dynamicAlbum: Insertable<DynamicAlbumTable>) {

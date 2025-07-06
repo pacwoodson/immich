@@ -1,5 +1,5 @@
 import { Kysely, SelectQueryBuilder, sql } from 'kysely';
-import { DynamicAlbumFilterOperator, DynamicAlbumFilterType } from 'src/enum';
+import { AssetType, DynamicAlbumFilterOperator, DynamicAlbumFilterType } from 'src/enum';
 import { DB } from 'src/schema';
 import { hasTags, withDefaultVisibility } from 'src/utils/database';
 
@@ -165,7 +165,11 @@ function applyAssetTypeFilter<O>(
   value: { types?: string[]; favorites?: boolean | null },
 ): SelectQueryBuilder<DB, 'assets', O> {
   if (value.types && value.types.length > 0) {
-    qb = qb.where('assets.type', 'in', value.types);
+    qb = qb.where(
+      'assets.type',
+      'in',
+      value.types.map((t) => t as AssetType),
+    );
   }
 
   if (value.favorites !== null && value.favorites !== undefined) {

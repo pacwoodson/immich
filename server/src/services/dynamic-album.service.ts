@@ -41,7 +41,10 @@ export class DynamicAlbumService {
       name: album.name,
       description: album.description,
       ownerId: album.ownerId,
-      filters: album.filters || [],
+      filters: (album.filters || []).map((filter: any) => ({
+        type: filter.filterType,
+        value: filter.filterValue,
+      })),
       assetCount: albumMetadata[album.id]?.assetCount ?? 0,
       startDate: albumMetadata[album.id]?.startDate ?? undefined,
       endDate: albumMetadata[album.id]?.endDate ?? undefined,
@@ -50,7 +53,11 @@ export class DynamicAlbumService {
       isActivityEnabled: album.isActivityEnabled,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
-      sharedUsers: album.sharedUsers || [],
+      sharedUsers: (album.sharedUsers || []).map((share: any) => ({
+        userId: share.user?.id,
+        role: share.role,
+        createdAt: share.createdAt,
+      })),
     }));
   }
 
@@ -67,7 +74,10 @@ export class DynamicAlbumService {
       name: album.name,
       description: album.description,
       ownerId: album.ownerId,
-      filters: album.filters || [],
+      filters: (album.filters || []).map((filter: any) => ({
+        type: filter.filterType,
+        value: filter.filterValue,
+      })),
       assetCount: albumMetadata?.assetCount ?? 0,
       startDate: albumMetadata?.startDate ?? undefined,
       endDate: albumMetadata?.endDate ?? undefined,
@@ -76,7 +86,11 @@ export class DynamicAlbumService {
       isActivityEnabled: album.isActivityEnabled,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
-      sharedUsers: album.sharedUsers || [],
+      sharedUsers: (album.sharedUsers || []).map((share: any) => ({
+        userId: share.user?.id,
+        role: share.role,
+        createdAt: share.createdAt,
+      })),
     };
   }
 
