@@ -1954,5 +1954,18 @@
   "yes": "Sí",
   "you_dont_have_any_shared_links": "No tienes ningún enlace compartido",
   "your_wifi_name": "El nombre de tu Wi-Fi",
-  "zoom_image": "Acercar Imagen"
+  "zoom_image": "Acercar Imagen",
+  "dynamic_albums": "Álbumes dinámicos",
+  "create_dynamic_album": "Crear álbum dinámico",
+  "edit_dynamic_album": "Editar álbum dinámico",
+  "dynamic_album_name_placeholder": "Introducir nombre del álbum dinámico",
+  "dynamic_album_description_placeholder": "Introducir descripción (opcional)",
+  "select_tags": "Seleccionar etiquetas",
+  "selected_tags": "Etiquetas seleccionadas",
+  "search_tags": "Buscar etiquetas...",
+  "remove_tag": "Eliminar etiqueta",
+  "errors.failed_to_load_tags": "Error al cargar etiquetas",
+  "errors.failed_to_create_dynamic_album": "Error al crear álbum dinámico",
+  "errors.failed_to_update_dynamic_album": "Error al actualizar álbum dinámico",
+  "unnamed_dynamic_album": "Álbum dinámico sin nombre"
 }

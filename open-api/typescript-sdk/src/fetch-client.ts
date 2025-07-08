@@ -622,6 +622,7 @@ export type CreateDynamicAlbumDto = {
     order?: Order;
 };
 export type UpdateDynamicAlbumDto = {
+    albumThumbnailAssetId?: string;
     description?: string;
     filters?: DynamicAlbumFilterDto[];
     isActivityEnabled?: boolean;

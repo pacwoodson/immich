@@ -2030,5 +2030,6 @@
   "remove_tag": "Remove tag",
   "errors.failed_to_load_tags": "Failed to load tags",
   "errors.failed_to_create_dynamic_album": "Failed to create dynamic album",
-  "errors.failed_to_update_dynamic_album": "Failed to update dynamic album"
+  "errors.failed_to_update_dynamic_album": "Failed to update dynamic album",
+  "unnamed_dynamic_album": "Unnamed Dynamic Album"
 }

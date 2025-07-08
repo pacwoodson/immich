@@ -67,6 +67,10 @@ export class UpdateDynamicAlbumDto {
   @IsBoolean()
   @Optional()
   isActivityEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @ValidateUUID({ optional: true })
+  albumThumbnailAssetId?: string;
 }
 
 export class DynamicAlbumShareDto {

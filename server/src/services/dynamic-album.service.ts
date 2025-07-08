@@ -37,6 +37,17 @@ export class DynamicAlbumService {
       albumMetadata[metadata.dynamicAlbumId] = metadata;
     }
 
+    // Get thumbnail asset IDs for albums without manual thumbnails
+    const albumsWithoutThumbnails = allAlbums.filter((album) => !album.albumThumbnailAssetId);
+    const thumbnailAssetIds = await Promise.all(
+      albumsWithoutThumbnails.map(async (album) => {
+        const assetId = await this.dynamicAlbumRepository.getFirstAssetForThumbnail(album.id);
+        return { albumId: album.id, assetId };
+      }),
+    );
+
+    const thumbnailMap = new Map(thumbnailAssetIds.map(({ albumId, assetId }) => [albumId, assetId]));
+
     return allAlbums.map((album) => ({
       id: album.id,
       name: album.name,
@@ -49,7 +60,7 @@ export class DynamicAlbumService {
       assetCount: albumMetadata[album.id]?.assetCount ?? 0,
       startDate: albumMetadata[album.id]?.startDate ?? undefined,
       endDate: albumMetadata[album.id]?.endDate ?? undefined,
-      albumThumbnailAssetId: album.albumThumbnailAssetId ?? undefined,
+      albumThumbnailAssetId: album.albumThumbnailAssetId ?? thumbnailMap.get(album.id) ?? undefined,
       order: album.order,
       isActivityEnabled: album.isActivityEnabled,
       createdAt: album.createdAt,
@@ -71,6 +82,17 @@ export class DynamicAlbumService {
       albumMetadata[metadata.dynamicAlbumId] = metadata;
     }
 
+    // Get thumbnail asset IDs for albums without manual thumbnails
+    const albumsWithoutThumbnails = sharedAlbums.filter((album) => !album.albumThumbnailAssetId);
+    const thumbnailAssetIds = await Promise.all(
+      albumsWithoutThumbnails.map(async (album) => {
+        const assetId = await this.dynamicAlbumRepository.getFirstAssetForThumbnail(album.id);
+        return { albumId: album.id, assetId };
+      }),
+    );
+
+    const thumbnailMap = new Map(thumbnailAssetIds.map(({ albumId, assetId }) => [albumId, assetId]));
+
     return sharedAlbums.map((album) => ({
       id: album.id,
       name: album.name,
@@ -83,7 +105,7 @@ export class DynamicAlbumService {
       assetCount: albumMetadata[album.id]?.assetCount ?? 0,
       startDate: albumMetadata[album.id]?.startDate ?? undefined,
       endDate: albumMetadata[album.id]?.endDate ?? undefined,
-      albumThumbnailAssetId: album.albumThumbnailAssetId ?? undefined,
+      albumThumbnailAssetId: album.albumThumbnailAssetId ?? thumbnailMap.get(album.id) ?? undefined,
       order: album.order,
       isActivityEnabled: album.isActivityEnabled,
       createdAt: album.createdAt,
@@ -104,6 +126,12 @@ export class DynamicAlbumService {
 
     const [albumMetadata] = await this.dynamicAlbumRepository.getMetadataForIds([album.id]);
 
+    // Get thumbnail asset ID if no manual thumbnail is set
+    let thumbnailAssetId = album.albumThumbnailAssetId;
+    if (!thumbnailAssetId) {
+      thumbnailAssetId = await this.dynamicAlbumRepository.getFirstAssetForThumbnail(album.id);
+    }
+
     return {
       id: album.id,
       name: album.name,
@@ -116,7 +144,7 @@ export class DynamicAlbumService {
       assetCount: albumMetadata?.assetCount ?? 0,
       startDate: albumMetadata?.startDate ?? undefined,
       endDate: albumMetadata?.endDate ?? undefined,
-      albumThumbnailAssetId: album.albumThumbnailAssetId ?? undefined,
+      albumThumbnailAssetId: thumbnailAssetId ?? undefined,
       order: album.order,
       isActivityEnabled: album.isActivityEnabled,
       createdAt: album.createdAt,
@@ -171,6 +199,9 @@ export class DynamicAlbumService {
     }
     if (dto.isActivityEnabled !== undefined) {
       updateData.isActivityEnabled = dto.isActivityEnabled;
+    }
+    if (dto.albumThumbnailAssetId !== undefined) {
+      updateData.albumThumbnailAssetId = dto.albumThumbnailAssetId;
     }
 
     await this.dynamicAlbumRepository.update(id, updateData);

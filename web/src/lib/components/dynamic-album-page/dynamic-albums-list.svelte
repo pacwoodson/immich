@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import RightClickContextMenu from '$lib/components/shared-components/context-menu/right-click-context-menu.svelte';
   import {
@@ -137,31 +136,33 @@
       });
     }
   };
-
-  const handleDynamicAlbumClick = (album: sdk.DynamicAlbumResponseDto) => {
-    goto(`${AppRoute.DYNAMIC_ALBUMS}/${album.id}`);
-  };
 </script>
 
 {#if filteredDynamicAlbums.length > 0}
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
     {#each filteredDynamicAlbums as dynamicAlbum, index (dynamicAlbum.id)}
-      <DynamicAlbumCard
-        {dynamicAlbum}
-        showOwner={allowEdit}
-        showDateRange={true}
-        showItemCount={true}
-        preload={index < 20}
-        onShowContextMenu={allowEdit ? (position) => showDynamicAlbumContextMenu(position, dynamicAlbum) : undefined}
-        onClick={() => handleDynamicAlbumClick(dynamicAlbum)}
-      />
+      <a data-sveltekit-preload-data="hover" href="{AppRoute.DYNAMIC_ALBUMS}/{dynamicAlbum.id}">
+        <DynamicAlbumCard
+          {dynamicAlbum}
+          showOwner={allowEdit}
+          showDateRange={true}
+          showItemCount={true}
+          preload={index < 20}
+          onShowContextMenu={allowEdit ? (position) => showDynamicAlbumContextMenu(position, dynamicAlbum) : undefined}
+        />
+      </a>
     {/each}
   </div>
 {:else}
   {@render empty?.()}
 {/if}
 
-<RightClickContextMenu {isOpen} {contextMenuPosition} onClose={closeDynamicAlbumContextMenu}>
+<RightClickContextMenu
+  title={$t('album_options')}
+  {...contextMenuPosition}
+  {isOpen}
+  onClose={closeDynamicAlbumContextMenu}
+>
   {#if showFullContextMenu}
     <MenuOption icon={mdiRenameOutline} text={$t('rename')} onClick={() => handleEdit(contextMenuTargetAlbum!)} />
     <MenuOption icon={mdiShareVariantOutline} text={$t('share')} onClick={() => handleShare(contextMenuTargetAlbum!)} />

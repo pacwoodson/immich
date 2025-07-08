@@ -199,6 +199,30 @@ export class DynamicAlbumRepository {
     return Number(result[0]?.assetCount) || 0;
   }
 
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async getFirstAssetForThumbnail(dynamicAlbumId: string): Promise<string | null> {
+    const album = await this.getById(dynamicAlbumId);
+    if (!album) {
+      return null;
+    }
+
+    const filters = await this.dynamicAlbumFilterRepository.getByDynamicAlbumId(dynamicAlbumId);
+    const dynamicFilters: DynamicAlbumFilter[] = filters.map((filter) => ({
+      type: filter.filterType,
+      value: filter.filterValue,
+    }));
+
+    const query = buildDynamicAlbumAssetQuery(this.db, dynamicFilters, {
+      userId: album.ownerId,
+      skip: 0,
+      take: 1,
+      order: 'desc',
+    });
+
+    const assets = await query.execute();
+    return assets.length > 0 ? assets[0].id : null;
+  }
+
   create(dynamicAlbum: Insertable<DynamicAlbumTable>) {
     return this.db.insertInto('dynamic_albums').values(dynamicAlbum).returningAll().executeTakeFirstOrThrow();
   }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DynamicAlbumCover from '$lib/components/dynamic-album-page/dynamic-album-cover.svelte';
   import { user } from '$lib/stores/user.store';
   import { getContextMenuPositionFromEvent, type ContextMenuPosition } from '$lib/utils/context-menu';
   import { type DynamicAlbumResponseDto } from '@immich/sdk';
@@ -13,7 +14,6 @@
     showItemCount?: boolean;
     preload?: boolean;
     onShowContextMenu?: ((position: ContextMenuPosition) => unknown) | undefined;
-    onClick?: (album: DynamicAlbumResponseDto) => void;
   }
 
   let {
@@ -23,19 +23,12 @@
     showItemCount = false,
     preload = false,
     onShowContextMenu = undefined,
-    onClick = undefined,
   }: Props = $props();
 
   const showAlbumContextMenu = (e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     onShowContextMenu?.(getContextMenuPositionFromEvent(e));
-  };
-
-  const handleClick = () => {
-    if (onClick && dynamicAlbum) {
-      onClick(dynamicAlbum);
-    }
   };
 
   // Computed properties
@@ -46,9 +39,8 @@
 
 {#if dynamicAlbum}
   <div
-    class="group relative rounded-2xl border border-transparent p-5 hover:bg-gray-100 hover:border-gray-200 dark:hover:border-gray-800 dark:hover:bg-gray-900 cursor-pointer"
+    class="group relative rounded-2xl border border-transparent p-5 hover:bg-gray-100 hover:border-gray-200 dark:hover:border-gray-800 dark:hover:bg-gray-900"
     data-testid="dynamic-album-card"
-    onclick={handleClick}
   >
     {#if onShowContextMenu}
       <div
@@ -70,22 +62,7 @@
     {/if}
 
     <!-- Dynamic Album Cover -->
-    <div
-      class="aspect-square overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 transition-all duration-300 hover:shadow-lg"
-    >
-      <div class="flex h-full w-full items-center justify-center">
-        <div class="text-center">
-          <div class="mx-auto mb-2 h-16 w-16 text-blue-500 dark:text-blue-400">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-              />
-            </svg>
-          </div>
-          <div class="text-sm font-medium text-blue-600 dark:text-blue-400">{$t('dynamic_album')}</div>
-        </div>
-      </div>
-    </div>
+    <DynamicAlbumCover {dynamicAlbum} {preload} class="transition-all duration-300 hover:shadow-lg" />
 
     <div class="mt-4">
       <p

@@ -16061,6 +16061,10 @@
       },
       "UpdateDynamicAlbumDto": {
         "properties": {
+          "albumThumbnailAssetId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "description": {
             "type": "string"
           },
