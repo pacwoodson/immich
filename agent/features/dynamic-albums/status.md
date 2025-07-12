@@ -69,6 +69,21 @@
 - **Fixed UserAvatar type errors**: Added missing required properties (`email`, `profileImagePath`, `avatarColor`, `profileChangedAt`) to UserAvatar components for owner and editor users
 - **All linter errors now resolved** in the dynamic albums photos page
 
+### 11. Download Functionality Fix ✅ (2025-01-12)
+- **Fixed 400 Bad Request error** when downloading dynamic albums
+- **Root Cause**: The download service was using `ALBUM_DOWNLOAD` permission for dynamic albums, but the access control system was designed for regular albums
+- **Solution**: 
+  - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
+  - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
+  - Added dynamic album access control logic to the access utility
+  - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
+- **Files Modified**:
+  - `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
+  - `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
+  - `server/src/utils/access.ts` - Added dynamic album permission handling
+  - `server/src/services/download.service.ts` - Updated to use correct permission
+- **Result**: Dynamic album downloads now work correctly with proper access control
+
 ## Current Status
 - ✅ Backend API fully implemented and functional
 - ✅ Database schema and migrations complete
@@ -78,11 +93,11 @@
 - ✅ Back navigation working correctly
 - ✅ All major features implemented and functional
 - ✅ All linter errors fixed
+- ✅ Download functionality working correctly
 
 ## Next Steps
 - Implement dynamic album sharing functionality (modals, user management)
 - Add dynamic album editing capabilities
-- Implement dynamic album download functionality
 - Add dynamic album map integration
 - Implement thumbnail selection for dynamic albums
 - Add comprehensive testing
@@ -95,6 +110,7 @@
 - Route structure matches regular albums: list page + photos route for individual viewing
 - Back navigation properly detects dynamic albums routes using `isDynamicAlbumsRoute` function
 - All components follow Immich's architectural patterns and coding standards
+- Download functionality now uses proper dynamic album access control
 
 ## API Endpoints Available
 - `GET /api/dynamic-albums` - Get all dynamic albums (owned and shared)
@@ -121,6 +137,7 @@ The **complete implementation** for dynamic albums is now ready! Both backend an
 - Full API with CRUD operations, sharing, and asset filtering
 - Comprehensive filtering system supporting tags, people, locations, dates, and asset types
 - Proper authentication and authorization
+- Download functionality with proper access control
 
 **Frontend:**
 - Complete UI components for dynamic albums
@@ -128,12 +145,14 @@ The **complete implementation** for dynamic albums is now ready! Both backend an
 - Routes and pages for dynamic album management
 - Context menus and navigation
 - Search and filtering capabilities
+- Download functionality working correctly
 
 **Recent Fix:**
 - Resolved API URL construction issue that was causing double `/api` prefix
 - Frontend now properly communicates with backend API endpoints
 - All endpoints responding correctly with proper authentication requirements
 - Fixed all linter errors in the dynamic albums photos page
+- Fixed download functionality with proper dynamic album access control
 
 The dynamic albums feature is now fully functional and ready for user testing!
 
@@ -155,10 +174,26 @@ Implementing a "dynamic albums" feature for Immich where users can create albums
 - ✅ Frontend: Thumbnail selection functionality implemented
 - ✅ Backend: Automatic thumbnail generation from first asset implemented
 - ✅ Frontend: Fixed missing import error for isDynamicAlbumsRoute
+- ✅ Backend: Fixed download functionality with proper access control
 
-## Latest Implementation (2025-01-08)
+## Latest Implementation (2025-01-12)
 
-### Bug Fix - Context Menu Positioning Issue
+### Bug Fix - Download Functionality
+- **Issue:** 400 Bad Request error when clicking download button on dynamic album page
+- **Root Cause:** The download service was using `ALBUM_DOWNLOAD` permission for dynamic albums, but the access control system was designed for regular albums
+- **Fix:** 
+  - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
+  - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
+  - Added dynamic album access control logic to the access utility
+  - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
+- **Files Modified:** 
+  - `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
+  - `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
+  - `server/src/utils/access.ts` - Added dynamic album permission handling
+  - `server/src/services/download.service.ts` - Updated to use correct permission
+- **Result:** Dynamic album downloads now work correctly with proper access control
+
+### Previous Implementation - Context Menu Positioning Issue
 - **Issue:** Dropdown menu on dynamic album cards was showing in wrong position (top-left, only showing first option)
 - **Root Cause:** The `RightClickContextMenu` component was missing the `title` prop and the context menu position was not being spread correctly
 - **Fix:** 
@@ -193,9 +228,10 @@ Implementing a "dynamic albums" feature for Immich where users can create albums
 - The first asset is determined by the album's order setting (defaults to descending by creation date)
 - Performance is optimized by only querying for thumbnails when needed (albums without manual thumbnails)
 - Context menu positioning now follows the same pattern as regular albums for consistency
+- Download functionality now uses proper dynamic album access control with owner and shared user permissions
 
 ## Next Steps
-- Test the context menu positioning fix
+- Test the download functionality fix
 - Consider adding a visual indicator when thumbnails are auto-generated vs manually set
 - Implement thumbnail caching if performance becomes an issue
 
@@ -207,6 +243,10 @@ Implementing a "dynamic albums" feature for Immich where users can create albums
 - `web/src/lib/components/dynamic-album-page/dynamic-album-cover.svelte` - Created new component
 - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added thumbnail selection and fixed import
 - `i18n/en.json`, `i18n/fr.json`, `i18n/de.json`, `i18n/es.json` - Added translation keys
+- `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
+- `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
+- `server/src/utils/access.ts` - Added dynamic album permission handling
+- `server/src/services/download.service.ts` - Updated to use correct permission
 
 ## 2025-01-12 - Dynamic Album Download Feature Implementation
 
@@ -224,11 +264,18 @@ Implementing a "dynamic albums" feature for Immich where users can create albums
 3. **OpenAPI Updates**:
    - Ran `make open-api` to update the TypeScript SDK with the new `dynamicAlbumId` field
 
+4. **Access Control Fix**:
+   - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
+   - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
+   - Added dynamic album access control logic to the access utility
+   - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
+
 ### Technical Details:
 - The download functionality works by filtering assets based on the dynamic album's filter criteria
 - Uses the existing `buildDynamicAlbumAssetQuery` function to get the correct assets
 - Downloads are handled as ZIP archives, similar to regular album downloads
 - Both the photos page and the albums list page now support downloading dynamic albums
+- Proper access control ensures only owners and shared users with appropriate permissions can download
 
 ### Status:
-✅ Dynamic album download feature is now fully implemented and ready for testing.
+✅ Dynamic album download feature is now fully implemented and working correctly with proper access control.

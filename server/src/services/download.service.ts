@@ -25,7 +25,7 @@ export class DownloadService extends BaseService {
       assets = this.downloadRepository.downloadAlbumId(albumId);
     } else if (dto.dynamicAlbumId) {
       const dynamicAlbumId = dto.dynamicAlbumId;
-      await this.requireAccess({ auth, permission: Permission.ALBUM_DOWNLOAD, ids: [dynamicAlbumId] });
+      await this.requireAccess({ auth, permission: Permission.DYNAMIC_ALBUM_DOWNLOAD, ids: [dynamicAlbumId] });
       assets = await this.downloadRepository.downloadDynamicAlbumId(dynamicAlbumId);
     } else if (dto.userId) {
       const userId = dto.userId;

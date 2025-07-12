@@ -195,6 +195,38 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
       return setUnion(isOwner, isShared);
     }
 
+    case Permission.DYNAMIC_ALBUM_READ: {
+      const isOwner = await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
+      const isShared = await access.dynamicAlbum.checkSharedAlbumAccess(
+        auth.user.id,
+        setDifference(ids, isOwner),
+        AlbumUserRole.VIEWER,
+      );
+      return setUnion(isOwner, isShared);
+    }
+
+    case Permission.DYNAMIC_ALBUM_UPDATE: {
+      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
+    }
+
+    case Permission.DYNAMIC_ALBUM_DELETE: {
+      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
+    }
+
+    case Permission.DYNAMIC_ALBUM_SHARE: {
+      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
+    }
+
+    case Permission.DYNAMIC_ALBUM_DOWNLOAD: {
+      const isOwner = await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
+      const isShared = await access.dynamicAlbum.checkSharedAlbumAccess(
+        auth.user.id,
+        setDifference(ids, isOwner),
+        AlbumUserRole.VIEWER,
+      );
+      return setUnion(isOwner, isShared);
+    }
+
     case Permission.ALBUM_REMOVE_ASSET: {
       const isOwner = await access.album.checkOwnerAccess(auth.user.id, ids);
       const isShared = await access.album.checkSharedAlbumAccess(

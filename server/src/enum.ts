@@ -98,6 +98,13 @@ export enum Permission {
   ALBUM_DELETE = 'album.delete',
   ALBUM_STATISTICS = 'album.statistics',
 
+  DYNAMIC_ALBUM_CREATE = 'dynamicAlbum.create',
+  DYNAMIC_ALBUM_READ = 'dynamicAlbum.read',
+  DYNAMIC_ALBUM_UPDATE = 'dynamicAlbum.update',
+  DYNAMIC_ALBUM_DELETE = 'dynamicAlbum.delete',
+  DYNAMIC_ALBUM_SHARE = 'dynamicAlbum.share',
+  DYNAMIC_ALBUM_DOWNLOAD = 'dynamicAlbum.download',
+
   ALBUM_ADD_ASSET = 'album.addAsset',
   ALBUM_REMOVE_ASSET = 'album.removeAsset',
   ALBUM_SHARE = 'album.share',

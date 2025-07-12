@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
-import { AlbumUserRole, AssetVisibility } from 'src/enum';
+import { AlbumUserRole, AssetVisibility, DynamicAlbumUserRole } from 'src/enum';
 import { DB } from 'src/schema';
 import { asUuid } from 'src/utils/database';
 
@@ -465,12 +465,59 @@ class TagAccess {
   }
 }
 
+class DynamicAlbumAccess {
+  constructor(private db: Kysely<DB>) {}
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkOwnerAccess(userId: string, dynamicAlbumIds: Set<string>) {
+    if (dynamicAlbumIds.size === 0) {
+      return new Set<string>();
+    }
+
+    return this.db
+      .selectFrom('dynamic_albums')
+      .select('dynamic_albums.id')
+      .where('dynamic_albums.id', 'in', [...dynamicAlbumIds])
+      .where('dynamic_albums.ownerId', '=', userId)
+      .where('dynamic_albums.deletedAt', 'is', null)
+      .execute()
+      .then((albums) => new Set(albums.map((album) => album.id)));
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkSharedAlbumAccess(userId: string, dynamicAlbumIds: Set<string>, access: AlbumUserRole) {
+    if (dynamicAlbumIds.size === 0) {
+      return new Set<string>();
+    }
+
+    const accessRole =
+      access === AlbumUserRole.EDITOR
+        ? [DynamicAlbumUserRole.EDITOR]
+        : [DynamicAlbumUserRole.EDITOR, DynamicAlbumUserRole.VIEWER];
+
+    return this.db
+      .selectFrom('dynamic_albums')
+      .select('dynamic_albums.id')
+      .leftJoin('dynamic_album_shares as albumShares', 'albumShares.dynamicAlbumId', 'dynamic_albums.id')
+      .leftJoin('users', (join) => join.onRef('users.id', '=', 'albumShares.userId').on('users.deletedAt', 'is', null))
+      .where('dynamic_albums.id', 'in', [...dynamicAlbumIds])
+      .where('dynamic_albums.deletedAt', 'is', null)
+      .where('users.id', '=', userId)
+      .where('albumShares.role', 'in', [...accessRole])
+      .execute()
+      .then((albums) => new Set(albums.map((album) => album.id)));
+  }
+}
+
 @Injectable()
 export class AccessRepository {
   activity: ActivityAccess;
   album: AlbumAccess;
   asset: AssetAccess;
   authDevice: AuthDeviceAccess;
+  dynamicAlbum: DynamicAlbumAccess;
   memory: MemoryAccess;
   notification: NotificationAccess;
   person: PersonAccess;
@@ -485,6 +532,7 @@ export class AccessRepository {
     this.album = new AlbumAccess(db);
     this.asset = new AssetAccess(db);
     this.authDevice = new AuthDeviceAccess(db);
+    this.dynamicAlbum = new DynamicAlbumAccess(db);
     this.memory = new MemoryAccess(db);
     this.notification = new NotificationAccess(db);
     this.person = new PersonAccess(db);

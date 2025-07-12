@@ -20,8 +20,8 @@ The files that you should use are located in the folders ./server and ./web. Do 
 
 # Coding
 
-The application is runned inside a docker container for which you don't have access. 
-Do not try to start server yourself.
+The application is runned inside a docker container with a hot reload server for which you don't have access. 
+Do not try to start/build server yourself.
 Do not try to run migrations. 
 Server api is available at http://localhost:2283
 
