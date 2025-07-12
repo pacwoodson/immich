@@ -63,6 +63,12 @@
 - **Back button now correctly navigates** to dynamic albums list instead of opening an image
 - **Maintains proper navigation flow**: Dynamic Albums List → Dynamic Album Photos → Back to List
 
+### 10. Linter Error Fixes ✅ (2025-01-12)
+- **Fixed missing import error**: Added `downloadAlbum` import from `$lib/utils/asset-utils`
+- **Fixed function call error**: Changed `downloadDynamicAlbum(dynamicAlbum)` to `downloadAlbum(dynamicAlbum)` to use the correct function
+- **Fixed UserAvatar type errors**: Added missing required properties (`email`, `profileImagePath`, `avatarColor`, `profileChangedAt`) to UserAvatar components for owner and editor users
+- **All linter errors now resolved** in the dynamic albums photos page
+
 ## Current Status
 - ✅ Backend API fully implemented and functional
 - ✅ Database schema and migrations complete
@@ -71,6 +77,7 @@
 - ✅ Route structure matches regular albums pattern exactly
 - ✅ Back navigation working correctly
 - ✅ All major features implemented and functional
+- ✅ All linter errors fixed
 
 ## Next Steps
 - Implement dynamic album sharing functionality (modals, user management)
@@ -126,6 +133,7 @@ The **complete implementation** for dynamic albums is now ready! Both backend an
 - Resolved API URL construction issue that was causing double `/api` prefix
 - Frontend now properly communicates with backend API endpoints
 - All endpoints responding correctly with proper authentication requirements
+- Fixed all linter errors in the dynamic albums photos page
 
 The dynamic albums feature is now fully functional and ready for user testing!
 
@@ -199,3 +207,28 @@ Implementing a "dynamic albums" feature for Immich where users can create albums
 - `web/src/lib/components/dynamic-album-page/dynamic-album-cover.svelte` - Created new component
 - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added thumbnail selection and fixed import
 - `i18n/en.json`, `i18n/fr.json`, `i18n/de.json`, `i18n/es.json` - Added translation keys
+
+## 2025-01-12 - Dynamic Album Download Feature Implementation
+
+### What was implemented:
+1. **Backend Support for Dynamic Album Downloads**:
+   - Added `dynamicAlbumId` field to `DownloadInfoDto` in `server/src/dtos/download.dto.ts`
+   - Added `downloadDynamicAlbumId` method to `DownloadRepository` in `server/src/repositories/download.repository.ts`
+   - Updated `DownloadService` in `server/src/services/download.service.ts` to handle dynamic album downloads
+
+2. **Frontend Download Functionality**:
+   - Added `downloadDynamicAlbum` function to `web/src/lib/utils/asset-utils.ts`
+   - Updated dynamic album photos page (`web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte`) to use the new download function
+   - Added download option to dynamic albums list context menu in `web/src/lib/components/dynamic-album-page/dynamic-albums-list.svelte`
+
+3. **OpenAPI Updates**:
+   - Ran `make open-api` to update the TypeScript SDK with the new `dynamicAlbumId` field
+
+### Technical Details:
+- The download functionality works by filtering assets based on the dynamic album's filter criteria
+- Uses the existing `buildDynamicAlbumAssetQuery` function to get the correct assets
+- Downloads are handled as ZIP archives, similar to regular album downloads
+- Both the photos page and the albums list page now support downloading dynamic albums
+
+### Status:
+✅ Dynamic album download feature is now fully implemented and ready for testing.

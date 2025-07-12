@@ -1,59 +1,36 @@
 ---
-description: 
+description: Instructions for how the agent should work. 
 globs: 
 alwaysApply: true
 ---
-This project is a fork of Immich, a self-hosted photo library.
 
-This project already does a lot of things I need, but it miss one major feature for me.
+You are a coding agent supervised by an experienced software engineer. 
 
-The project has an "Albums" feature, where users can create albums and add photos to them.
-The project has an "Tags" feature, where users add tags to pictures and see all pictures that contains them.
+## Code base
 
-I am heavily relying on tags, and I would like to share albums based on them, instead of having to manually having to add pictures to albums. 
+Summaries of the code base are available at `./agent/code-packs/`.
+You should read it when starting thinking about starting a new feature and when establishing specifications. 
 
-I want to add a "dynamic albums" feature, where users can create albums based on tags. When creating an album, the user can select a list of tags, and the album will be populated with all pictures that contains this tag. 
-The pictures in the albums should not be stored in the database, but dynamically fetched from the database. Everytime a dynamic album is displayed, it should show an updated list of the pictures that contains the tags that were used to create the album.
+## Features branches
 
-The files that you should use are located in the folders ./server and ./web. Do not read/edit files in other folders. 
+You are only working on features branches, like `feature/[feature_name]`.
 
-- A summary of the server codebase is available at `./agent/repomix-server-src.md` .
+Every feature has a folder in `./agent/features/[feature_name]`, which contains the specifications (specs.md) of the feature and the current state of work on the feature (status.md). Please read them before starting to work on a feature.
 
-- A summary of the frontend codebase is available at `./agent/repomix-web-src.md` .
+## Feature status
 
-Always respect the existing coding rules and how the software has been architected when writing code. 
-  
-- User specifications are available at `./agent/dynamic-albums-user-specification.md`.
+You can know what feature is being worked on by getting the current branch name.
 
-- Technical specifications are available at `./agent/dynamic-albums-specification.md`.
+The current development status of the feature is available in `./agent/features/[feature_name]/status.md`.
 
-- Everytime you edit the code, please write a short summary of what you've done in `./agent/agent-memory.md` file.
+## What to do
 
-### What to do
+You have to implement the requested feature, described in `./agent/features/[feature_name]/specs.md`, while following the specifications. Analyse the code base and the current state of work on the feature to know where we are in the steps. 
 
-You have to implement the requested feature, while following the specifications. Analyse the code base and the agent memory to know where we are in the steps. 
+## Coding rules
 
-Don't go too far in the feature, we are just doing an mvp for now. 
+Always respect the existing coding rules and how the software has been architected when writing code. When writing new code, always try to see if something similar has been done before and do it the same way, using the existing utilities and components if possible. 
 
+## Actions
 
-### How to do
-
-At the beggining of any conversation, make a git diff between main an current branch to know what file have been added/edited to know where we are in the development.
-
-The application is runned inside a docker container for which you don't have access. 
-Do not try to start server yourself.
-Do not try to run migrations. 
-Server api is available at http://localhost:2283
-
-#### Backend
-
-When new endpoints are added or DTOs are edited, run 'make open-api' to update @immich/sdk package with open-api
-
-#### Frontend
-With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
-
-Always use $t('...') for texts in the frontend, and add translations accordingly.
-
-I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 
-
-When working on new components of the frontend, always check how other similar components have been created (like comparing with normal albums features)
+A list of actions you can execute is available in `./agent/actions.md`.
