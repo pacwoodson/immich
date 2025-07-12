@@ -39,8 +39,8 @@
   // Check if search term doesn't match any existing person
   let shouldShowCreateButton = $derived(
     searchTerm.trim() &&
-    filteredCandidates.length === 0 &&
-    !candidates.some((person) => person.name.toLowerCase() === searchTerm.toLowerCase())
+      filteredCandidates.length === 0 &&
+      !candidates.some((person) => person.name.toLowerCase() === searchTerm.trim().toLowerCase()),
   );
 
   const configureControlStyle = () => {
@@ -382,12 +382,7 @@
         <div class="flex flex-col items-center justify-center py-4 gap-2">
           <p class="text-sm text-gray-500">{$t('no_people_found')}</p>
           {#if shouldShowCreateButton}
-            <Button 
-              size="small" 
-              onclick={createNewPerson}
-              color="primary"
-              class="w-full"
-            >
+            <Button size="small" onclick={createNewPerson} color="primary" class="w-full">
               {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
             </Button>
           {/if}
