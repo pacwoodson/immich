@@ -36,7 +36,7 @@
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
   import { preferences, user } from '$lib/stores/user.store';
   import { handlePromiseError } from '$lib/utils';
-  import { cancelMultiselect } from '$lib/utils/asset-utils';
+  import { cancelMultiselect, downloadAlbum } from '$lib/utils/asset-utils';
   import { handleError } from '$lib/utils/handle-error';
   import {
     isAlbumsRoute,
@@ -175,8 +175,11 @@
   };
 
   const handleDownloadDynamicAlbum = async () => {
-    // TODO: Implement dynamic album download
-    console.log('Download dynamic album not implemented yet');
+    try {
+      await downloadAlbum(dynamicAlbum);
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_download_files'));
+    }
   };
 
   const handleRemoveDynamicAlbum = async () => {
@@ -355,13 +358,33 @@
                 <div class="my-3 flex gap-x-1">
                   <!-- owner -->
                   <button type="button">
-                    <UserAvatar user={{ id: dynamicAlbum.ownerId, name: 'Owner' }} size="md" />
+                    <UserAvatar
+                      user={{
+                        id: dynamicAlbum.ownerId,
+                        name: 'Owner',
+                        email: '',
+                        profileImagePath: '',
+                        avatarColor: '',
+                        profileChangedAt: new Date(),
+                      }}
+                      size="md"
+                    />
                   </button>
 
                   <!-- users with write access (collaborators) -->
                   {#each dynamicAlbum.sharedUsers.filter(({ role }) => role === 'editor') as sharedUser (sharedUser.userId)}
                     <button type="button">
-                      <UserAvatar user={{ id: sharedUser.userId, name: 'Editor' }} size="md" />
+                      <UserAvatar
+                        user={{
+                          id: sharedUser.userId,
+                          name: 'Editor',
+                          email: '',
+                          profileImagePath: '',
+                          avatarColor: '',
+                          profileChangedAt: new Date(),
+                        }}
+                        size="md"
+                      />
                     </button>
                   {/each}
 

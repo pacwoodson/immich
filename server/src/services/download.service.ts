@@ -23,12 +23,16 @@ export class DownloadService extends BaseService {
       const albumId = dto.albumId;
       await this.requireAccess({ auth, permission: Permission.ALBUM_DOWNLOAD, ids: [albumId] });
       assets = this.downloadRepository.downloadAlbumId(albumId);
+    } else if (dto.dynamicAlbumId) {
+      const dynamicAlbumId = dto.dynamicAlbumId;
+      await this.requireAccess({ auth, permission: Permission.ALBUM_DOWNLOAD, ids: [dynamicAlbumId] });
+      assets = await this.downloadRepository.downloadDynamicAlbumId(dynamicAlbumId);
     } else if (dto.userId) {
       const userId = dto.userId;
       await this.requireAccess({ auth, permission: Permission.TIMELINE_DOWNLOAD, ids: [userId] });
       assets = this.downloadRepository.downloadUserId(userId);
     } else {
-      throw new BadRequestException('assetIds, albumId, or userId is required');
+      throw new BadRequestException('assetIds, albumId, dynamicAlbumId, or userId is required');
     }
 
     const targetSize = dto.archiveSize || HumanReadableSize.GiB * 4;

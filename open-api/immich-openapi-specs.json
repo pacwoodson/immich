@@ -10702,6 +10702,10 @@
             },
             "type": "array"
           },
+          "dynamicAlbumId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "userId": {
             "format": "uuid",
             "type": "string"

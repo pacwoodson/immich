@@ -14,7 +14,7 @@
   import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
   import { normalizeSearchString } from '$lib/utils/string-utils';
   import * as sdk from '@immich/sdk';
-  import { mdiDeleteOutline, mdiRenameOutline, mdiShareVariantOutline } from '@mdi/js';
+  import { mdiDeleteOutline, mdiDownloadOutline, mdiRenameOutline, mdiShareVariantOutline } from '@mdi/js';
   import { type Snippet } from 'svelte';
   import { t } from 'svelte-i18n';
   import { run } from 'svelte/legacy';
@@ -136,6 +136,15 @@
       });
     }
   };
+
+  const handleDownload = async (album: sdk.DynamicAlbumResponseDto) => {
+    closeDynamicAlbumContextMenu();
+    try {
+      await downloadDynamicAlbum(album);
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_download_files'));
+    }
+  };
 </script>
 
 {#if filteredDynamicAlbums.length > 0}
@@ -163,6 +172,7 @@
   {isOpen}
   onClose={closeDynamicAlbumContextMenu}
 >
+  <MenuOption icon={mdiDownloadOutline} text={$t('download')} onClick={() => handleDownload(contextMenuTargetAlbum!)} />
   {#if showFullContextMenu}
     <MenuOption icon={mdiRenameOutline} text={$t('rename')} onClick={() => handleEdit(contextMenuTargetAlbum!)} />
     <MenuOption icon={mdiShareVariantOutline} text={$t('share')} onClick={() => handleShare(contextMenuTargetAlbum!)} />
