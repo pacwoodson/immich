@@ -1,0 +1,38 @@
+---
+description: This rule contains some managing actions that the supervisor might ask to do. 
+alwaysApply: false
+---
+
+Here is a list of actions a supervisor can ask or you can execute if you need:
+
+
+# Pack the code
+
+You can pack a summary of the code in a markdown file with repomix, with executing the following example command, that you have to adapt to the current project:
+
+- `npx repomix@latest ./src -o ./agent/code-packs/src.md`
+
+# Analyse current state of the code
+
+- Analyse what files have been changed: `git diff main --name-only`
+- For each file, read the diff from the main branch and analyse what has been done
+- In `./agent/features/[feature_name]/status.md`, write:
+  - What files have been changed
+  - What have been done
+  - What problems have been detected
+  - What needs to be done
+
+# Initiating a feature branch
+
+- Create a branch with the name like `feature/[feature_name]`
+- Read the feature description in `./agent/features/[feature_name]/description.md` file or write it yourself if you know what the feature is about. 
+- Write a specification of the feature in `./agent/features/[feature_name]/specs.md` file from the description. Start with a clear user specification, and then a technical specification.
+- Update the code package in ./agent/code-packs with repomix
+
+# Prepare for merging a feature
+
+When the feature is complete and ready to be merged:
+
+- Analyse the current state of the code so we get an up to date `./agent/features/[feature_name]/status.md` file.
+- Pack the code.
+- Create the pull request with a great description
