@@ -181,4 +181,17 @@ export class TagRepository {
       }
     });
   }
+
+  async getEmptyTagIds(userId: string): Promise<string[]> {
+    const result = await this.db
+      .selectFrom('tags')
+      .leftJoin('tag_asset', 'tag_asset.tagsId', 'tags.id')
+      .select((eb) => ['tags.id', eb.fn.count<number>('tag_asset.tagsId').as('count')])
+      .where('tags.userId', '=', userId)
+      .groupBy('tags.id')
+      .having((eb) => eb.fn.count<number>('tag_asset.tagsId'), '=', 0)
+      .execute();
+
+    return result.map(({ id }) => id);
+  }
 }

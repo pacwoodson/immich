@@ -76,9 +76,14 @@ export class TagService extends BaseService {
   }
 
   async deleteEmptyTags(auth: AuthDto): Promise<void> {
-    // Check if user has permission to delete tags
-    await this.requireAccess({ auth, permission: Permission.TAG_DELETE, ids: [] });
-    await this.tagRepository.deleteEmptyTags();
+    // Get the list of empty tags for the user
+    const emptyTagIds = await this.tagRepository.getEmptyTagIds(auth.user.id);
+    
+    // Check if user has permission to delete these specific tags
+    if (emptyTagIds.length > 0) {
+      await this.requireAccess({ auth, permission: Permission.TAG_DELETE, ids: emptyTagIds });
+      await this.tagRepository.deleteEmptyTags();
+    }
   }
 
   async bulkTagAssets(auth: AuthDto, dto: TagBulkAssetsDto): Promise<TagBulkAssetsResponseDto> {
