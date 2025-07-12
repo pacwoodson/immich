@@ -44,6 +44,7 @@
   import PhotoViewer from './photo-viewer.svelte';
   import SlideshowBar from './slideshow-bar.svelte';
   import VideoViewer from './video-wrapper-viewer.svelte';
+  import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
 
   type HasAsset = boolean;
 
@@ -215,6 +216,7 @@
   };
 
   const closeViewer = () => {
+    isFaceEditMode.value = false;
     onClose(asset);
   };
 
