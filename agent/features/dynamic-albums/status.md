@@ -84,6 +84,40 @@
   - `server/src/services/download.service.ts` - Updated to use correct permission
 - **Result**: Dynamic album downloads now work correctly with proper access control
 
+### 12. Dynamic Album Filtering Fix ✅ (2025-01-12)
+- **Fixed issue**: Dynamic albums were showing all images instead of filtered ones
+- **Root Cause**: TimelineManager was fetching all user assets and only marking dynamic album assets as selected, instead of filtering the timeline to show only dynamic album assets
+- **Solution**: 
+  - Added `dynamicAlbumId` support to `TimelineManagerOptions` type
+  - Updated TimelineManager initialization logic to handle `dynamicAlbumId`
+  - **Complete rewrite of dynamic album asset loading logic**:
+    - Skip regular timeline fetch when `dynamicAlbumId` is present
+    - Fetch dynamic album assets with pagination (50 assets per batch)
+    - Filter assets by the current time bucket (month) client-side
+    - Create a proper `TimeBucketAssetResponseDto` mock response with only filtered assets
+    - Include all required fields: `id`, `ownerId`, `ratio`, `isFavorite`, `visibility`, `isTrashed`, `isImage`, `thumbhash`, `fileCreatedAt`, `localOffsetHours`, `duration`, `projectionType`, `livePhotoVideoId`, `city`, `country`, `stack`
+  - Updated dynamic albums photos page to use `dynamicAlbumId` option
+- **Performance improvements**:
+  - Fetch assets in smaller batches (50 instead of 1000) for better performance
+  - Stop fetching after 3 consecutive empty batches to avoid unnecessary API calls
+  - Only show assets that match both the dynamic album filter AND the current time bucket
+- **Files Modified**:
+  - `web/src/lib/managers/timeline-manager/types.ts` - Added `dynamicAlbumId` to `TimelineManagerOptions`
+  - `web/src/lib/managers/timeline-manager/internal/load-support.svelte.ts` - Complete rewrite of dynamic album filtering logic
+  - `web/src/routes/(user)/albums/[albumId]/photos/[[assetId=id]]/+page.svelte` - Updated to pass `dynamicAlbumId` to TimelineManager
+- **Result**: Dynamic albums now correctly show only filtered assets for the current time bucket, matching the expected behavior of regular albums
+
+### 13. Dynamic Album Filtering Performance Improvement ✅ (2025-01-12)
+- **Improved performance**: Enhanced the dynamic album filtering logic to be more efficient
+- **Changes**:
+  - Reduced batch size from 100 to 50 assets per request for better responsiveness
+  - Added consecutive empty batch detection to stop fetching when no more relevant assets are found
+  - Implemented early termination after 3 consecutive empty batches to avoid unnecessary API calls
+  - Added proper date range filtering using start and end dates for the time bucket
+- **Files Modified**:
+  - `web/src/lib/managers/timeline-manager/internal/load-support.svelte.ts` - Improved dynamic album asset loading logic
+- **Result**: Dynamic album filtering is now more efficient and responsive, with better performance for large albums
+
 ## Current Status
 - ✅ Backend API fully implemented and functional
 - ✅ Database schema and migrations complete
@@ -94,6 +128,7 @@
 - ✅ All major features implemented and functional
 - ✅ All linter errors fixed
 - ✅ Download functionality working correctly
+- ✅ Dynamic album filtering working correctly with improved performance
 
 ## Next Steps
 - Implement dynamic album sharing functionality (modals, user management)
@@ -105,12 +140,13 @@
 ## Technical Notes
 - Dynamic albums use tag-based filtering to automatically populate with matching assets
 - Assets are dynamically fetched based on filter criteria, not stored in database
-- TimelineManager integration uses workaround since it doesn't natively support dynamicAlbumId
+- TimelineManager now supports `dynamicAlbumId` for proper asset filtering
 - Photos route follows the same pattern as regular albums for consistency
 - Route structure matches regular albums: list page + photos route for individual viewing
 - Back navigation properly detects dynamic albums routes using `isDynamicAlbumsRoute` function
 - All components follow Immich's architectural patterns and coding standards
 - Download functionality now uses proper dynamic album access control
+- Dynamic album filtering now works correctly by fetching assets from the dynamic album API and filtering by time bucket
 
 ## API Endpoints Available
 - `GET /api/dynamic-albums` - Get all dynamic albums (owned and shared)

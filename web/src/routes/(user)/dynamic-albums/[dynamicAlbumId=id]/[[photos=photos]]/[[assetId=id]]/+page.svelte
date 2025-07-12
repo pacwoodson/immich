@@ -235,9 +235,8 @@
 
   $effect(() => {
     if (viewMode === AlbumPageViewMode.VIEW) {
-      // For dynamic albums, we need to use a different approach since TimelineManager doesn't support dynamicAlbumId
-      // We'll use the assets from the page data for now
-      void timelineManager.updateOptions({ order: dynamicAlbumOrder });
+      // Use the new dynamicAlbumId support in TimelineManager
+      void timelineManager.updateOptions({ dynamicAlbumId, order: dynamicAlbumOrder });
     } else if (viewMode === AlbumPageViewMode.SELECT_ASSETS) {
       void timelineManager.updateOptions({
         visibility: AssetVisibility.Timeline,

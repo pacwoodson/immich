@@ -11,22 +11,22 @@ import { AssetJobStatusTable } from 'src/schema/tables/asset-job-status.table';
 import { AssetTable } from 'src/schema/tables/asset.table';
 import { ExifTable } from 'src/schema/tables/exif.table';
 import {
-  anyUuid,
-  asUuid,
-  hasPeople,
-  removeUndefinedKeys,
-  truncatedDate,
-  unnest,
-  withDefaultVisibility,
-  withExif,
-  withFaces,
-  withFacesAndPeople,
-  withFiles,
-  withLibrary,
-  withOwner,
-  withSmartSearch,
-  withTagId,
-  withTags,
+    anyUuid,
+    asUuid,
+    hasPeople,
+    removeUndefinedKeys,
+    truncatedDate,
+    unnest,
+    withDefaultVisibility,
+    withExif,
+    withFaces,
+    withFacesAndPeople,
+    withFiles,
+    withLibrary,
+    withOwner,
+    withSmartSearch,
+    withTagId,
+    withTags,
 } from 'src/utils/database';
 import { globToSqlPattern } from 'src/utils/misc';
 
@@ -51,6 +51,7 @@ interface AssetBuilderOptions {
   isTrashed?: boolean;
   isDuplicate?: boolean;
   albumId?: string;
+  dynamicAlbumId?: string;
   tagId?: string;
   personId?: string;
   userIds?: string[];

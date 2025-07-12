@@ -2,11 +2,11 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@
 import { ApiTags } from '@nestjs/swagger';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-  CreateDynamicAlbumDto,
-  DynamicAlbumResponseDto,
-  ShareDynamicAlbumDto,
-  UpdateDynamicAlbumDto,
-  UpdateDynamicAlbumShareDto,
+    CreateDynamicAlbumDto,
+    DynamicAlbumResponseDto,
+    ShareDynamicAlbumDto,
+    UpdateDynamicAlbumDto,
+    UpdateDynamicAlbumShareDto,
 } from 'src/dtos/dynamic-album.dto';
 import { Permission } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
@@ -67,6 +67,16 @@ export class DynamicAlbumController {
     @Query('take') take?: number,
   ) {
     return this.service.getAssets(auth, id, { skip, take });
+  }
+
+  @Get(':id/assets/time-bucket/:timeBucket')
+  @Authenticated({ permission: Permission.ALBUM_READ })
+  getDynamicAlbumAssetsByTimeBucket(
+    @Auth() auth: AuthDto,
+    @Param() { id }: UUIDParamDto,
+    @Param('timeBucket') timeBucket: string,
+  ) {
+    return this.service.getAssetsByTimeBucket(auth, id, timeBucket);
   }
 
   @Get(':id/assets/count')

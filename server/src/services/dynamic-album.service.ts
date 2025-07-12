@@ -2,11 +2,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-  CreateDynamicAlbumDto,
-  DynamicAlbumResponseDto,
-  ShareDynamicAlbumDto,
-  UpdateDynamicAlbumDto,
-  UpdateDynamicAlbumShareDto,
+    CreateDynamicAlbumDto,
+    DynamicAlbumResponseDto,
+    ShareDynamicAlbumDto,
+    UpdateDynamicAlbumDto,
+    UpdateDynamicAlbumShareDto,
 } from 'src/dtos/dynamic-album.dto';
 
 import { DynamicAlbumFilterRepository } from 'src/repositories/dynamic-album-filter.repository';
@@ -251,6 +251,25 @@ export class DynamicAlbumService {
   async getAssets(auth: AuthDto, id: string, options: { skip?: number; take?: number } = {}): Promise<any[]> {
     const assets = await this.dynamicAlbumRepository.getAssets(id, options);
     return assets.map((asset) => mapAsset(asset, { auth }));
+  }
+
+  async getAssetsByTimeBucket(auth: AuthDto, id: string, timeBucket: string): Promise<any[]> {
+    // Parse the time bucket (format: YYYY-MM-DD)
+    const [year, month] = timeBucket.split('-').map(Number);
+    const startDate = new Date(year, month - 1, 1); // First day of the month
+    const endDate = new Date(year, month, 0); // Last day of the month
+    
+    // Get all assets for the dynamic album and filter by time bucket
+    const assets = await this.dynamicAlbumRepository.getAssets(id, {});
+    
+    // Filter assets by the time bucket
+    const filteredAssets = assets.filter((asset) => {
+      if (!asset.fileCreatedAt) return false;
+      const assetDate = new Date(asset.fileCreatedAt);
+      return assetDate >= startDate && assetDate <= endDate;
+    });
+    
+    return filteredAssets.map((asset) => mapAsset(asset, { auth }));
   }
 
   async getAssetCount(auth: AuthDto, id: string): Promise<number> {
