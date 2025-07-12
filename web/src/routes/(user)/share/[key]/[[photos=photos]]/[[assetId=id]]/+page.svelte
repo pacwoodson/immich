@@ -1,5 +1,6 @@
 <script lang="ts">
   import AlbumViewer from '$lib/components/album-page/album-viewer.svelte';
+  import DynamicAlbumViewer from '$lib/components/dynamic-album-page/dynamic-album-viewer.svelte';
   import IndividualSharedViewer from '$lib/components/share-page/individual-shared-viewer.svelte';
   import ControlAppBar from '$lib/components/shared-components/control-app-bar.svelte';
   import ImmichLogoSmallLink from '$lib/components/shared-components/immich-logo-small-link.svelte';
@@ -89,6 +90,9 @@
 
 {#if !passwordRequired && sharedLink?.type == SharedLinkType.Album}
   <AlbumViewer {sharedLink} />
+{/if}
+{#if !passwordRequired && sharedLink?.type == SharedLinkType.DynamicAlbum}
+  <DynamicAlbumViewer {sharedLink} />
 {/if}
 {#if !passwordRequired && sharedLink?.type == SharedLinkType.Individual}
   <div class="immich-scrollbar">

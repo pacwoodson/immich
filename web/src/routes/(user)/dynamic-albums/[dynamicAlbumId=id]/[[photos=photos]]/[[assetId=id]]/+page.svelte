@@ -40,7 +40,7 @@
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
   import { preferences, user } from '$lib/stores/user.store';
   import { handlePromiseError, makeSharedLinkUrl } from '$lib/utils';
-  import { cancelMultiselect, downloadAlbum } from '$lib/utils/asset-utils';
+  import { cancelMultiselect, downloadDynamicAlbum } from '$lib/utils/asset-utils';
   import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
   import { handleError } from '$lib/utils/handle-error';
   import {
@@ -185,7 +185,7 @@
 
   const handleDownloadDynamicAlbum = async () => {
     try {
-      await downloadAlbum(dynamicAlbum);
+      await downloadDynamicAlbum(dynamicAlbum);
     } catch (error) {
       handleError(error, $t('errors.unable_to_download_files'));
     }

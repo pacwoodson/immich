@@ -101,7 +101,8 @@ order by
 select distinct
   on ("shared_links"."createdAt") "shared_links".*,
   "assets"."assets",
-  to_json("album") as "album"
+  to_json("album") as "album",
+  to_json("dynamicAlbum") as "dynamicAlbum"
 from
   "shared_links"
   left join "shared_link__asset" on "shared_link__asset"."sharedLinksId" = "shared_links"."id"
@@ -147,13 +148,48 @@ from
       "albums"."id" = "shared_links"."albumId"
       and "albums"."deletedAt" is null
   ) as "album" on true
+  left join lateral (
+    select
+      "dynamic_albums".*,
+      to_json("owner") as "owner"
+    from
+      "dynamic_albums"
+      inner join lateral (
+        select
+          "users"."id",
+          "users"."email",
+          "users"."createdAt",
+          "users"."profileImagePath",
+          "users"."isAdmin",
+          "users"."shouldChangePassword",
+          "users"."deletedAt",
+          "users"."oauthId",
+          "users"."updatedAt",
+          "users"."storageLabel",
+          "users"."name",
+          "users"."quotaSizeInBytes",
+          "users"."quotaUsageInBytes",
+          "users"."status",
+          "users"."profileChangedAt"
+        from
+          "users"
+        where
+          "users"."id" = "dynamic_albums"."ownerId"
+          and "users"."deletedAt" is null
+      ) as "owner" on true
+    where
+      "dynamic_albums"."id" = "shared_links"."dynamicAlbumId"
+      and "dynamic_albums"."deletedAt" is null
+  ) as "dynamicAlbum" on true
 where
   "shared_links"."userId" = $1
   and (
     "shared_links"."type" = $2
     or "album"."id" is not null
+    or "dynamicAlbum"."id" is not null
   )
   and "shared_links"."albumId" = $3
+  and "shared_links"."dynamicAlbumId" = $4
 order by
   "shared_links"."createdAt" desc
 

@@ -2,17 +2,19 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-    CreateDynamicAlbumDto,
-    DynamicAlbumResponseDto,
-    ShareDynamicAlbumDto,
-    UpdateDynamicAlbumDto,
-    UpdateDynamicAlbumShareDto,
+  CreateDynamicAlbumDto,
+  DynamicAlbumResponseDto,
+  ShareDynamicAlbumDto,
+  UpdateDynamicAlbumDto,
+  UpdateDynamicAlbumShareDto,
 } from 'src/dtos/dynamic-album.dto';
-
+import { Permission } from 'src/enum';
+import { AccessRepository } from 'src/repositories/access.repository';
 import { DynamicAlbumFilterRepository } from 'src/repositories/dynamic-album-filter.repository';
 import { DynamicAlbumShareRepository } from 'src/repositories/dynamic-album-share.repository';
 import { DynamicAlbumRepository } from 'src/repositories/dynamic-album.repository';
 import { UserRepository } from 'src/repositories/user.repository';
+import { requireAccess } from 'src/utils/access';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
@@ -22,6 +24,7 @@ export class DynamicAlbumService {
     private dynamicAlbumFilterRepository: DynamicAlbumFilterRepository,
     private dynamicAlbumShareRepository: DynamicAlbumShareRepository,
     private userRepository: UserRepository,
+    private accessRepository: AccessRepository,
   ) {}
 
   async getAll(auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
@@ -119,6 +122,8 @@ export class DynamicAlbumService {
   }
 
   async get(auth: AuthDto, id: string): Promise<DynamicAlbumResponseDto> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_READ, ids: [id] });
+
     const album = await this.dynamicAlbumRepository.getById(id);
     if (!album) {
       throw new BadRequestException('Dynamic album not found');
@@ -182,6 +187,8 @@ export class DynamicAlbumService {
   }
 
   async update(auth: AuthDto, id: string, dto: UpdateDynamicAlbumDto): Promise<DynamicAlbumResponseDto> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_UPDATE, ids: [id] });
+
     const album = await this.dynamicAlbumRepository.getById(id);
     if (!album) {
       throw new BadRequestException('Dynamic album not found');
@@ -220,10 +227,13 @@ export class DynamicAlbumService {
   }
 
   async delete(auth: AuthDto, id: string): Promise<void> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_DELETE, ids: [id] });
     await this.dynamicAlbumRepository.delete(id);
   }
 
   async share(auth: AuthDto, id: string, dto: ShareDynamicAlbumDto): Promise<void> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_SHARE, ids: [id] });
+
     const exists = await this.userRepository.get(dto.userId, {});
     if (!exists) {
       throw new BadRequestException('User not found');
@@ -241,38 +251,45 @@ export class DynamicAlbumService {
   }
 
   async updateShare(auth: AuthDto, id: string, userId: string, dto: UpdateDynamicAlbumShareDto): Promise<void> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_SHARE, ids: [id] });
     await this.dynamicAlbumShareRepository.update(id, userId, { role: dto.role });
   }
 
   async removeShare(auth: AuthDto, id: string, userId: string): Promise<void> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_SHARE, ids: [id] });
     await this.dynamicAlbumShareRepository.delete(id, userId);
   }
 
   async getAssets(auth: AuthDto, id: string, options: { skip?: number; take?: number } = {}): Promise<any[]> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_READ, ids: [id] });
+
     const assets = await this.dynamicAlbumRepository.getAssets(id, options);
     return assets.map((asset) => mapAsset(asset, { auth }));
   }
 
   async getAssetsByTimeBucket(auth: AuthDto, id: string, timeBucket: string): Promise<any[]> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_READ, ids: [id] });
+
     // Parse the time bucket (format: YYYY-MM-DD)
     const [year, month] = timeBucket.split('-').map(Number);
     const startDate = new Date(year, month - 1, 1); // First day of the month
     const endDate = new Date(year, month, 0); // Last day of the month
-    
+
     // Get all assets for the dynamic album and filter by time bucket
     const assets = await this.dynamicAlbumRepository.getAssets(id, {});
-    
+
     // Filter assets by the time bucket
     const filteredAssets = assets.filter((asset) => {
       if (!asset.fileCreatedAt) return false;
       const assetDate = new Date(asset.fileCreatedAt);
       return assetDate >= startDate && assetDate <= endDate;
     });
-    
+
     return filteredAssets.map((asset) => mapAsset(asset, { auth }));
   }
 
   async getAssetCount(auth: AuthDto, id: string): Promise<number> {
+    await requireAccess(this.accessRepository, { auth, permission: Permission.DYNAMIC_ALBUM_READ, ids: [id] });
     return this.dynamicAlbumRepository.getAssetCount(id);
   }
 }

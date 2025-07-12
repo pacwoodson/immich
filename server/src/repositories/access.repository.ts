@@ -509,6 +509,25 @@ class DynamicAlbumAccess {
       .execute()
       .then((albums) => new Set(albums.map((album) => album.id)));
   }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkSharedLinkAccess(sharedLinkId: string, dynamicAlbumIds: Set<string>) {
+    if (dynamicAlbumIds.size === 0) {
+      return new Set<string>();
+    }
+
+    return this.db
+      .selectFrom('shared_links')
+      .select('shared_links.dynamicAlbumId')
+      .where('shared_links.id', '=', sharedLinkId)
+      .where('shared_links.dynamicAlbumId', 'in', [...dynamicAlbumIds])
+      .execute()
+      .then(
+        (sharedLinks) =>
+          new Set(sharedLinks.flatMap((sharedLink) => (sharedLink.dynamicAlbumId ? [sharedLink.dynamicAlbumId] : []))),
+      );
+  }
 }
 
 @Injectable()

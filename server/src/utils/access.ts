@@ -96,6 +96,14 @@ const checkSharedLinkAccess = async (
       return sharedLink.allowUpload ? await access.album.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
     }
 
+    case Permission.DYNAMIC_ALBUM_READ: {
+      return await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids);
+    }
+
+    case Permission.DYNAMIC_ALBUM_DOWNLOAD: {
+      return sharedLink.allowDownload ? await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
+    }
+
     default: {
       return new Set<string>();
     }

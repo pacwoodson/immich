@@ -166,6 +166,20 @@
   - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Updated share functionality
 - **Result**: Dynamic albums now support both user sharing and public link sharing, matching the functionality of regular albums
 
+### 15. Dynamic Album Download Access Control Fix ✅ (2025-01-12)
+- **Issue**: Dynamic album download was returning 400 Bad Request error with "Not found or no album.download access"
+- **Root Cause**: The dynamic album controller and service were using regular album permissions (`ALBUM_READ`, `ALBUM_CREATE`, etc.) instead of dynamic album specific permissions (`DYNAMIC_ALBUM_READ`, `DYNAMIC_ALBUM_CREATE`, etc.)
+- **Solution**: 
+  - Updated `DynamicAlbumController` to use correct dynamic album permissions for all endpoints
+  - Added proper access control checks to `DynamicAlbumService` methods using `requireAccess`
+  - Added `AccessRepository` dependency to `DynamicAlbumService` for access control
+  - Updated OpenAPI specification to reflect correct permissions
+- **Files Modified**:
+  - `server/src/controllers/dynamic-album.controller.ts` - Updated all endpoints to use `DYNAMIC_ALBUM_*` permissions
+  - `server/src/services/dynamic-album.service.ts` - Added access control checks to all methods
+  - `open-api/immich-openapi-specs.json` - Updated with correct permissions
+- **Result**: Dynamic album downloads now work correctly with proper access control and permissions
+
 ## Current Status
 - ✅ Backend API fully implemented and functional
 - ✅ Database schema and migrations complete
@@ -178,6 +192,7 @@
 - ✅ Download functionality working correctly
 - ✅ Dynamic album filtering working correctly with improved performance
 - ✅ Dynamic album sharing functionality (user sharing and link sharing) fully implemented
+- ✅ **FIXED: Dynamic album download access control issue** - Updated controller and service to use correct dynamic album permissions
 
 ## Next Steps
 - ✅ Implement dynamic album sharing functionality (modals, user management)

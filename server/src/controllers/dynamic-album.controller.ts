@@ -2,11 +2,11 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@
 import { ApiTags } from '@nestjs/swagger';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-    CreateDynamicAlbumDto,
-    DynamicAlbumResponseDto,
-    ShareDynamicAlbumDto,
-    UpdateDynamicAlbumDto,
-    UpdateDynamicAlbumShareDto,
+  CreateDynamicAlbumDto,
+  DynamicAlbumResponseDto,
+  ShareDynamicAlbumDto,
+  UpdateDynamicAlbumDto,
+  UpdateDynamicAlbumShareDto,
 } from 'src/dtos/dynamic-album.dto';
 import { Permission } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
@@ -19,31 +19,31 @@ export class DynamicAlbumController {
   constructor(private service: DynamicAlbumService) {}
 
   @Get()
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   getAllDynamicAlbums(@Auth() auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
     return this.service.getAll(auth);
   }
 
   @Get('shared')
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   getSharedDynamicAlbums(@Auth() auth: AuthDto): Promise<DynamicAlbumResponseDto[]> {
     return this.service.getShared(auth);
   }
 
   @Post()
-  @Authenticated({ permission: Permission.ALBUM_CREATE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_CREATE })
   createDynamicAlbum(@Auth() auth: AuthDto, @Body() dto: CreateDynamicAlbumDto): Promise<DynamicAlbumResponseDto> {
     return this.service.create(auth, dto);
   }
 
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   @Get(':id')
   getDynamicAlbumInfo(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<DynamicAlbumResponseDto> {
     return this.service.get(auth, id);
   }
 
   @Patch(':id')
-  @Authenticated({ permission: Permission.ALBUM_UPDATE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_UPDATE })
   updateDynamicAlbumInfo(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,
@@ -53,13 +53,13 @@ export class DynamicAlbumController {
   }
 
   @Delete(':id')
-  @Authenticated({ permission: Permission.ALBUM_DELETE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_DELETE })
   deleteDynamicAlbum(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<void> {
     return this.service.delete(auth, id);
   }
 
   @Get(':id/assets')
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   getDynamicAlbumAssets(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,
@@ -70,7 +70,7 @@ export class DynamicAlbumController {
   }
 
   @Get(':id/assets/time-bucket/:timeBucket')
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   getDynamicAlbumAssetsByTimeBucket(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,
@@ -80,13 +80,13 @@ export class DynamicAlbumController {
   }
 
   @Get(':id/assets/count')
-  @Authenticated({ permission: Permission.ALBUM_READ })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_READ })
   getDynamicAlbumAssetCount(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<number> {
     return this.service.getAssetCount(auth, id);
   }
 
   @Post(':id/share')
-  @Authenticated({ permission: Permission.ALBUM_SHARE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_SHARE })
   shareDynamicAlbum(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,
@@ -96,7 +96,7 @@ export class DynamicAlbumController {
   }
 
   @Put(':id/share/:userId')
-  @Authenticated({ permission: Permission.ALBUM_SHARE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_SHARE })
   updateDynamicAlbumShare(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,
@@ -107,7 +107,7 @@ export class DynamicAlbumController {
   }
 
   @Delete(':id/share/:userId')
-  @Authenticated({ permission: Permission.ALBUM_SHARE })
+  @Authenticated({ permission: Permission.DYNAMIC_ALBUM_SHARE })
   removeDynamicAlbumShare(
     @Auth() auth: AuthDto,
     @Param() { id }: UUIDParamDto,

@@ -12,6 +12,8 @@
   import { user } from '$lib/stores/user.store';
   import type { ContextMenuPosition } from '$lib/utils/context-menu';
   import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
+  import { downloadDynamicAlbum } from '$lib/utils/asset-utils';
+  import { handleError } from '$lib/utils/handle-error';
   import { normalizeSearchString } from '$lib/utils/string-utils';
   import * as sdk from '@immich/sdk';
   import { mdiDeleteOutline, mdiDownloadOutline, mdiRenameOutline, mdiShareVariantOutline } from '@mdi/js';
