@@ -37,6 +37,7 @@
   import { preferences, user } from '$lib/stores/user.store';
   import { handlePromiseError } from '$lib/utils';
   import { cancelMultiselect, downloadAlbum } from '$lib/utils/asset-utils';
+  import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
   import { handleError } from '$lib/utils/handle-error';
   import {
     isAlbumsRoute,
@@ -183,8 +184,21 @@
   };
 
   const handleRemoveDynamicAlbum = async () => {
-    // TODO: Implement dynamic album deletion with confirmation
-    console.log('Delete dynamic album not implemented yet');
+    const isConfirmed = await confirmDynamicAlbumDelete(dynamicAlbum);
+
+    if (!isConfirmed) {
+      viewMode = AlbumPageViewMode.VIEW;
+      return;
+    }
+
+    try {
+      await deleteDynamicAlbum({ id: dynamicAlbum.id });
+      await goto(backUrl);
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_delete_album'));
+    } finally {
+      viewMode = AlbumPageViewMode.VIEW;
+    }
   };
 
   const handleSetVisibility = (assetIds: string[]) => {

@@ -2032,5 +2032,9 @@
   "errors.failed_to_load_tags": "Failed to load tags",
   "errors.failed_to_create_dynamic_album": "Failed to create dynamic album",
   "errors.failed_to_update_dynamic_album": "Failed to update dynamic album",
-  "unnamed_dynamic_album": "Unnamed Dynamic Album"
+  "unnamed_dynamic_album": "Unnamed Dynamic Album",
+  "delete_dynamic_album": "Delete dynamic album",
+  "delete_dynamic_album_prompt": "Are you sure you want to delete the dynamic album '{name}'? This action cannot be undone.",
+  "delete": "Delete",
+  "cancel": "Cancel"
 }
