@@ -110,14 +110,8 @@
       // Refresh the tags list
       tags = await getAllTags();
       
-      // Navigate to root if current tag was deleted
-      if (tag.path.length > 0) {
-        // Check if current tag still exists
-        const currentTag = tags.find(t => t.id === tag.id);
-        if (!currentTag) {
-          await navigateToView('');
-        }
-      }
+      // No navigation needed since we're already at the root level
+      // (this function is only called when tag.path.length === 0)
     } catch (error) {
       console.error('Error deleting empty tags:', error);
       // You might want to show an error notification here
