@@ -29,6 +29,7 @@
   import { AlbumPageViewMode, AppRoute } from '$lib/constants';
   import { modalManager } from '$lib/managers/modal-manager.svelte';
   import DynamicAlbumShareModal from '$lib/modals/DynamicAlbumShareModal.svelte';
+  import DynamicAlbumOptionsModal from '$lib/modals/DynamicAlbumOptionsModal.svelte';
   import QrCodeModal from '$lib/modals/QrCodeModal.svelte';
   import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import { activityManager } from '$lib/managers/activity-manager.svelte';
@@ -166,6 +167,17 @@
 
   const refreshDynamicAlbum = async () => {
     dynamicAlbum = await getDynamicAlbumInfo({ id: dynamicAlbum.id });
+    
+    // Refresh timeline manager to reflect the updated dynamic album content
+    if (viewMode === AlbumPageViewMode.VIEW) {
+      // Force a reload by adding a timestamp to make the options different
+      await timelineManager.updateOptions({ 
+        dynamicAlbumId: dynamicAlbum.id, 
+        order: dynamicAlbumOrder,
+        // Add a timestamp to force reload when filters change
+        ...(dynamicAlbum.updatedAt && { _forceReload: new Date(dynamicAlbum.updatedAt).getTime() })
+      });
+    }
   };
 
   const setModeToView = async () => {
@@ -349,8 +361,30 @@
   };
 
   const handleOptions = async () => {
-    // TODO: Implement options functionality
-    console.log('Dynamic album options not implemented yet');
+    const result = await modalManager.show(DynamicAlbumOptionsModal, { album: dynamicAlbum, order: dynamicAlbumOrder, user: $user });
+
+    if (!result) {
+      return;
+    }
+
+    switch (result.action) {
+      case 'changeOrder': {
+        dynamicAlbumOrder = result.order;
+        break;
+      }
+      case 'shareUser': {
+        await handleShare();
+        break;
+      }
+      case 'refreshAlbum': {
+        await refreshDynamicAlbum();
+        break;
+      }
+      case 'editFilters': {
+        await refreshDynamicAlbum();
+        break;
+      }
+    }
   };
 
   const handleUpdateThumbnail = async (assetId: string) => {

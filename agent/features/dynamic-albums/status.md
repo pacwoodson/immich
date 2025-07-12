@@ -180,6 +180,31 @@
   - `open-api/immich-openapi-specs.json` - Updated with correct permissions
 - **Result**: Dynamic album downloads now work correctly with proper access control and permissions
 
+### 16. Dynamic Album Options Dialog Implementation ✅ (2025-01-12)
+- **Implemented complete options dialog** for dynamic albums that combines functionality from regular album options with dynamic album filter editing
+- **Features**:
+  - Settings section with display order and activity toggle
+  - Filters section with inline editing capability (similar to EditDynamicAlbumModal)
+  - People section with user management (role changes, removal)
+  - Proper integration with modalManager
+- **Components Created**:
+  - `web/src/lib/modals/DynamicAlbumOptionsModal.svelte` - Complete options modal
+- **Components Modified**:
+  - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added options modal integration
+  - `i18n/en.json` - Added missing translation keys
+- **Key Features**:
+  - **Filter Editing**: Users can edit dynamic album filters directly in the options modal
+  - **Tag Management**: Add/remove tags with combobox and visual tag display
+  - **User Management**: Change user roles and remove users from shared albums
+  - **Settings Management**: Toggle activity and change display order
+  - **Responsive Design**: Works on both desktop and mobile
+- **Technical Implementation**:
+  - Reuses existing components (Combobox, SettingDropdown, SettingSwitch, etc.)
+  - Follows Immich's architectural patterns and coding standards
+  - Proper error handling and user feedback
+  - Integration with existing modal management system
+- **Result**: Dynamic albums now have a complete options dialog that matches the functionality of regular albums while adding dynamic album-specific features
+
 ## Current Status
 - ✅ Backend API fully implemented and functional
 - ✅ Database schema and migrations complete
@@ -193,11 +218,12 @@
 - ✅ Dynamic album filtering working correctly with improved performance
 - ✅ Dynamic album sharing functionality (user sharing and link sharing) fully implemented
 - ✅ **FIXED: Dynamic album download access control issue** - Updated controller and service to use correct dynamic album permissions
+- ✅ **Dynamic album options dialog implemented** - Complete options modal with settings, filter editing, and user management
 
 ## Next Steps
 - ✅ Implement dynamic album sharing functionality (modals, user management)
 - ✅ Implement dynamic album link sharing functionality (shared links, QR codes)
-- Add dynamic album editing capabilities
+- ✅ **Implement dynamic album options dialog** - Complete options modal with filter editing
 - Add dynamic album map integration
 - Implement thumbnail selection for dynamic albums
 - Add comprehensive testing

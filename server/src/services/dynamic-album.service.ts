@@ -211,7 +211,10 @@ export class DynamicAlbumService {
       updateData.albumThumbnailAssetId = dto.albumThumbnailAssetId;
     }
 
-    await this.dynamicAlbumRepository.update(id, updateData);
+    // Only update the dynamic album table if there are fields to update
+    if (Object.keys(updateData).length > 0) {
+      await this.dynamicAlbumRepository.update(id, updateData);
+    }
 
     // Update filters if provided
     if (dto.filters !== undefined) {

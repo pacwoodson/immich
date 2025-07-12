@@ -32,7 +32,7 @@ When new endpoints are added or DTOs are edited, run 'make open-api' to update @
 ### Frontend
 With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
 
-Always use $t('...') for texts in the frontend, and add translations accordingly. Only create english translations.
+Always use $t('...') for texts in the frontend, and add translations accordingly. Only create english translations. When creating translations, never use single quotes when using the {name} placeholder.
 
 I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 
 

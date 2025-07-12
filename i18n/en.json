@@ -413,8 +413,8 @@
   "dynamic_album_description_placeholder": "Enter description (optional)",
   "create_dynamic_album_description": "Dynamic albums automatically display photos based on tags you select. Choose tags and the album will always show the latest photos matching those tags.",
   "edit_dynamic_album_description": "Edit the name and tag filters for this dynamic album. The album will automatically update to show photos matching the selected tags.",
-  "dynamic_album_created": "Dynamic album '{album}' created successfully",
-  "dynamic_album_updated": "Dynamic album '{album}' updated successfully",
+  "dynamic_album_created": "Dynamic album {album} created successfully",
+  "dynamic_album_updated": "Dynamic album {album} updated successfully",
   "enter_album_name": "Enter album name",
   "select_tags_to_create_dynamic_album": "Select tags to create a dynamic album",
   "select_tags_for_dynamic_album": "Select tags for the dynamic album",
@@ -469,6 +469,8 @@
   "failed_to_create_dynamic_album": "Failed to create dynamic album",
   "failed_to_load_dynamic_album": "Failed to load dynamic album",
   "failed_to_update_dynamic_album": "Failed to update dynamic album",
+  "dynamic_album_filters_updated": "Dynamic album {album} filters updated successfully",
+  "no_filters_configured": "No filters configured",
   "failed_to_delete_dynamic_album": "Failed to delete dynamic album",
   "failed_to_load_dynamic_album_assets": "Failed to load dynamic album assets",
   "failed_to_load_dynamic_album_asset_count": "Failed to load dynamic album asset count",
@@ -2053,7 +2055,7 @@
   "errors.failed_to_update_dynamic_album": "Failed to update dynamic album",
   "unnamed_dynamic_album": "Unnamed Dynamic Album",
   "delete_dynamic_album": "Delete dynamic album",
-  "delete_dynamic_album_prompt": "Are you sure you want to delete the dynamic album '{name}'? This action cannot be undone.",
+  "delete_dynamic_album_prompt": "Are you sure you want to delete the dynamic album {name}? This action cannot be undone.",
   "delete": "Delete",
   "cancel": "Cancel"
 }
