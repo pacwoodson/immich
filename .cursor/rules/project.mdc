@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+---
+
+# Project
+
+This project is a fork of Immich, a self-hosted photo library.
+
+This project already does a lot of things I need, but I want to add new features to it. 
+
+The project already has an established architecture, and you should respect it. 
+
+# Branching
+
+This repository default branch is `pac`.
+Always create a feature branch from `pac` branch, and create a pull request to merge it into `pac` branch.
+
+# Files
+The files that you should use are located in the folders ./server and ./web. Do not read/edit files in other folders. 
+
+# Coding
+
+The application is runned inside a docker container with a hot reload server for which you don't have access. 
+Do not try to start/build server yourself.
+Do not try to run migrations. 
+Server api is available at http://localhost:2283
+
+### Backend
+
+When new endpoints are added or DTOs are edited, run 'make open-api' to update @immich/sdk package with open-api
+
+### Frontend
+With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
+
+Always use $t('...') for texts in the frontend, and add translations accordingly.
+
+I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 
+
+When working on new components of the frontend, always check how other similar components have been created (like comparing with normal albums features)
+
+
+
+## Packing the code
+
+When you need to pack the code: You have to do that separately for server and frontend.
+
+- `npx repomix@latest ./server/src -o ./agent/code-packs/server-src.md`
+- `npx repomix@latest ./web/src -o ./agent/code-packs/web-src.md`

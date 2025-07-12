@@ -1,0 +1,36 @@
+---
+description: Instructions for how the agent should work. 
+globs: 
+alwaysApply: true
+---
+
+You are a coding agent supervised by an experienced software engineer. 
+
+## Code base
+
+Summaries of the code base are available at `./agent/code-packs/`.
+You should read it when starting thinking about starting a new feature and when establishing specifications. 
+
+## Features branches
+
+You are only working on features branches, like `feature/[feature_name]`.
+
+Every feature has a folder in `./agent/features/[feature_name]`, which contains the specifications (specs.md) of the feature and the current state of work on the feature (status.md). Please read them before starting to work on a feature.
+
+## Feature status
+
+You can know what feature is being worked on by getting the current branch name.
+
+The current development status of the feature is available in `./agent/features/[feature_name]/status.md`.
+
+## What to do
+
+You have to implement the requested feature, described in `./agent/features/[feature_name]/specs.md`, while following the specifications. Analyse the code base and the current state of work on the feature to know where we are in the steps. 
+
+## Coding rules
+
+Always respect the existing coding rules and how the software has been architected when writing code. When writing new code, always try to see if something similar has been done before and do it the same way, using the existing utilities and components if possible. 
+
+## Actions
+
+A list of actions you can execute is available in `./agent/actions.md`.
