@@ -4,24 +4,27 @@ import { AssetIdErrorReason, AssetIdsResponseDto } from 'src/dtos/asset-ids.resp
 import { AssetIdsDto } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-    mapSharedLink,
-    mapSharedLinkWithoutMetadata,
-    SharedLinkCreateDto,
-    SharedLinkEditDto,
-    SharedLinkPasswordDto,
-    SharedLinkResponseDto,
-    SharedLinkSearchDto,
+  mapSharedLink,
+  mapSharedLinkWithoutMetadata,
+  SharedLinkCreateDto,
+  SharedLinkEditDto,
+  SharedLinkPasswordDto,
+  SharedLinkResponseDto,
+  SharedLinkSearchDto,
 } from 'src/dtos/shared-link.dto';
 import { Permission, SharedLinkType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { getExternalDomain, OpenGraphTags } from 'src/utils/misc';
 
 @Injectable()
 export class SharedLinkService extends BaseService {
+  constructor(private dynamicAlbumService: DynamicAlbumService) {
+    super();
+  }
   async getAll(auth: AuthDto, { albumId, dynamicAlbumId }: SharedLinkSearchDto): Promise<SharedLinkResponseDto[]> {
-    return this.sharedLinkRepository
-      .getAll({ userId: auth.user.id, albumId, dynamicAlbumId })
-      .then((links) => links.map((link) => mapSharedLink(link)));
+    const links = await this.sharedLinkRepository.getAll({ userId: auth.user.id, albumId, dynamicAlbumId });
+    return Promise.all(links.map((link) => this.mapToSharedLink(link, { withExif: true })));
   }
 
   async getMine(auth: AuthDto, dto: SharedLinkPasswordDto): Promise<SharedLinkResponseDto> {
@@ -30,7 +33,7 @@ export class SharedLinkService extends BaseService {
     }
 
     const sharedLink = await this.findOrFail(auth.user.id, auth.sharedLink.id);
-    const response = this.mapToSharedLink(sharedLink, { withExif: sharedLink.showExif });
+    const response = await this.mapToSharedLink(sharedLink, { withExif: sharedLink.showExif });
     if (sharedLink.password) {
       response.token = this.validateAndRefreshToken(sharedLink, dto);
     }
@@ -40,7 +43,7 @@ export class SharedLinkService extends BaseService {
 
   async get(auth: AuthDto, id: string): Promise<SharedLinkResponseDto> {
     const sharedLink = await this.findOrFail(auth.user.id, id);
-    return this.mapToSharedLink(sharedLink, { withExif: true });
+    return await this.mapToSharedLink(sharedLink, { withExif: true });
   }
 
   async create(auth: AuthDto, dto: SharedLinkCreateDto): Promise<SharedLinkResponseDto> {
@@ -87,7 +90,7 @@ export class SharedLinkService extends BaseService {
       showExif: dto.showMetadata ?? true,
     });
 
-    return this.mapToSharedLink(sharedLink, { withExif: true });
+    return await this.mapToSharedLink(sharedLink, { withExif: true });
   }
 
   async update(auth: AuthDto, id: string, dto: SharedLinkEditDto) {
@@ -102,7 +105,7 @@ export class SharedLinkService extends BaseService {
       allowDownload: dto.allowDownload,
       showExif: dto.showMetadata,
     });
-    return this.mapToSharedLink(sharedLink, { withExif: true });
+    return await this.mapToSharedLink(sharedLink, { withExif: true });
   }
 
   async remove(auth: AuthDto, id: string): Promise<void> {
@@ -203,8 +206,13 @@ export class SharedLinkService extends BaseService {
     };
   }
 
-  private mapToSharedLink(sharedLink: SharedLink, { withExif }: { withExif: boolean }) {
-    return withExif ? mapSharedLink(sharedLink) : mapSharedLinkWithoutMetadata(sharedLink);
+  private async mapToSharedLink(sharedLink: SharedLink, { withExif }: { withExif: boolean }) {
+    const baseResponse = withExif ? mapSharedLink(sharedLink) : mapSharedLinkWithoutMetadata(sharedLink);
+
+    // The mapSharedLink function already handles dynamic albums correctly
+    // No additional processing needed here
+
+    return baseResponse;
   }
 
   private validateAndRefreshToken(sharedLink: SharedLink, dto: SharedLinkPasswordDto): string {
