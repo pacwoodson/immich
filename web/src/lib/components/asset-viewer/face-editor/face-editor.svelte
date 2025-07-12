@@ -1,7 +1,6 @@
 <script lang="ts">
   import ImageThumbnail from '$lib/components/assets/thumbnail/image-thumbnail.svelte';
   import { notificationController } from '$lib/components/shared-components/notification/notification';
-  import { modalManager } from '$lib/managers/modal-manager.svelte';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
   import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
   import { getPeopleThumbnailUrl } from '$lib/utils';
@@ -39,9 +38,7 @@
 
   // Check if search term doesn't match any existing person
   let shouldShowCreateButton = $derived(
-    searchTerm.trim() &&
-      filteredCandidates.length === 0 &&
-      !candidates.some((person) => person.name.toLowerCase() === searchTerm.trim().toLowerCase()),
+    searchTerm.trim() && !candidates.some((person) => person.name.toLowerCase() === searchTerm.trim().toLowerCase()),
   );
 
   // Update selected person when filtered candidates change
@@ -439,20 +436,20 @@
       {:else}
         <div class="flex flex-col items-center justify-center py-4 gap-2">
           <p class="text-sm text-gray-500">{$t('no_people_found')}</p>
-          {#if shouldShowCreateButton}
-            <Button
-              size="small"
-              onclick={createNewPerson}
-              color="primary"
-              class="w-full {!selectedPerson ? 'ring-2 ring-immich-primary ring-offset-2' : ''}"
-            >
-              {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
-            </Button>
-          {/if}
         </div>
       {/if}
     </div>
 
+    {#if shouldShowCreateButton}
+      <Button
+        size="small"
+        onclick={createNewPerson}
+        color="primary"
+        class="w-full {!selectedPerson ? 'ring-2 ring-immich-primary ring-offset-2' : ''}"
+      >
+        {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
+      </Button>
+    {/if}
     <Button size="small" fullWidth onclick={cancel} color="danger" class="mt-2">{$t('cancel')}</Button>
   </div>
 </div>
