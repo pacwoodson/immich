@@ -124,22 +124,27 @@ export function mapSharedLink(sharedLink: SharedLink): SharedLinkResponseDto {
     expiresAt: sharedLink.expiresAt,
     assets: linkAssets.map((asset) => mapAsset(asset)),
     album: sharedLink.album ? mapAlbumWithoutAssets(sharedLink.album) : undefined,
-    dynamicAlbum: sharedLink.dynamicAlbum ? {
-      id: sharedLink.dynamicAlbum.id,
-      name: sharedLink.dynamicAlbum.name,
-      description: sharedLink.dynamicAlbum.description,
-      ownerId: sharedLink.dynamicAlbum.ownerId,
-      filters: sharedLink.dynamicAlbum.filters || [],
-      assetCount: 0, // Will be populated by the service
-      startDate: undefined, // Will be populated by the service
-      endDate: undefined, // Will be populated by the service
-      albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
-      order: sharedLink.dynamicAlbum.order,
-      isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
-      createdAt: sharedLink.dynamicAlbum.createdAt,
-      updatedAt: sharedLink.dynamicAlbum.updatedAt,
-      sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
-    } : undefined,
+    dynamicAlbum: sharedLink.dynamicAlbum
+      ? {
+          id: sharedLink.dynamicAlbum.id,
+          name: sharedLink.dynamicAlbum.name,
+          description: sharedLink.dynamicAlbum.description,
+          ownerId: sharedLink.dynamicAlbum.ownerId,
+          filters: (sharedLink.dynamicAlbum.filters || []).map((filter: any) => ({
+            type: filter.filterType,
+            value: filter.filterValue,
+          })),
+          assetCount: (sharedLink.dynamicAlbum as any).assetCount || 0,
+          startDate: (sharedLink.dynamicAlbum as any).startDate,
+          endDate: (sharedLink.dynamicAlbum as any).endDate,
+          albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
+          order: sharedLink.dynamicAlbum.order,
+          isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
+          createdAt: sharedLink.dynamicAlbum.createdAt,
+          updatedAt: sharedLink.dynamicAlbum.updatedAt,
+          sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
+        }
+      : undefined,
     allowUpload: sharedLink.allowUpload,
     allowDownload: sharedLink.allowDownload,
     showMetadata: sharedLink.showExif,
@@ -163,22 +168,27 @@ export function mapSharedLinkWithoutMetadata(sharedLink: SharedLink): SharedLink
     expiresAt: sharedLink.expiresAt,
     assets: assets.map((asset) => mapAsset(asset, { stripMetadata: true })),
     album: sharedLink.album ? mapAlbumWithoutAssets(sharedLink.album) : undefined,
-    dynamicAlbum: sharedLink.dynamicAlbum ? {
-      id: sharedLink.dynamicAlbum.id,
-      name: sharedLink.dynamicAlbum.name,
-      description: sharedLink.dynamicAlbum.description,
-      ownerId: sharedLink.dynamicAlbum.ownerId,
-      filters: sharedLink.dynamicAlbum.filters || [],
-      assetCount: 0, // Will be populated by the service
-      startDate: undefined, // Will be populated by the service
-      endDate: undefined, // Will be populated by the service
-      albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
-      order: sharedLink.dynamicAlbum.order,
-      isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
-      createdAt: sharedLink.dynamicAlbum.createdAt,
-      updatedAt: sharedLink.dynamicAlbum.updatedAt,
-      sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
-    } : undefined,
+    dynamicAlbum: sharedLink.dynamicAlbum
+      ? {
+          id: sharedLink.dynamicAlbum.id,
+          name: sharedLink.dynamicAlbum.name,
+          description: sharedLink.dynamicAlbum.description,
+          ownerId: sharedLink.dynamicAlbum.ownerId,
+          filters: (sharedLink.dynamicAlbum.filters || []).map((filter: any) => ({
+            type: filter.filterType,
+            value: filter.filterValue,
+          })),
+          assetCount: (sharedLink.dynamicAlbum as any).assetCount || 0,
+          startDate: (sharedLink.dynamicAlbum as any).startDate,
+          endDate: (sharedLink.dynamicAlbum as any).endDate,
+          albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
+          order: sharedLink.dynamicAlbum.order,
+          isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
+          createdAt: sharedLink.dynamicAlbum.createdAt,
+          updatedAt: sharedLink.dynamicAlbum.updatedAt,
+          sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
+        }
+      : undefined,
     allowUpload: sharedLink.allowUpload,
     allowDownload: sharedLink.allowDownload,
     showMetadata: sharedLink.showExif,

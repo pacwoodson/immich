@@ -49,6 +49,11 @@ export class TimelineService extends BaseService {
       requireElevatedPermission(auth);
     }
 
+    if (dto.dynamicAlbumId) {
+      await this.requireAccess({ auth, permission: Permission.DYNAMIC_ALBUM_READ, ids: [dto.dynamicAlbumId] });
+      return;
+    }
+
     if (dto.albumId) {
       await this.requireAccess({ auth, permission: Permission.ALBUM_READ, ids: [dto.albumId] });
     } else {

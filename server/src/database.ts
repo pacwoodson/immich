@@ -1,16 +1,16 @@
 import { Selectable } from 'kysely';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import {
-    AlbumUserRole,
-    AssetFileType,
-    AssetType,
-    AssetVisibility,
-    MemoryType,
-    Permission,
-    SharedLinkType,
-    SourceType,
-    UserAvatarColor,
-    UserStatus,
+  AlbumUserRole,
+  AssetFileType,
+  AssetType,
+  AssetVisibility,
+  MemoryType,
+  Permission,
+  SharedLinkType,
+  SourceType,
+  UserAvatarColor,
+  UserStatus,
 } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
 import { DynamicAlbumTable } from 'src/schema/tables/dynamic-album.table';
@@ -176,6 +176,7 @@ export type AuthSharedLink = {
   allowUpload: boolean;
   allowDownload: boolean;
   password: string | null;
+  dynamicAlbumId: string | null;
 };
 
 export type SharedLink = {
@@ -329,6 +330,7 @@ export const columns = {
     'shared_links.allowUpload',
     'shared_links.allowDownload',
     'shared_links.password',
+    'shared_links.dynamicAlbumId',
   ],
   user: userColumns,
   userWithPrefix: userWithPrefixColumns,

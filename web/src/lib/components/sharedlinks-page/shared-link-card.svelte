@@ -68,6 +68,8 @@
               {link.album?.albumName}
             {:else if link.type === SharedLinkType.Individual}
               {$t('individual_share')}
+            {:else if link.type === SharedLinkType.DYNAMIC_ALBUM}
+              {link.dynamicAlbum?.name}
             {/if}
           </p>
 

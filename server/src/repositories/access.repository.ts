@@ -5,6 +5,7 @@ import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
 import { AlbumUserRole, AssetVisibility, DynamicAlbumUserRole } from 'src/enum';
 import { DB } from 'src/schema';
 import { asUuid } from 'src/utils/database';
+import { buildDynamicAlbumAssetQuery } from 'src/utils/dynamic-album-filter';
 
 class ActivityAccess {
   constructor(private db: Kysely<DB>) {}
@@ -245,7 +246,7 @@ class AssetAccess {
         sql`array[${sql.join([...assetIds])}]::uuid[] `,
       )
       .execute()
-      .then((rows) => {
+      .then((rows: any[]) => {
         const allowedIds = new Set<string>();
         for (const row of rows) {
           if (row.assetId && assetIds.has(row.assetId)) {
@@ -263,6 +264,63 @@ class AssetAccess {
         }
         return allowedIds;
       });
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
+  @ChunkedSet({ paramIndex: 1 })
+  async checkDynamicAlbumAssetAccess(dynamicAlbumId: string, assetIds: Set<string>) {
+    if (assetIds.size === 0) {
+      return new Set<string>();
+    }
+
+    // Get the dynamic album and its filters
+    const dynamicAlbum = await this.db
+      .selectFrom('dynamic_albums')
+      .selectAll('dynamic_albums')
+      .where('dynamic_albums.id', '=', dynamicAlbumId)
+      .where('dynamic_albums.deletedAt', 'is', null)
+      .executeTakeFirst();
+
+    if (!dynamicAlbum) {
+      return new Set<string>();
+    }
+
+    const filters = await this.db
+      .selectFrom('dynamic_album_filters')
+      .selectAll()
+      .where('dynamicAlbumId', '=', dynamicAlbumId)
+      .execute();
+
+    // Build the dynamic album asset query
+    const dynamicFilters = filters.map((filter) => ({
+      type: filter.filterType,
+      value: filter.filterValue,
+    }));
+
+    const query = buildDynamicAlbumAssetQuery(this.db, dynamicFilters, {
+      userId: dynamicAlbum.ownerId,
+      skip: undefined,
+      take: undefined,
+      order: 'desc',
+    });
+
+    // Get the assets that match the dynamic album filters
+    const matchingAssets = await query
+      .select(['assets.id', 'assets.livePhotoVideoId'])
+      .where('assets.id', 'in', [...assetIds])
+      .execute();
+
+    const allowedIds = new Set<string>();
+    for (const asset of matchingAssets) {
+      if (asset.id && assetIds.has(asset.id)) {
+        allowedIds.add(asset.id);
+      }
+      if (asset.livePhotoVideoId && assetIds.has(asset.livePhotoVideoId)) {
+        allowedIds.add(asset.livePhotoVideoId);
+      }
+    }
+
+    return allowedIds;
   }
 }
 

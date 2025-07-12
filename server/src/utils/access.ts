@@ -68,6 +68,10 @@ const checkSharedLinkAccess = async (
     }
 
     case Permission.ASSET_VIEW: {
+      // Check if this is a dynamic album shared link
+      if (sharedLink.dynamicAlbumId) {
+        return await access.asset.checkDynamicAlbumAssetAccess(sharedLink.dynamicAlbumId, ids);
+      }
       return await access.asset.checkSharedLinkAccess(sharedLinkId, ids);
     }
 
@@ -102,6 +106,11 @@ const checkSharedLinkAccess = async (
 
     case Permission.DYNAMIC_ALBUM_DOWNLOAD: {
       return sharedLink.allowDownload ? await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
+    }
+
+    case Permission.TIMELINE_READ: {
+      // Allow timeline access if the shared link is for the requested dynamic album(s)
+      return await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids);
     }
 
     default: {

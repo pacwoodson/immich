@@ -75,13 +75,13 @@
 
       // Share with each user individually since the API only supports one user at a time
       for (const { userId, role } of shareData) {
-        await shareDynamicAlbum({
-          id: album.id,
-          shareDynamicAlbumDto: {
+      await shareDynamicAlbum({
+        id: album.id,
+        shareDynamicAlbumDto: {
             userId,
             role,
-          },
-        });
+        },
+      });
       }
 
       notificationController.show({

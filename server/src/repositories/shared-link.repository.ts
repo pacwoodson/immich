@@ -89,17 +89,61 @@ export class SharedLinkRepository {
             .as('album'),
         (join) => join.onTrue(),
       )
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('dynamic_albums')
+            .selectAll('dynamic_albums')
+            .whereRef('dynamic_albums.id', '=', 'shared_links.dynamicAlbumId')
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .select([
+                    'users.id',
+                    'users.email',
+                    'users.createdAt',
+                    'users.profileImagePath',
+                    'users.isAdmin',
+                    'users.shouldChangePassword',
+                    'users.deletedAt',
+                    'users.oauthId',
+                    'users.updatedAt',
+                    'users.storageLabel',
+                    'users.name',
+                    'users.quotaSizeInBytes',
+                    'users.quotaUsageInBytes',
+                    'users.status',
+                    'users.profileChangedAt',
+                  ])
+                  .whereRef('users.id', '=', 'dynamic_albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .where('dynamic_albums.deletedAt', 'is', null)
+            .as('dynamicAlbum'),
+        (join) => join.onTrue(),
+      )
       .select((eb) =>
         eb.fn
           .coalesce(eb.fn.jsonAgg('a').filterWhere('a.id', 'is not', null), sql`'[]'`)
           .$castTo<MapAsset[]>()
           .as('assets'),
       )
-      .groupBy(['shared_links.id', sql`"album".*`])
+      .groupBy(['shared_links.id', sql`"album".*`, sql`"dynamicAlbum".*`])
       .select((eb) => eb.fn.toJson('album').$castTo<Album | null>().as('album'))
+      .select((eb) => eb.fn.toJson('dynamicAlbum').$castTo<DynamicAlbum | null>().as('dynamicAlbum'))
       .where('shared_links.id', '=', id)
       .where('shared_links.userId', '=', userId)
-      .where((eb) => eb.or([eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL), eb('album.id', 'is not', null)]))
+      .where((eb) =>
+        eb.or([
+          eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL),
+          eb('album.id', 'is not', null),
+          eb('dynamicAlbum.id', 'is not', null),
+        ]),
+      )
       .orderBy('shared_links.createdAt', 'desc')
       .executeTakeFirst();
   }
@@ -219,14 +263,58 @@ export class SharedLinkRepository {
       .selectFrom('shared_links')
       .where('shared_links.key', '=', key)
       .leftJoin('albums', 'albums.id', 'shared_links.albumId')
-      .where('albums.deletedAt', 'is', null)
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('dynamic_albums')
+            .selectAll('dynamic_albums')
+            .whereRef('dynamic_albums.id', '=', 'shared_links.dynamicAlbumId')
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .select([
+                    'users.id',
+                    'users.email',
+                    'users.createdAt',
+                    'users.profileImagePath',
+                    'users.isAdmin',
+                    'users.shouldChangePassword',
+                    'users.deletedAt',
+                    'users.oauthId',
+                    'users.updatedAt',
+                    'users.storageLabel',
+                    'users.name',
+                    'users.quotaSizeInBytes',
+                    'users.quotaUsageInBytes',
+                    'users.status',
+                    'users.profileChangedAt',
+                  ])
+                  .whereRef('users.id', '=', 'dynamic_albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .where('dynamic_albums.deletedAt', 'is', null)
+            .as('dynamicAlbum'),
+        (join) => join.onTrue(),
+      )
       .select((eb) => [
         ...columns.authSharedLink,
         jsonObjectFrom(
           eb.selectFrom('users').select(columns.authUser).whereRef('users.id', '=', 'shared_links.userId'),
         ).as('user'),
+        eb.fn.toJson('dynamicAlbum').$castTo<DynamicAlbum | null>().as('dynamicAlbum'),
       ])
-      .where((eb) => eb.or([eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL), eb('albums.id', 'is not', null)]))
+      .where((eb) =>
+        eb.or([
+          eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL),
+          eb('albums.id', 'is not', null),
+          eb('dynamicAlbum.id', 'is not', null),
+        ]),
+      )
+      .where('albums.deletedAt', 'is', null)
       .executeTakeFirst();
   }
 

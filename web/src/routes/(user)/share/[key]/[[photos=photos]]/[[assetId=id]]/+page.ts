@@ -15,7 +15,10 @@ export const load = (async ({ params, url }) => {
     const [sharedLink, asset] = await Promise.all([getMySharedLink({ key }), getAssetInfoFromParam(params)]);
     setSharedLink(sharedLink);
     const assetCount = sharedLink.assets.length;
-    const assetId = sharedLink.album?.albumThumbnailAssetId || sharedLink.assets[0]?.id;
+    const assetId =
+      sharedLink.album?.albumThumbnailAssetId ||
+      sharedLink.dynamicAlbum?.albumThumbnailAssetId ||
+      sharedLink.assets[0]?.id;
     const assetPath = assetId ? getAssetThumbnailUrl(assetId) : '/feature-panel.png';
 
     return {
@@ -23,7 +26,11 @@ export const load = (async ({ params, url }) => {
       sharedLinkKey: key,
       asset,
       meta: {
-        title: sharedLink.album ? sharedLink.album.albumName : $t('public_share'),
+        title: sharedLink.album
+          ? sharedLink.album.albumName
+          : sharedLink.dynamicAlbum
+            ? sharedLink.dynamicAlbum.name
+            : $t('public_share'),
         description: sharedLink.description || $t('shared_photos_and_videos_count', { values: { assetCount } }),
         imageUrl: assetPath,
       },
