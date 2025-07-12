@@ -1,12 +1,11 @@
 <script lang="ts">
   import ImageThumbnail from '$lib/components/assets/thumbnail/image-thumbnail.svelte';
   import { notificationController } from '$lib/components/shared-components/notification/notification';
-  import { modalManager } from '$lib/managers/modal-manager.svelte';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
   import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
   import { getPeopleThumbnailUrl } from '$lib/utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { createFace, getAllPeople, type PersonResponseDto } from '@immich/sdk';
+  import { createFace, createPerson, getAllPeople, updatePerson, type PersonResponseDto } from '@immich/sdk';
   import { Button, Input } from '@immich/ui';
   import { Canvas, InteractiveFabricObject, Rect } from 'fabric';
   import { onMount } from 'svelte';
@@ -29,12 +28,41 @@
   let candidates = $state<PersonResponseDto[]>([]);
 
   let searchTerm = $state('');
+  let selectedPerson = $state<PersonResponseDto | null>(null);
 
   let filteredCandidates = $derived(
     searchTerm
       ? candidates.filter((person) => person.name.toLowerCase().includes(searchTerm.toLowerCase()))
       : candidates,
   );
+
+  // Check if search term doesn't match any existing person
+  let shouldShowCreateButton = $derived(
+    searchTerm.trim() && !candidates.some((person) => person.name.toLowerCase() === searchTerm.trim().toLowerCase()),
+  );
+
+  // Update selected person when filtered candidates change
+  $effect(() => {
+    if (filteredCandidates.length > 0) {
+      selectedPerson = filteredCandidates[0];
+    } else {
+      selectedPerson = null;
+    }
+  });
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (selectedPerson) {
+        tagFace(selectedPerson);
+      } else if (shouldShowCreateButton) {
+        createNewPerson();
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel();
+    }
+  };
 
   const configureControlStyle = () => {
     InteractiveFabricObject.ownDefaults = {
@@ -77,6 +105,15 @@
   onMount(async () => {
     setupCanvas();
     await getPeople();
+
+    // Focus the search input when the modal opens
+    setTimeout(() => {
+      // Try to find the actual input element within the Input component
+      const inputElement = faceSelectorEl?.querySelector('input');
+      if (inputElement) {
+        inputElement.focus();
+      }
+    }, 200);
   });
 
   $effect(() => {
@@ -285,16 +322,6 @@
         return;
       }
 
-      const isConfirmed = await modalManager.showDialog({
-        prompt: person.name
-          ? $t('confirm_tag_face', { values: { name: person.name } })
-          : $t('confirm_tag_face_unnamed'),
-      });
-
-      if (!isConfirmed) {
-        return;
-      }
-
       await createFace({
         assetFaceCreateDto: {
           assetId,
@@ -306,6 +333,59 @@
       await assetViewingStore.setAssetId(assetId);
     } catch (error) {
       handleError(error, 'Error tagging face');
+    } finally {
+      isFaceEditMode.value = false;
+    }
+  };
+
+  const createNewPerson = async () => {
+    try {
+      // Get the face coordinates first
+      const faceCoordinates = getFaceCroppedCoordinates();
+      if (!faceCoordinates) {
+        notificationController.show({
+          message: $t('error_tag_face_bounding_box'),
+        });
+        return;
+      }
+
+      // Create the person
+      const newPerson = await createPerson({
+        personCreateDto: {
+          name: searchTerm.trim(),
+        },
+      });
+
+      // Create a face for this person using the selected coordinates
+      await createFace({
+        assetFaceCreateDto: {
+          assetId,
+          personId: newPerson.id,
+          ...faceCoordinates,
+        },
+      });
+
+      // Add a small delay to allow the server to process the face creation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update the person to use this face as the featured photo
+      await updatePerson({
+        id: newPerson.id,
+        personUpdateDto: {
+          featureFaceAssetId: assetId,
+        },
+      });
+
+      // Add the new person to the candidates list (thumbnail will be updated via websocket)
+      candidates = [...candidates, newPerson];
+
+      // Clear the search term to show all people including the new one
+      searchTerm = '';
+
+      // Refresh the asset to show the new face
+      await assetViewingStore.setAssetId(assetId);
+    } catch (error) {
+      handleError(error, 'Error creating new person');
     } finally {
       isFaceEditMode.value = false;
     }
@@ -323,7 +403,7 @@
     <p class="text-center text-sm">{$t('select_person_to_tag')}</p>
 
     <div class="my-3 relative">
-      <Input placeholder={$t('search_people')} bind:value={searchTerm} size="tiny" />
+      <Input placeholder={$t('search_people')} bind:value={searchTerm} size="tiny" onkeydown={handleKeydown} />
     </div>
 
     <div class="h-[250px] overflow-y-auto mt-2">
@@ -333,7 +413,10 @@
             <button
               onclick={() => tagFace(person)}
               type="button"
-              class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25"
+              class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25 {selectedPerson?.id ===
+              person.id
+                ? 'bg-immich-primary/25'
+                : ''}"
             >
               <ImageThumbnail
                 curve
@@ -351,12 +434,22 @@
           {/each}
         </div>
       {:else}
-        <div class="flex items-center justify-center py-4">
+        <div class="flex flex-col items-center justify-center py-4 gap-2">
           <p class="text-sm text-gray-500">{$t('no_people_found')}</p>
         </div>
       {/if}
     </div>
 
+    {#if shouldShowCreateButton}
+      <Button
+        size="small"
+        onclick={createNewPerson}
+        color="primary"
+        class="w-full {!selectedPerson ? 'ring-2 ring-immich-primary ring-offset-2' : ''}"
+      >
+        {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
+      </Button>
+    {/if}
     <Button size="small" fullWidth onclick={cancel} color="danger" class="mt-2">{$t('cancel')}</Button>
   </div>
 </div>

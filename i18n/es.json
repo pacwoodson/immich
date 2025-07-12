@@ -685,6 +685,7 @@
   "create_new": "Crear nuevo",
   "create_new_person": "Crear nueva persona",
   "create_new_person_hint": "Asignar los archivos seleccionados a una nueva persona",
+  "create_person_with_name": "Crear persona {name}",
   "create_new_user": "Crear nuevo usuario",
   "create_shared_album_page_share_add_assets": "AGREGAR ELEMENTOS",
   "create_shared_album_page_share_select_photos": "Seleccionar Fotos",
