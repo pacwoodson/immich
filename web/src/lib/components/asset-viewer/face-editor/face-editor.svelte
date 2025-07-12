@@ -29,6 +29,7 @@
   let candidates = $state<PersonResponseDto[]>([]);
 
   let searchTerm = $state('');
+  let selectedPerson = $state<PersonResponseDto | null>(null);
 
   let filteredCandidates = $derived(
     searchTerm
@@ -42,6 +43,29 @@
       filteredCandidates.length === 0 &&
       !candidates.some((person) => person.name.toLowerCase() === searchTerm.trim().toLowerCase()),
   );
+
+  // Update selected person when filtered candidates change
+  $effect(() => {
+    if (filteredCandidates.length > 0) {
+      selectedPerson = filteredCandidates[0];
+    } else {
+      selectedPerson = null;
+    }
+  });
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (selectedPerson) {
+        tagFace(selectedPerson);
+      } else if (shouldShowCreateButton) {
+        createNewPerson();
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel();
+    }
+  };
 
   const configureControlStyle = () => {
     InteractiveFabricObject.ownDefaults = {
@@ -301,16 +325,6 @@
         return;
       }
 
-      const isConfirmed = await modalManager.showDialog({
-        prompt: person.name
-          ? $t('confirm_tag_face', { values: { name: person.name } })
-          : $t('confirm_tag_face_unnamed'),
-      });
-
-      if (!isConfirmed) {
-        return;
-      }
-
       await createFace({
         assetFaceCreateDto: {
           assetId,
@@ -392,7 +406,7 @@
     <p class="text-center text-sm">{$t('select_person_to_tag')}</p>
 
     <div class="my-3 relative">
-      <Input placeholder={$t('search_people')} bind:value={searchTerm} size="tiny" />
+      <Input placeholder={$t('search_people')} bind:value={searchTerm} size="tiny" onkeydown={handleKeydown} />
     </div>
 
     <div class="h-[250px] overflow-y-auto mt-2">
@@ -402,7 +416,10 @@
             <button
               onclick={() => tagFace(person)}
               type="button"
-              class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25"
+              class="w-full flex place-items-center gap-2 rounded-lg ps-1 pe-4 py-2 hover:bg-immich-primary/25 {selectedPerson?.id ===
+              person.id
+                ? 'bg-immich-primary/25'
+                : ''}"
             >
               <ImageThumbnail
                 curve
@@ -423,7 +440,12 @@
         <div class="flex flex-col items-center justify-center py-4 gap-2">
           <p class="text-sm text-gray-500">{$t('no_people_found')}</p>
           {#if shouldShowCreateButton}
-            <Button size="small" onclick={createNewPerson} color="primary" class="w-full">
+            <Button
+              size="small"
+              onclick={createNewPerson}
+              color="primary"
+              class="w-full {!selectedPerson ? 'ring-2 ring-immich-primary ring-offset-2' : ''}"
+            >
               {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
             </Button>
           {/if}
