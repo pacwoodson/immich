@@ -6,7 +6,7 @@
   import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
   import { getPeopleThumbnailUrl } from '$lib/utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { createFace, createPerson, getAllPeople, type PersonResponseDto } from '@immich/sdk';
+  import { createFace, createPerson, getAllPeople, updatePerson, type PersonResponseDto } from '@immich/sdk';
   import { Button, Input } from '@immich/ui';
   import { Canvas, InteractiveFabricObject, Rect } from 'fabric';
   import { onMount } from 'svelte';
@@ -329,22 +329,54 @@
 
   const createNewPerson = async () => {
     try {
+      // Get the face coordinates first
+      const faceCoordinates = getFaceCroppedCoordinates();
+      if (!faceCoordinates) {
+        notificationController.show({
+          message: $t('error_tag_face_bounding_box'),
+        });
+        return;
+      }
+
+      // Create the person
       const newPerson = await createPerson({
         personCreateDto: {
           name: searchTerm.trim(),
         },
       });
 
-      // Add the new person to the candidates list
+      // Create a face for this person using the selected coordinates
+      await createFace({
+        assetFaceCreateDto: {
+          assetId,
+          personId: newPerson.id,
+          ...faceCoordinates,
+        },
+      });
+
+      // Add a small delay to allow the server to process the face creation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update the person to use this face as the featured photo
+      await updatePerson({
+        id: newPerson.id,
+        personUpdateDto: {
+          featureFaceAssetId: assetId,
+        },
+      });
+
+      // Add the new person to the candidates list (thumbnail will be updated via websocket)
       candidates = [...candidates, newPerson];
 
       // Clear the search term to show all people including the new one
       searchTerm = '';
 
-      // Automatically tag the face with the new person
-      await tagFace(newPerson);
+      // Refresh the asset to show the new face
+      await assetViewingStore.setAssetId(assetId);
     } catch (error) {
       handleError(error, 'Error creating new person');
+    } finally {
+      isFaceEditMode.value = false;
     }
   };
 </script>
