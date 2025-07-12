@@ -1,408 +1,248 @@
-# Dynamic Albums Implementation Progress
+# Enhanced Albums with Dynamic Filtering - Refactoring Status
 
-## Completed Steps
+## Project Overview
 
-### 1. Database Schema Design ✅
-- Created enums for dynamic album filter types, operators, and user roles
-- Designed database schema for dynamic albums with proper relationships
-- Created table classes following Immich's architectural patterns
+This feature is being **refactored** from a separate dynamic albums system to an integrated enhancement of the existing album functionality. Instead of maintaining separate tables, controllers, and components, we're adding a `dynamic` boolean field to the existing `albums` table and enhancing the album system to support both regular and dynamic albums.
 
-### 2. Database Tables Created ✅
-- `DynamicAlbumTable` - Main dynamic album entity
-- `DynamicAlbumFilterTable` - Filter configuration for dynamic albums
-- `DynamicAlbumShareTable` - Sharing permissions for dynamic albums
-- `DynamicAlbumAuditTable` - Audit trail for dynamic albums
-- `DynamicAlbumShareAuditTable` - Audit trail for sharing changes
+## Current State Analysis
 
-### 3. Database Migration ✅
-- Created migration file `1751400000000-CreateDynamicAlbumsTables.ts`
-- Includes all table creation with proper foreign key relationships
-- Added indexes for performance optimization
+The current implementation created a complete separate system for dynamic albums:
+- **Separate Database Tables**: `dynamic_albums`, `dynamic_album_filters`, `dynamic_album_shares`, etc.
+- **Separate Backend Code**: Controllers, services, repositories, DTOs
+- **Separate Frontend Code**: Routes, components, modals, utilities
+- **Duplicate UI Logic**: Similar interfaces for regular vs dynamic albums
 
-### 4. Backend API Implementation ✅
-- Created `DynamicAlbumController` with CRUD endpoints
-- Implemented `DynamicAlbumService` with business logic
-- Created `DynamicAlbumRepository` for data access
-- Added filter processing logic in `DynamicAlbumFilterService`
-- Implemented asset counting and metadata retrieval
+## Refactoring Approach
 
-### 5. DTOs and Types ✅
-- Created `CreateDynamicAlbumDto`, `UpdateDynamicAlbumDto`
-- Created `DynamicAlbumResponseDto`, `DynamicAlbumFilterDto`
-- Created `DynamicAlbumShareDto` for sharing functionality
-- Added proper validation decorators
+### Why Refactor?
+1. **Code Duplication**: 90% of album functionality is duplicated
+2. **User Experience**: Users need to learn two different systems
+3. **Maintenance Burden**: Two separate systems to maintain and test
+4. **Architecture Complexity**: Unnecessary separation of similar functionality
 
-### 6. Frontend Dynamic Albums List ✅
-- Created dynamic albums list page at `/dynamic-albums`
-- Implemented `DynamicAlbumsList` component with search and filtering
-- Created `DynamicAlbumCard` component for individual album display
-- Added context menu for album management (edit, share, delete)
-- Implemented create dynamic album functionality
+### New Architecture
+- **Single Table**: Add `dynamic` boolean and `filters` JSONB to existing `albums` table
+- **Enhanced Services**: Modify existing `AlbumService` to handle both types
+- **Unified Frontend**: Enhance existing album components with dynamic capabilities
+- **Seamless UX**: Users see one consistent album interface
 
-### 7. Frontend Photos Route Implementation ✅
-- **Created photos route structure** for dynamic albums at `/dynamic-albums/[id]/[[photos=photos]]/[[assetId=id]]`
-- **Created page load function** (`+page.ts`) that loads dynamic album info and asset data
-- **Created photos page component** (`+page.svelte`) that follows the same structure as regular albums photos page
-- **Integrated with AssetGrid** for proper asset display and navigation
-- **Added proper routing support** for asset viewing within dynamic albums
-- **Maintained consistency** with regular albums photos page structure and functionality
-- **Fixed route structure** to match regular albums pattern (no individual album page, only photos route)
+## Implementation Status
 
-### 8. Route Structure Correction ✅
-- **Corrected dynamic albums route structure** to match regular albums exactly
-- **Removed unnecessary individual album page** at `/dynamic-albums/[id]/+page.svelte` (doesn't exist in regular albums)
-- **Individual album viewing** now handled entirely through photos route: `/dynamic-albums/[id]/[[photos=photos]]/[[assetId=id]]`
-- **Fixed linter errors** by using proper UserAvatarColor enum values
-- **Structure now matches regular albums**: `/albums` (list) → `/albums/[id]/[[photos=photos]]/[[assetId=id]]` (individual view)
+### ❌ Current Implementation (To Be Refactored)
+- ✅ Separate dynamic album tables created
+- ✅ Separate backend API implemented
+- ✅ Separate frontend components created
+- ✅ All functionality working in isolation
 
-### 9. Back Navigation Fix ✅
-- **Fixed back button navigation issue** in dynamic albums photos page
-- **Added `isDynamicAlbumsRoute` function** to navigation utilities for proper route detection
-- **Updated `afterNavigate` logic** to properly detect when coming from dynamic albums list vs other routes
-- **Fixed `onNavigate` function** to use correct route detection for dynamic albums
-- **Back button now correctly navigates** to dynamic albums list instead of opening an image
-- **Maintains proper navigation flow**: Dynamic Albums List → Dynamic Album Photos → Back to List
+### 🔄 Refactoring Status (In Progress)
+- ✅ Analysis completed - identified all files to merge/remove
+- ✅ Specifications updated for integrated approach
+- ⏳ **Next: Database schema changes**
+- ⏳ **Next: Backend refactoring**
+- ⏳ **Next: Frontend integration**
+- ⏳ **Next: Migration script**
+- ⏳ **Next: Testing and cleanup**
 
-### 10. Linter Error Fixes ✅ (2025-01-12)
-- **Fixed missing import error**: Added `downloadAlbum` import from `$lib/utils/asset-utils`
-- **Fixed function call error**: Changed `downloadDynamicAlbum(dynamicAlbum)` to `downloadAlbum(dynamicAlbum)` to use the correct function
-- **Fixed UserAvatar type errors**: Added missing required properties (`email`, `profileImagePath`, `avatarColor`, `profileChangedAt`) to UserAvatar components for owner and editor users
-- **All linter errors now resolved** in the dynamic albums photos page
+## Files Analysis
 
-### 11. Download Functionality Fix ✅ (2025-01-12)
-- **Fixed 400 Bad Request error** when downloading dynamic albums
-- **Root Cause**: The download service was using `ALBUM_DOWNLOAD` permission for dynamic albums, but the access control system was designed for regular albums
-- **Solution**: 
-  - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
-  - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
-  - Added dynamic album access control logic to the access utility
-  - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
-- **Files Modified**:
-  - `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
-  - `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
-  - `server/src/utils/access.ts` - Added dynamic album permission handling
-  - `server/src/services/download.service.ts` - Updated to use correct permission
-- **Result**: Dynamic album downloads now work correctly with proper access control
+### Files to Remove (Separate Dynamic Album System)
+**Backend (Server):**
+- `server/src/controllers/dynamic-album.controller.ts`
+- `server/src/services/dynamic-album.service.ts`
+- `server/src/repositories/dynamic-album.repository.ts`
+- `server/src/repositories/dynamic-album-filter.repository.ts`
+- `server/src/repositories/dynamic-album-share.repository.ts`
+- `server/src/dtos/dynamic-album.dto.ts`
+- `server/src/schema/tables/dynamic-album.table.ts`
+- `server/src/schema/tables/dynamic-album-filter.table.ts`
+- `server/src/schema/tables/dynamic-album-share.table.ts`
+- `server/src/schema/tables/dynamic-album-audit.table.ts`
+- `server/src/schema/tables/dynamic-album-share-audit.table.ts`
+- `server/src/queries/dynamic.album.repository.sql`
+- `server/src/utils/dynamic-album-filter.ts`
+- `server/src/schema/migrations/1751400000000-CreateDynamicAlbumsTables.ts`
 
-### 12. Dynamic Album Filtering Fix ✅ (2025-01-12)
-- **Fixed issue**: Dynamic albums were showing all images instead of filtered ones
-- **Root Cause**: TimelineManager was fetching all user assets and only marking dynamic album assets as selected, instead of filtering the timeline to show only dynamic album assets
-- **Solution**: 
-  - Added `dynamicAlbumId` support to `TimelineManagerOptions` type
-  - Updated TimelineManager initialization logic to handle `dynamicAlbumId`
-  - **Complete rewrite of dynamic album asset loading logic**:
-    - Skip regular timeline fetch when `dynamicAlbumId` is present
-    - Fetch dynamic album assets with pagination (50 assets per batch)
-    - Filter assets by the current time bucket (month) client-side
-    - Create a proper `TimeBucketAssetResponseDto` mock response with only filtered assets
-    - Include all required fields: `id`, `ownerId`, `ratio`, `isFavorite`, `visibility`, `isTrashed`, `isImage`, `thumbhash`, `fileCreatedAt`, `localOffsetHours`, `duration`, `projectionType`, `livePhotoVideoId`, `city`, `country`, `stack`
-  - Updated dynamic albums photos page to use `dynamicAlbumId` option
-- **Performance improvements**:
-  - Fetch assets in smaller batches (50 instead of 1000) for better performance
-  - Stop fetching after 3 consecutive empty batches to avoid unnecessary API calls
-  - Only show assets that match both the dynamic album filter AND the current time bucket
-- **Files Modified**:
-  - `web/src/lib/managers/timeline-manager/types.ts` - Added `dynamicAlbumId` to `TimelineManagerOptions`
-  - `web/src/lib/managers/timeline-manager/internal/load-support.svelte.ts` - Complete rewrite of dynamic album filtering logic
-  - `web/src/routes/(user)/albums/[albumId]/photos/[[assetId=id]]/+page.svelte` - Updated to pass `dynamicAlbumId` to TimelineManager
-- **Result**: Dynamic albums now correctly show only filtered assets for the current time bucket, matching the expected behavior of regular albums
+**Frontend (Web):**
+- `web/src/routes/(user)/dynamic-albums/` (entire directory)
+- `web/src/lib/components/dynamic-album-page/` (entire directory)
+- `web/src/lib/modals/CreateDynamicAlbumModal.svelte`
+- `web/src/lib/modals/EditDynamicAlbumModal.svelte`
+- `web/src/lib/modals/DynamicAlbumShareModal.svelte`
+- `web/src/lib/modals/DynamicAlbumOptionsModal.svelte`
+- `web/src/lib/modals/ShareDynamicAlbumModal.svelte`
+- `web/src/lib/utils/dynamic-album-utils.ts`
 
-### 13. Dynamic Album Filtering Performance Improvement ✅ (2025-01-12)
-- **Improved performance**: Enhanced the dynamic album filtering logic to be more efficient
-- **Changes**:
-  - Reduced batch size from 100 to 50 assets per request for better responsiveness
-  - Added consecutive empty batch detection to stop fetching when no more relevant assets are found
-  - Implemented early termination after 3 consecutive empty batches to avoid unnecessary API calls
-  - Added proper date range filtering using start and end dates for the time bucket
-- **Files Modified**:
-  - `web/src/lib/managers/timeline-manager/internal/load-support.svelte.ts` - Improved dynamic album asset loading logic
-- **Result**: Dynamic album filtering is now more efficient and responsive, with better performance for large albums
-
-### 14. Dynamic Album Sharing Functionality ✅ (2025-01-12)
-- **Implemented complete sharing functionality**: Added the ability to share dynamic albums with other users
-- **Features**:
-  - Share dynamic albums with multiple users at once
-  - Support for both editor and viewer roles
-  - User selection modal with role assignment
-  - Proper access control and permissions
-  - Visual display of shared users in the dynamic album page
-- **Backend Implementation**:
-  - `ShareDynamicAlbumDto` for sharing requests
-  - `DynamicAlbumShareDto` for response data
-  - `shareDynamicAlbum` API endpoint for sharing with individual users
-  - Proper validation and error handling
-- **Frontend Implementation**:
-  - `ShareDynamicAlbumModal` component for user selection and role assignment
-  - Integration with `modalManager` for consistent UI
-  - Share button in dynamic album photos page
-  - Visual display of shared users with proper role labels
-  - Automatic refresh of dynamic album data after sharing
-- **Files Modified**:
-  - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added share functionality and user display
-  - `web/src/lib/modals/ShareDynamicAlbumModal.svelte` - Fixed user filtering and API calls
-- **Result**: Dynamic albums can now be shared with other users, with proper role-based access control and visual feedback
-
-### 14. Dynamic Album Share Link Implementation ✅ (2025-01-12)
-- **Share Link Feature**: Implemented full share link functionality for dynamic albums
-- **Changes**:
-  - Added `DYNAMIC_ALBUM` type to `SharedLinkType` enum
-  - Updated `SharedLinkCreateDto` and `SharedLinkResponseDto` to support `dynamicAlbumId`
-  - Created migration to add `dynamicAlbumId` column to `shared_links` table
-  - Updated shared link service to handle dynamic album permissions and validation
-  - Updated shared link repository to support dynamic album filtering and joins
-  - Created `DynamicAlbumShareModal` that combines user sharing and link sharing
-  - Updated `SharedLinkCreateModal` to support dynamic album shared links
-  - Updated dynamic album page to handle both user sharing and link sharing
-- **Files Modified**:
-  - `server/src/enum.ts` - Added DYNAMIC_ALBUM to SharedLinkType
-  - `server/src/dtos/shared-link.dto.ts` - Added dynamicAlbumId support
-  - `server/src/migrations/1751500000000-AddDynamicAlbumIdToSharedLinks.ts` - New migration
-  - `server/src/schema/tables/shared-link.table.ts` - Added dynamicAlbumId column
-  - `server/src/database.ts` - Added DynamicAlbum type and dynamicAlbumId field
-  - `server/src/services/shared-link.service.ts` - Added dynamic album support
-  - `server/src/repositories/shared-link.repository.ts` - Added dynamic album filtering
-  - `web/src/lib/modals/DynamicAlbumShareModal.svelte` - New modal for combined sharing
-  - `web/src/lib/modals/SharedLinkCreateModal.svelte` - Added dynamic album support
-  - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Updated share functionality
-- **Result**: Dynamic albums now support both user sharing and public link sharing, matching the functionality of regular albums
-
-### 15. Dynamic Album Download Access Control Fix ✅ (2025-01-12)
-- **Issue**: Dynamic album download was returning 400 Bad Request error with "Not found or no album.download access"
-- **Root Cause**: The dynamic album controller and service were using regular album permissions (`ALBUM_READ`, `ALBUM_CREATE`, etc.) instead of dynamic album specific permissions (`DYNAMIC_ALBUM_READ`, `DYNAMIC_ALBUM_CREATE`, etc.)
-- **Solution**: 
-  - Updated `DynamicAlbumController` to use correct dynamic album permissions for all endpoints
-  - Added proper access control checks to `DynamicAlbumService` methods using `requireAccess`
-  - Added `AccessRepository` dependency to `DynamicAlbumService` for access control
-  - Updated OpenAPI specification to reflect correct permissions
-- **Files Modified**:
-  - `server/src/controllers/dynamic-album.controller.ts` - Updated all endpoints to use `DYNAMIC_ALBUM_*` permissions
-  - `server/src/services/dynamic-album.service.ts` - Added access control checks to all methods
-  - `open-api/immich-openapi-specs.json` - Updated with correct permissions
-- **Result**: Dynamic album downloads now work correctly with proper access control and permissions
-
-### 16. Dynamic Album Options Dialog Implementation ✅ (2025-01-12)
-- **Implemented complete options dialog** for dynamic albums that combines functionality from regular album options with dynamic album filter editing
-- **Features**:
-  - Settings section with display order and activity toggle
-  - Filters section with inline editing capability (similar to EditDynamicAlbumModal)
-  - People section with user management (role changes, removal)
-  - Proper integration with modalManager
-- **Components Created**:
-  - `web/src/lib/modals/DynamicAlbumOptionsModal.svelte` - Complete options modal
-- **Components Modified**:
-  - `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added options modal integration
-  - `i18n/en.json` - Added missing translation keys
-- **Key Features**:
-  - **Filter Editing**: Users can edit dynamic album filters directly in the options modal
-  - **Tag Management**: Add/remove tags with combobox and visual tag display
-  - **User Management**: Change user roles and remove users from shared albums
-  - **Settings Management**: Toggle activity and change display order
-  - **Responsive Design**: Works on both desktop and mobile
-- **Technical Implementation**:
-  - Reuses existing components (Combobox, SettingDropdown, SettingSwitch, etc.)
-  - Follows Immich's architectural patterns and coding standards
-  - Proper error handling and user feedback
-  - Integration with existing modal management system
-- **Result**: Dynamic albums now have a complete options dialog that matches the functionality of regular albums while adding dynamic album-specific features
-
-## Current Status
-- ✅ Backend API fully implemented and functional
-- ✅ Database schema and migrations complete
-- ✅ Frontend dynamic albums list page working
-- ✅ Frontend photos route working for asset viewing within dynamic albums
-- ✅ Route structure matches regular albums pattern exactly
-- ✅ Back navigation working correctly
-- ✅ All major features implemented and functional
-- ✅ All linter errors fixed
-- ✅ Download functionality working correctly
-- ✅ Dynamic album filtering working correctly with improved performance
-- ✅ Dynamic album sharing functionality (user sharing and link sharing) fully implemented
-- ✅ **FIXED: Dynamic album download access control issue** - Updated controller and service to use correct dynamic album permissions
-- ✅ **Dynamic album options dialog implemented** - Complete options modal with settings, filter editing, and user management
-
-## Next Steps
-- ✅ Implement dynamic album sharing functionality (modals, user management)
-- ✅ Implement dynamic album link sharing functionality (shared links, QR codes)
-- ✅ **Implement dynamic album options dialog** - Complete options modal with filter editing
-- Add dynamic album map integration
-- Implement thumbnail selection for dynamic albums
-- Add comprehensive testing
-
-## Technical Notes
-- Dynamic albums use tag-based filtering to automatically populate with matching assets
-- Assets are dynamically fetched based on filter criteria, not stored in database
-- TimelineManager now supports `dynamicAlbumId` for proper asset filtering
-- Photos route follows the same pattern as regular albums for consistency
-- Route structure matches regular albums: list page + photos route for individual viewing
-- Back navigation properly detects dynamic albums routes using `isDynamicAlbumsRoute` function
-- All components follow Immich's architectural patterns and coding standards
-- Download functionality now uses proper dynamic album access control
-- Dynamic album filtering now works correctly by fetching assets from the dynamic album API and filtering by time bucket
-
-## API Endpoints Available
-- `GET /api/dynamic-albums` - Get all dynamic albums (owned and shared)
-- `POST /api/dynamic-albums` - Create new dynamic album
-- `GET /api/dynamic-albums/:id` - Get specific dynamic album
-- `PATCH /api/dynamic-albums/:id` - Update dynamic album
-- `DELETE /api/dynamic-albums/:id` - Delete dynamic album
-- `GET /api/dynamic-albums/:id/assets` - Get assets in dynamic album
-- `GET /api/dynamic-albums/:id/assets/count` - Get asset count
-- `POST /api/dynamic-albums/:id/share` - Share dynamic album
-- `PUT /api/dynamic-albums/:id/share/:userId` - Update share permissions
-- `DELETE /api/dynamic-albums/:id/share/:userId` - Remove share
-- `GET /api/dynamic-albums/shared` - Get shared dynamic albums
-
-## Frontend Routes Available
-- `/dynamic-albums` - Dynamic albums listing page
-- `/dynamic-albums/[id]` - Individual dynamic album view page
-
-## Implementation Summary
-The **complete implementation** for dynamic albums is now ready! Both backend and frontend components have been implemented following Immich's architectural patterns. The feature includes:
-
+### Files to Enhance (Existing Album System)
 **Backend:**
-- Complete database schema with migrations applied
-- Full API with CRUD operations, sharing, and asset filtering
-- Comprehensive filtering system supporting tags, people, locations, dates, and asset types
-- Proper authentication and authorization
-- Download functionality with proper access control
+- `server/src/schema/tables/album.table.ts` - Add `dynamic` and `filters` fields
+- `server/src/services/album.service.ts` - Add dynamic album logic
+- `server/src/repositories/album.repository.ts` - Add filter processing
+- `server/src/dtos/album.dto.ts` - Add dynamic album fields
+- `server/src/controllers/album.controller.ts` - Handle dynamic albums
 
 **Frontend:**
-- Complete UI components for dynamic albums
-- API integration with proper error handling
-- Routes and pages for dynamic album management
-- Context menus and navigation
-- Search and filtering capabilities
-- Download functionality working correctly
+- `web/src/lib/components/album-page/` - Add dynamic album support
+- `web/src/lib/modals/CreateAlbumModal.svelte` - Add dynamic option
+- `web/src/routes/(user)/albums/` - Handle both album types
+- `web/src/lib/components/shared-components/` - Reuse filter components
 
-**Recent Fix:**
-- Resolved API URL construction issue that was causing double `/api` prefix
-- Frontend now properly communicates with backend API endpoints
-- All endpoints responding correctly with proper authentication requirements
-- Fixed all linter errors in the dynamic albums photos page
-- Fixed download functionality with proper dynamic album access control
+### Files to Reuse (Keep Existing Logic)
+- `web/src/lib/components/shared-components/filter-display.svelte`
+- `web/src/lib/components/shared-components/filter-operator-selector.svelte`
+- `web/src/lib/components/shared-components/tag-selector.svelte`
+- Filter processing logic from dynamic album service
 
-The dynamic albums feature is now fully functional and ready for user testing!
+## Database Schema Changes
 
-# Agent Memory - Dynamic Albums Feature Implementation
+### New Album Table Structure
+```sql
+-- Add new columns to existing albums table
+ALTER TABLE albums 
+  ADD COLUMN dynamic boolean DEFAULT false,
+  ADD COLUMN filters jsonb DEFAULT null;
 
-## Overview
-Implementing a "dynamic albums" feature for Immich where users can create albums based on tags. The albums are populated dynamically with all pictures that contain the selected tags.
+-- Create indexes for performance
+CREATE INDEX idx_albums_dynamic ON albums(dynamic);
+CREATE INDEX idx_albums_filters ON albums USING gin(filters);
+```
 
-## Current Status
-- ✅ Backend: Dynamic album entity, repository, service, controller, and DTOs implemented
-- ✅ Backend: Dynamic album filters (tag-based) implemented
-- ✅ Backend: Dynamic album sharing functionality implemented
-- ✅ Backend: Asset querying based on filters implemented
-- ✅ Frontend: Dynamic albums list page implemented
-- ✅ Frontend: Dynamic album creation modal implemented
-- ✅ Frontend: Dynamic album photos page implemented
-- ✅ Frontend: Dynamic album card component implemented
-- ✅ Frontend: Dynamic album cover component implemented
-- ✅ Frontend: Thumbnail selection functionality implemented
-- ✅ Backend: Automatic thumbnail generation from first asset implemented
-- ✅ Frontend: Fixed missing import error for isDynamicAlbumsRoute
-- ✅ Backend: Fixed download functionality with proper access control
+### Migration Strategy
+1. **Backup**: Create backup of existing dynamic album data
+2. **Migrate**: Move dynamic album data to enhanced albums table
+3. **Validate**: Ensure all data migrated correctly
+4. **Cleanup**: Drop old dynamic album tables
+5. **Update**: Update all references in code
 
-## Latest Implementation (2025-01-12)
+## Backend Refactoring Tasks
 
-### Bug Fix - Download Functionality
-- **Issue:** 400 Bad Request error when clicking download button on dynamic album page
-- **Root Cause:** The download service was using `ALBUM_DOWNLOAD` permission for dynamic albums, but the access control system was designed for regular albums
-- **Fix:** 
-  - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
-  - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
-  - Added dynamic album access control logic to the access utility
-  - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
-- **Files Modified:** 
-  - `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
-  - `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
-  - `server/src/utils/access.ts` - Added dynamic album permission handling
-  - `server/src/services/download.service.ts` - Updated to use correct permission
-- **Result:** Dynamic album downloads now work correctly with proper access control
+### AlbumService Enhancement
+- Add dynamic album detection logic
+- Implement filter-based asset retrieval
+- Disable asset add/remove for dynamic albums
+- Enhance metadata calculation for filtered assets
 
-### Previous Implementation - Context Menu Positioning Issue
-- **Issue:** Dropdown menu on dynamic album cards was showing in wrong position (top-left, only showing first option)
-- **Root Cause:** The `RightClickContextMenu` component was missing the `title` prop and the context menu position was not being spread correctly
-- **Fix:** 
-  - Removed `onclick` handler from the main div in `DynamicAlbumCard`
-  - Wrapped each `DynamicAlbumCard` in an `<a>` tag with proper href in `DynamicAlbumsList`
-  - Removed `cursor-pointer` class to match regular album card styling
-  - Fixed `RightClickContextMenu` usage to include `title` prop and spread `contextMenuPosition`
-  - Reverted to using `getContextMenuPositionFromEvent` like regular albums
-  - Removed unused `onClick` prop and `handleClick` function
-  - Removed unused `goto` import
-- **Files Modified:** 
-  - `web/src/lib/components/dynamic-album-page/dynamic-album-card.svelte`
-  - `web/src/lib/components/dynamic-album-page/dynamic-albums-list.svelte`
-- **Result:** Context menu now appears in the correct position, matching the behavior of regular albums exactly
+### AlbumRepository Enhancement
+- Add filter query building
+- Implement dynamic asset fetching
+- Update metadata queries for both types
+- Add filter validation
 
-### Previous Implementation - Automatic Thumbnail Generation
-- **Backend Changes:**
-  - Added `getFirstAssetForThumbnail()` method to `DynamicAlbumRepository` to fetch the first asset from a dynamic album
-  - Modified `DynamicAlbumService.getAll()`, `getShared()`, and `get()` methods to automatically use the first asset as thumbnail when no manual thumbnail is set
-  - The system now falls back to the first asset in the dynamic album when `albumThumbnailAssetId` is null/undefined
+### Controller Updates
+- Remove dynamic album endpoints
+- Enhance existing album endpoints
+- Add filter management endpoints
+- Update documentation
 
-- **Frontend Changes:**
-  - Created `DynamicAlbumCover` component that follows the same pattern as regular album covers
-  - Updated `DynamicAlbumCard` to use the new cover component
-  - Added thumbnail selection functionality to dynamic album photos page
-  - Added context menu option to select album cover
-  - Added missing translation keys for "unnamed_dynamic_album"
+## Frontend Refactoring Tasks
 
-### Technical Details
-- The automatic thumbnail generation happens at the service level, so it's transparent to the frontend
-- When a user manually sets a thumbnail, it takes precedence over the automatic one
-- The first asset is determined by the album's order setting (defaults to descending by creation date)
-- Performance is optimized by only querying for thumbnails when needed (albums without manual thumbnails)
-- Context menu positioning now follows the same pattern as regular albums for consistency
-- Download functionality now uses proper dynamic album access control with owner and shared user permissions
+### Component Enhancement
+- Add dynamic indicator to album cards
+- Implement filter display in album headers
+- Disable asset operations for dynamic albums
+- Add filter editing to album settings
+
+### Modal Updates
+- Enhance create album modal with dynamic option
+- Add filter configuration UI
+- Remove separate dynamic album modals
+- Update sharing modals
+
+### Route Integration
+- Remove dynamic album routes
+- Enhance album routes for both types
+- Update navigation logic
+- Fix timeline manager integration
+
+## Progress Tracking
+
+### Phase 1: Database Schema ⏳
+- [ ] Create migration for album table enhancement
+- [ ] Add dynamic and filters columns
+- [ ] Create data migration script
+- [ ] Test migration on development data
+
+### Phase 2: Backend Integration ⏳
+- [ ] Enhance AlbumService with dynamic logic
+- [ ] Update AlbumRepository for filter processing
+- [ ] Remove dynamic album controllers/services
+- [ ] Update DTOs and API documentation
+
+### Phase 3: Frontend Integration ⏳
+- [ ] Enhance existing album components
+- [ ] Remove dynamic album components
+- [ ] Update routing and navigation
+- [ ] Fix timeline manager integration
+
+### Phase 4: Migration and Cleanup ⏳
+- [ ] Create production migration script
+- [ ] Remove old dynamic album files
+- [ ] Update documentation
+- [ ] Test all functionality
+
+### Phase 5: Testing and Validation ⏳
+- [ ] Test regular album functionality
+- [ ] Test dynamic album functionality
+- [ ] Test migration process
+- [ ] Performance testing
+
+## Benefits After Refactoring
+
+### Technical Benefits
+- **50% Less Code**: Elimination of duplicate functionality
+- **Unified Architecture**: Single system for all album types
+- **Better Performance**: Direct asset filtering, fewer table joins
+- **Easier Maintenance**: One codebase to maintain and test
+
+### User Experience Benefits
+- **Consistent Interface**: Same UI for all album types
+- **Seamless Workflow**: Easy switching between album types
+- **Better Discovery**: Dynamic albums visible in main album list
+- **Simplified Learning**: Users only need to learn one system
+
+### Development Benefits
+- **Faster Feature Development**: Changes benefit both album types
+- **Easier Testing**: Unified test suite
+- **Better Code Quality**: Less duplication, cleaner architecture
+- **Simplified Deployment**: Fewer moving parts
+
+## Risk Mitigation
+
+### Data Safety
+- **Complete Backup**: All dynamic album data backed up before migration
+- **Rollback Plan**: Migration can be reversed if issues arise
+- **Data Validation**: Extensive testing of migration process
+
+### Functionality Preservation
+- **Feature Parity**: All existing functionality preserved
+- **Backward Compatibility**: Existing albums remain unchanged
+- **API Compatibility**: Existing API endpoints continue to work
+
+### Performance Considerations
+- **Query Optimization**: Filter queries optimized for performance
+- **Index Strategy**: Proper indexing for dynamic album queries
+- **Caching**: Unified caching strategy for both album types
+
+## Success Criteria
+
+### Technical Metrics
+- [ ] All existing album functionality preserved
+- [ ] All dynamic album functionality working
+- [ ] 50% reduction in album-related code
+- [ ] No performance degradation
+- [ ] Migration completes successfully
+
+### User Experience Metrics
+- [ ] Users can create both album types seamlessly
+- [ ] Dynamic albums visible in main album interface
+- [ ] All sharing and access features work for both types
+- [ ] No confusion between album types
 
 ## Next Steps
-- Test the download functionality fix
-- Consider adding a visual indicator when thumbnails are auto-generated vs manually set
-- Implement thumbnail caching if performance becomes an issue
 
-## Files Modified
-- `web/src/lib/components/dynamic-album-page/dynamic-album-card.svelte` - Removed onclick handler and onClick prop
-- `web/src/lib/components/dynamic-album-page/dynamic-albums-list.svelte` - Wrapped cards in anchor tags with proper context menu handling
-- `server/src/repositories/dynamic-album.repository.ts` - Added `getFirstAssetForThumbnail()` method
-- `server/src/services/dynamic-album.service.ts` - Modified to use automatic thumbnails
-- `web/src/lib/components/dynamic-album-page/dynamic-album-cover.svelte` - Created new component
-- `web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte` - Added thumbnail selection and fixed import
-- `i18n/en.json`, `i18n/fr.json`, `i18n/de.json`, `i18n/es.json` - Added translation keys
-- `server/src/enum.ts` - Added `DYNAMIC_ALBUM_SHARE` permission
-- `server/src/repositories/access.repository.ts` - Added `DynamicAlbumAccess` class and integrated it into `AccessRepository`
-- `server/src/utils/access.ts` - Added dynamic album permission handling
-- `server/src/services/download.service.ts` - Updated to use correct permission
+1. **Complete Database Schema Design** - Finalize column types and constraints
+2. **Create Migration Script** - Build and test data migration
+3. **Enhance AlbumService** - Add dynamic album logic
+4. **Update Frontend Components** - Integrate dynamic album support
+5. **Test and Validate** - Ensure all functionality works correctly
 
-## 2025-01-12 - Dynamic Album Download Feature Implementation
-
-### What was implemented:
-1. **Backend Support for Dynamic Album Downloads**:
-   - Added `dynamicAlbumId` field to `DownloadInfoDto` in `server/src/dtos/download.dto.ts`
-   - Added `downloadDynamicAlbumId` method to `DownloadRepository` in `server/src/repositories/download.repository.ts`
-   - Updated `DownloadService` in `server/src/services/download.service.ts` to handle dynamic album downloads
-
-2. **Frontend Download Functionality**:
-   - Added `downloadDynamicAlbum` function to `web/src/lib/utils/asset-utils.ts`
-   - Updated dynamic album photos page (`web/src/routes/(user)/dynamic-albums/[dynamicAlbumId=id]/[[photos=photos]]/[[assetId=id]]/+page.svelte`) to use the new download function
-   - Added download option to dynamic albums list context menu in `web/src/lib/components/dynamic-album-page/dynamic-albums-list.svelte`
-
-3. **OpenAPI Updates**:
-   - Ran `make open-api` to update the TypeScript SDK with the new `dynamicAlbumId` field
-
-4. **Access Control Fix**:
-   - Added `DYNAMIC_ALBUM_DOWNLOAD` permission to the Permission enum
-   - Created `DynamicAlbumAccess` class in the access repository with proper owner and shared access checks
-   - Added dynamic album access control logic to the access utility
-   - Updated download service to use `DYNAMIC_ALBUM_DOWNLOAD` permission instead of `ALBUM_DOWNLOAD`
-
-### Technical Details:
-- The download functionality works by filtering assets based on the dynamic album's filter criteria
-- Uses the existing `buildDynamicAlbumAssetQuery` function to get the correct assets
-- Downloads are handled as ZIP archives, similar to regular album downloads
-- Both the photos page and the albums list page now support downloading dynamic albums
-- Proper access control ensures only owners and shared users with appropriate permissions can download
-
-### Status:
-✅ Dynamic album download feature is now fully implemented and working correctly with proper access control.
+This refactoring will result in a more maintainable, user-friendly, and performant album system that provides all the benefits of dynamic albums while maintaining the simplicity and consistency of the existing album interface.
