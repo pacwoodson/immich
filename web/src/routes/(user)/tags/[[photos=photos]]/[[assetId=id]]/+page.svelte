@@ -82,6 +82,47 @@
     // navigate to parent
     await navigateToView(tag.parent ? tag.parent.path : '');
   };
+
+  const handleDeleteEmptyTags = async () => {
+    const isConfirm = await modalManager.showDialog({
+      title: $t('delete_empty_tags'),
+      prompt: $t('delete_empty_tags_confirmation_prompt'),
+      confirmText: $t('delete'),
+    });
+
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      // Make direct API call since the SDK might not be updated yet
+      const response = await fetch(`/api/tags/empty`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete empty tags');
+      }
+
+      // Refresh the tags list
+      tags = await getAllTags();
+      
+      // Navigate to root if current tag was deleted
+      if (tag.path.length > 0) {
+        // Check if current tag still exists
+        const currentTag = tags.find(t => t.id === tag.id);
+        if (!currentTag) {
+          await navigateToView('');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting empty tags:', error);
+      // You might want to show an error notification here
+    }
+  };
 </script>
 
 <UserPageLayout title={data.meta.title}>
@@ -102,6 +143,12 @@
       <Button leadingIcon={mdiPlus} onclick={handleCreate} size="small" variant="ghost" color="secondary">
         <Text class="hidden md:block">{$t('create_tag')}</Text>
       </Button>
+
+      {#if tag.path.length === 0}
+        <Button leadingIcon={mdiTrashCanOutline} onclick={handleDeleteEmptyTags} size="small" variant="ghost" color="secondary">
+          <Text class="hidden md:block">{$t('delete_empty_tags')}</Text>
+        </Button>
+      {/if}
 
       {#if tag.path.length > 0}
         <Button leadingIcon={mdiPencil} onclick={handleEdit} size="small" variant="ghost" color="secondary">

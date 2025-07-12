@@ -82,4 +82,11 @@ export class TagController {
   ): Promise<BulkIdResponseDto[]> {
     return this.service.removeAssets(auth, id, dto);
   }
+
+  @Delete('empty')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.TAG_DELETE })
+  deleteEmptyTags(@Auth() auth: AuthDto): Promise<void> {
+    return this.service.deleteEmptyTags(auth);
+  }
 }
