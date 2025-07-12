@@ -15,11 +15,18 @@
   interface Props {
     onClose: (sharedLink?: SharedLinkResponseDto) => void;
     albumId?: string | undefined;
+    dynamicAlbumId?: string | undefined;
     assetIds?: string[];
     editingLink?: SharedLinkResponseDto | undefined;
   }
 
-  let { onClose, albumId = $bindable(undefined), assetIds = $bindable([]), editingLink = undefined }: Props = $props();
+  let {
+    onClose,
+    albumId = $bindable(undefined),
+    dynamicAlbumId = $bindable(undefined),
+    assetIds = $bindable([]),
+    editingLink = undefined,
+  }: Props = $props();
 
   let sharedLink: string | null = $state(null);
   let description = $state('');
@@ -51,7 +58,9 @@
     })),
   ]);
 
-  let shareType = $derived(albumId ? SharedLinkType.Album : SharedLinkType.Individual);
+  let shareType = $derived(
+    albumId ? SharedLinkType.Album : dynamicAlbumId ? SharedLinkType.DynamicAlbum : SharedLinkType.Individual,
+  );
 
   $effect(() => {
     if (!showMetadata) {
@@ -84,6 +93,7 @@
         sharedLinkCreateDto: {
           type: shareType,
           albumId,
+          dynamicAlbumId,
           assetIds,
           expiresAt: expirationDate,
           allowUpload,
@@ -150,6 +160,17 @@
         <div class="text-sm">
           {$t('public_album')} |
           <span class="text-immich-primary dark:text-immich-dark-primary">{editingLink.album?.albumName}</span>
+        </div>
+      {/if}
+    {/if}
+
+    {#if shareType === SharedLinkType.DynamicAlbum}
+      {#if !editingLink}
+        <div>{$t('dynamic_album_with_link_access')}</div>
+      {:else}
+        <div class="text-sm">
+          {$t('public_dynamic_album')} |
+          <span class="text-immich-primary dark:text-immich-dark-primary">{editingLink.dynamicAlbum?.name}</span>
         </div>
       {/if}
     {/if}

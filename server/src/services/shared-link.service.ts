@@ -4,13 +4,13 @@ import { AssetIdErrorReason, AssetIdsResponseDto } from 'src/dtos/asset-ids.resp
 import { AssetIdsDto } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
-  mapSharedLink,
-  mapSharedLinkWithoutMetadata,
-  SharedLinkCreateDto,
-  SharedLinkEditDto,
-  SharedLinkPasswordDto,
-  SharedLinkResponseDto,
-  SharedLinkSearchDto,
+    mapSharedLink,
+    mapSharedLinkWithoutMetadata,
+    SharedLinkCreateDto,
+    SharedLinkEditDto,
+    SharedLinkPasswordDto,
+    SharedLinkResponseDto,
+    SharedLinkSearchDto,
 } from 'src/dtos/shared-link.dto';
 import { Permission, SharedLinkType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
@@ -18,9 +18,9 @@ import { getExternalDomain, OpenGraphTags } from 'src/utils/misc';
 
 @Injectable()
 export class SharedLinkService extends BaseService {
-  async getAll(auth: AuthDto, { albumId }: SharedLinkSearchDto): Promise<SharedLinkResponseDto[]> {
+  async getAll(auth: AuthDto, { albumId, dynamicAlbumId }: SharedLinkSearchDto): Promise<SharedLinkResponseDto[]> {
     return this.sharedLinkRepository
-      .getAll({ userId: auth.user.id, albumId })
+      .getAll({ userId: auth.user.id, albumId, dynamicAlbumId })
       .then((links) => links.map((link) => mapSharedLink(link)));
   }
 
@@ -53,6 +53,14 @@ export class SharedLinkService extends BaseService {
         break;
       }
 
+      case SharedLinkType.DYNAMIC_ALBUM: {
+        if (!dto.dynamicAlbumId) {
+          throw new BadRequestException('Invalid dynamicAlbumId');
+        }
+        await this.requireAccess({ auth, permission: Permission.DYNAMIC_ALBUM_SHARE, ids: [dto.dynamicAlbumId] });
+        break;
+      }
+
       case SharedLinkType.INDIVIDUAL: {
         if (!dto.assetIds || dto.assetIds.length === 0) {
           throw new BadRequestException('Invalid assetIds');
@@ -69,6 +77,7 @@ export class SharedLinkService extends BaseService {
       userId: auth.user.id,
       type: dto.type,
       albumId: dto.albumId || null,
+      dynamicAlbumId: dto.dynamicAlbumId || null,
       assetIds: dto.assetIds,
       description: dto.description || null,
       password: dto.password,

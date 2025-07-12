@@ -4,12 +4,16 @@ import _ from 'lodash';
 import { SharedLink } from 'src/database';
 import { AlbumResponseDto, mapAlbumWithoutAssets } from 'src/dtos/album.dto';
 import { AssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
+import { DynamicAlbumResponseDto } from 'src/dtos/dynamic-album.dto';
 import { SharedLinkType } from 'src/enum';
 import { Optional, ValidateBoolean, ValidateDate, ValidateUUID } from 'src/validation';
 
 export class SharedLinkSearchDto {
   @ValidateUUID({ optional: true })
   albumId?: string;
+
+  @ValidateUUID({ optional: true })
+  dynamicAlbumId?: string;
 }
 
 export class SharedLinkCreateDto {
@@ -22,6 +26,9 @@ export class SharedLinkCreateDto {
 
   @ValidateUUID({ optional: true })
   albumId?: string;
+
+  @ValidateUUID({ optional: true })
+  dynamicAlbumId?: string;
 
   @IsString()
   @Optional()
@@ -96,6 +103,7 @@ export class SharedLinkResponseDto {
   expiresAt!: Date | null;
   assets!: AssetResponseDto[];
   album?: AlbumResponseDto;
+  dynamicAlbum?: DynamicAlbumResponseDto;
   allowUpload!: boolean;
 
   allowDownload!: boolean;
@@ -116,6 +124,22 @@ export function mapSharedLink(sharedLink: SharedLink): SharedLinkResponseDto {
     expiresAt: sharedLink.expiresAt,
     assets: linkAssets.map((asset) => mapAsset(asset)),
     album: sharedLink.album ? mapAlbumWithoutAssets(sharedLink.album) : undefined,
+    dynamicAlbum: sharedLink.dynamicAlbum ? {
+      id: sharedLink.dynamicAlbum.id,
+      name: sharedLink.dynamicAlbum.name,
+      description: sharedLink.dynamicAlbum.description,
+      ownerId: sharedLink.dynamicAlbum.ownerId,
+      filters: sharedLink.dynamicAlbum.filters || [],
+      assetCount: 0, // Will be populated by the service
+      startDate: undefined, // Will be populated by the service
+      endDate: undefined, // Will be populated by the service
+      albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
+      order: sharedLink.dynamicAlbum.order,
+      isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
+      createdAt: sharedLink.dynamicAlbum.createdAt,
+      updatedAt: sharedLink.dynamicAlbum.updatedAt,
+      sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
+    } : undefined,
     allowUpload: sharedLink.allowUpload,
     allowDownload: sharedLink.allowDownload,
     showMetadata: sharedLink.showExif,
@@ -139,6 +163,22 @@ export function mapSharedLinkWithoutMetadata(sharedLink: SharedLink): SharedLink
     expiresAt: sharedLink.expiresAt,
     assets: assets.map((asset) => mapAsset(asset, { stripMetadata: true })),
     album: sharedLink.album ? mapAlbumWithoutAssets(sharedLink.album) : undefined,
+    dynamicAlbum: sharedLink.dynamicAlbum ? {
+      id: sharedLink.dynamicAlbum.id,
+      name: sharedLink.dynamicAlbum.name,
+      description: sharedLink.dynamicAlbum.description,
+      ownerId: sharedLink.dynamicAlbum.ownerId,
+      filters: sharedLink.dynamicAlbum.filters || [],
+      assetCount: 0, // Will be populated by the service
+      startDate: undefined, // Will be populated by the service
+      endDate: undefined, // Will be populated by the service
+      albumThumbnailAssetId: sharedLink.dynamicAlbum.albumThumbnailAssetId || undefined,
+      order: sharedLink.dynamicAlbum.order,
+      isActivityEnabled: sharedLink.dynamicAlbum.isActivityEnabled,
+      createdAt: sharedLink.dynamicAlbum.createdAt,
+      updatedAt: sharedLink.dynamicAlbum.updatedAt,
+      sharedUsers: sharedLink.dynamicAlbum.sharedUsers || [],
+    } : undefined,
     allowUpload: sharedLink.allowUpload,
     allowDownload: sharedLink.allowDownload,
     showMetadata: sharedLink.showExif,

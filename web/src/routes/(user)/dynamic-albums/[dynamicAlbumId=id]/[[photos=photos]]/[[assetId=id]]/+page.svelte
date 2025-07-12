@@ -27,6 +27,10 @@
   } from '$lib/components/shared-components/notification/notification';
   import UserAvatar from '$lib/components/shared-components/user-avatar.svelte';
   import { AlbumPageViewMode, AppRoute } from '$lib/constants';
+  import { modalManager } from '$lib/managers/modal-manager.svelte';
+  import DynamicAlbumShareModal from '$lib/modals/DynamicAlbumShareModal.svelte';
+  import QrCodeModal from '$lib/modals/QrCodeModal.svelte';
+  import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import { activityManager } from '$lib/managers/activity-manager.svelte';
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
@@ -35,7 +39,7 @@
   import { featureFlags } from '$lib/stores/server-config.store';
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
   import { preferences, user } from '$lib/stores/user.store';
-  import { handlePromiseError } from '$lib/utils';
+  import { handlePromiseError, makeSharedLinkUrl } from '$lib/utils';
   import { cancelMultiselect, downloadAlbum } from '$lib/utils/asset-utils';
   import { confirmDynamicAlbumDelete } from '$lib/utils/dynamic-album-utils';
   import { handleError } from '$lib/utils/handle-error';
@@ -55,6 +59,8 @@
     getAllTags,
     updateDynamicAlbumInfo,
     type TagResponseDto,
+    shareDynamicAlbum,
+    type DynamicAlbumShareDto,
   } from '@immich/sdk';
   import { Button, IconButton } from '@immich/ui';
   import {
@@ -304,8 +310,42 @@
   );
 
   const handleShare = async () => {
-    // TODO: Implement share functionality
-    console.log('Share dynamic album not implemented yet');
+    const result = await modalManager.show(DynamicAlbumShareModal, { album: dynamicAlbum });
+    
+    switch (result?.action) {
+      case 'sharedUsers': {
+        // Handle user sharing
+        await handleAddUsers(result.data);
+        return;
+      }
+
+      case 'sharedLink': {
+        // Handle link sharing
+        await handleShareLink();
+        return;
+      }
+    }
+  };
+
+  const handleShareLink = async () => {
+    const sharedLink = await modalManager.show(SharedLinkCreateModal, { dynamicAlbumId: dynamicAlbum.id });
+
+    if (sharedLink) {
+      await modalManager.show(QrCodeModal, { title: $t('view_link'), value: makeSharedLinkUrl(sharedLink.key) });
+    }
+  };
+
+  const handleAddUsers = async (users: DynamicAlbumShareDto[]) => {
+    // Share with each user
+    for (const user of users) {
+      await shareDynamicAlbum({
+        id: dynamicAlbum.id,
+        shareDynamicAlbumDto: user,
+      });
+    }
+
+    // Refresh the dynamic album to get updated shared users
+    await refreshDynamicAlbum();
   };
 
   const handleOptions = async () => {
@@ -388,7 +428,7 @@
                     <UserAvatar
                       user={{
                         id: dynamicAlbum.ownerId,
-                        name: 'Owner',
+                        name: $t('owner'),
                         email: '',
                         profileImagePath: '',
                         avatarColor: '',
@@ -398,13 +438,13 @@
                     />
                   </button>
 
-                  <!-- users with write access (collaborators) -->
-                  {#each dynamicAlbum.sharedUsers.filter(({ role }) => role === 'editor') as sharedUser (sharedUser.userId)}
+                  <!-- shared users -->
+                  {#each dynamicAlbum.sharedUsers as sharedUser (sharedUser.userId)}
                     <button type="button">
                       <UserAvatar
                         user={{
                           id: sharedUser.userId,
-                          name: 'Editor',
+                          name: $t(sharedUser.role === 'editor' ? 'role_editor' : 'role_viewer'),
                           email: '',
                           profileImagePath: '',
                           avatarColor: '',
@@ -414,17 +454,6 @@
                       />
                     </button>
                   {/each}
-
-                  <!-- display ellipsis if there are readonly users too -->
-                  {#if dynamicAlbumHasViewers}
-                    <IconButton
-                      shape="round"
-                      aria-label={$t('view_all_users')}
-                      color="secondary"
-                      size="medium"
-                      icon={mdiDotsVertical}
-                    />
-                  {/if}
                 </div>
               {/if}
 

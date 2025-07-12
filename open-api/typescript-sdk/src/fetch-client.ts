@@ -596,7 +596,7 @@ export type DynamicAlbumFilterDto = {
 };
 export type DynamicAlbumShareDto = {
     createdAt: string;
-    role: Role;
+    role: DynamicAlbumUserRole;
     userId: string;
 };
 export type DynamicAlbumResponseDto = {
@@ -631,11 +631,11 @@ export type UpdateDynamicAlbumDto = {
     order?: Order;
 };
 export type ShareDynamicAlbumDto = {
-    role: Role;
+    role: DynamicAlbumUserRole;
     userId: string;
 };
 export type UpdateDynamicAlbumShareDto = {
-    role: Role;
+    role: DynamicAlbumUserRole;
 };
 export type PersonResponseDto = {
     birthDate: string | null;
@@ -1239,6 +1239,7 @@ export type SharedLinkResponseDto = {
     assets: AssetResponseDto[];
     createdAt: string;
     description: string | null;
+    dynamicAlbum?: DynamicAlbumResponseDto;
     expiresAt: string | null;
     id: string;
     key: string;
@@ -1254,6 +1255,7 @@ export type SharedLinkCreateDto = {
     allowUpload?: boolean;
     assetIds?: string[];
     description?: string;
+    dynamicAlbumId?: string;
     expiresAt?: string | null;
     password?: string;
     showMetadata?: boolean;
@@ -2445,6 +2447,17 @@ export function getDynamicAlbumAssetCount({ id }: {
         ...opts
     }));
 }
+export function getDynamicAlbumAssetsByTimeBucket({ id, timeBucket }: {
+    id: string;
+    timeBucket: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: object[];
+    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets/time-bucket/${encodeURIComponent(timeBucket)}`, {
+        ...opts
+    }));
+}
 export function shareDynamicAlbum({ id, shareDynamicAlbumDto }: {
     id: string;
     shareDynamicAlbumDto: ShareDynamicAlbumDto;
@@ -3341,14 +3354,16 @@ export function lockSession({ id }: {
         method: "POST"
     }));
 }
-export function getAllSharedLinks({ albumId }: {
+export function getAllSharedLinks({ albumId, dynamicAlbumId }: {
     albumId?: string;
+    dynamicAlbumId?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: SharedLinkResponseDto[];
     }>(`/shared-links${QS.query(QS.explode({
-        albumId
+        albumId,
+        dynamicAlbumId
     }))}`, {
         ...opts
     }));
@@ -3737,8 +3752,9 @@ export function tagAssets({ id, bulkIdsDto }: {
         body: bulkIdsDto
     })));
 }
-export function getTimeBucket({ albumId, isFavorite, isTrashed, key, order, personId, tagId, timeBucket, userId, visibility, withPartners, withStacked }: {
+export function getTimeBucket({ albumId, dynamicAlbumId, isFavorite, isTrashed, key, order, personId, tagId, timeBucket, userId, visibility, withPartners, withStacked }: {
     albumId?: string;
+    dynamicAlbumId?: string;
     isFavorite?: boolean;
     isTrashed?: boolean;
     key?: string;
@@ -3756,6 +3772,7 @@ export function getTimeBucket({ albumId, isFavorite, isTrashed, key, order, pers
         data: TimeBucketAssetResponseDto;
     }>(`/timeline/bucket${QS.query(QS.explode({
         albumId,
+        dynamicAlbumId,
         isFavorite,
         isTrashed,
         key,
@@ -3771,8 +3788,9 @@ export function getTimeBucket({ albumId, isFavorite, isTrashed, key, order, pers
         ...opts
     }));
 }
-export function getTimeBuckets({ albumId, isFavorite, isTrashed, key, order, personId, tagId, userId, visibility, withPartners, withStacked }: {
+export function getTimeBuckets({ albumId, dynamicAlbumId, isFavorite, isTrashed, key, order, personId, tagId, userId, visibility, withPartners, withStacked }: {
     albumId?: string;
+    dynamicAlbumId?: string;
     isFavorite?: boolean;
     isTrashed?: boolean;
     key?: string;
@@ -3789,6 +3807,7 @@ export function getTimeBuckets({ albumId, isFavorite, isTrashed, key, order, per
         data: TimeBucketsResponseDto[];
     }>(`/timeline/buckets${QS.query(QS.explode({
         albumId,
+        dynamicAlbumId,
         isFavorite,
         isTrashed,
         key,
@@ -4187,7 +4206,7 @@ export enum Order {
     Asc = "asc",
     Desc = "desc"
 }
-export enum Role {
+export enum DynamicAlbumUserRole {
     Viewer = "viewer",
     Editor = "editor",
     Admin = "admin"
@@ -4240,7 +4259,8 @@ export enum SearchSuggestionType {
 }
 export enum SharedLinkType {
     Album = "ALBUM",
-    Individual = "INDIVIDUAL"
+    Individual = "INDIVIDUAL",
+    DynamicAlbum = "DYNAMIC_ALBUM"
 }
 export enum Error2 {
     Duplicate = "duplicate",

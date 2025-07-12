@@ -3,7 +3,7 @@ import { Insertable, Kysely, NotNull, sql, Updateable } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import _ from 'lodash';
 import { InjectKysely } from 'nestjs-kysely';
-import { Album, columns } from 'src/database';
+import { Album, columns, DynamicAlbum } from 'src/database';
 import { DummyValue, GenerateSql } from 'src/decorators';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import { SharedLinkType } from 'src/enum';
@@ -13,6 +13,7 @@ import { SharedLinkTable } from 'src/schema/tables/shared-link.table';
 export type SharedLinkSearchOptions = {
   userId: string;
   albumId?: string;
+  dynamicAlbumId?: string;
 };
 
 @Injectable()
@@ -103,8 +104,8 @@ export class SharedLinkRepository {
       .executeTakeFirst();
   }
 
-  @GenerateSql({ params: [{ userId: DummyValue.UUID, albumId: DummyValue.UUID }] })
-  getAll({ userId, albumId }: SharedLinkSearchOptions) {
+  @GenerateSql({ params: [{ userId: DummyValue.UUID, albumId: DummyValue.UUID, dynamicAlbumId: DummyValue.UUID }] })
+  getAll({ userId, albumId, dynamicAlbumId }: SharedLinkSearchOptions) {
     return this.db
       .selectFrom('shared_links')
       .selectAll('shared_links')
@@ -160,8 +161,53 @@ export class SharedLinkRepository {
         (join) => join.onTrue(),
       )
       .select((eb) => eb.fn.toJson('album').$castTo<Album | null>().as('album'))
-      .where((eb) => eb.or([eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL), eb('album.id', 'is not', null)]))
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('dynamic_albums')
+            .selectAll('dynamic_albums')
+            .whereRef('dynamic_albums.id', '=', 'shared_links.dynamicAlbumId')
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .select([
+                    'users.id',
+                    'users.email',
+                    'users.createdAt',
+                    'users.profileImagePath',
+                    'users.isAdmin',
+                    'users.shouldChangePassword',
+                    'users.deletedAt',
+                    'users.oauthId',
+                    'users.updatedAt',
+                    'users.storageLabel',
+                    'users.name',
+                    'users.quotaSizeInBytes',
+                    'users.quotaUsageInBytes',
+                    'users.status',
+                    'users.profileChangedAt',
+                  ])
+                  .whereRef('users.id', '=', 'dynamic_albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .where('dynamic_albums.deletedAt', 'is', null)
+            .as('dynamicAlbum'),
+        (join) => join.onTrue(),
+      )
+      .select((eb) => eb.fn.toJson('dynamicAlbum').$castTo<DynamicAlbum | null>().as('dynamicAlbum'))
+      .where((eb) =>
+        eb.or([
+          eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL),
+          eb('album.id', 'is not', null),
+          eb('dynamicAlbum.id', 'is not', null),
+        ]),
+      )
       .$if(!!albumId, (eb) => eb.where('shared_links.albumId', '=', albumId!))
+      .$if(!!dynamicAlbumId, (eb) => eb.where('shared_links.dynamicAlbumId', '=', dynamicAlbumId!))
       .orderBy('shared_links.createdAt', 'desc')
       .distinctOn(['shared_links.createdAt'])
       .execute();
@@ -248,7 +294,83 @@ export class SharedLinkRepository {
           .$castTo<MapAsset[]>()
           .as('assets'),
       )
-      .groupBy('shared_links.id')
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('albums')
+            .selectAll('albums')
+            .whereRef('albums.id', '=', 'shared_links.albumId')
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .select([
+                    'users.id',
+                    'users.email',
+                    'users.createdAt',
+                    'users.profileImagePath',
+                    'users.isAdmin',
+                    'users.shouldChangePassword',
+                    'users.deletedAt',
+                    'users.oauthId',
+                    'users.updatedAt',
+                    'users.storageLabel',
+                    'users.name',
+                    'users.quotaSizeInBytes',
+                    'users.quotaUsageInBytes',
+                    'users.status',
+                    'users.profileChangedAt',
+                  ])
+                  .whereRef('users.id', '=', 'albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .where('albums.deletedAt', 'is', null)
+            .as('album'),
+        (join) => join.onTrue(),
+      )
+      .select((eb) => eb.fn.toJson('album').$castTo<Album | null>().as('album'))
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('dynamic_albums')
+            .selectAll('dynamic_albums')
+            .whereRef('dynamic_albums.id', '=', 'shared_links.dynamicAlbumId')
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .select([
+                    'users.id',
+                    'users.email',
+                    'users.createdAt',
+                    'users.profileImagePath',
+                    'users.isAdmin',
+                    'users.shouldChangePassword',
+                    'users.deletedAt',
+                    'users.oauthId',
+                    'users.updatedAt',
+                    'users.storageLabel',
+                    'users.name',
+                    'users.quotaSizeInBytes',
+                    'users.quotaUsageInBytes',
+                    'users.status',
+                    'users.profileChangedAt',
+                  ])
+                  .whereRef('users.id', '=', 'dynamic_albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .where('dynamic_albums.deletedAt', 'is', null)
+            .as('dynamicAlbum'),
+        (join) => join.onTrue(),
+      )
+      .select((eb) => eb.fn.toJson('dynamicAlbum').$castTo<DynamicAlbum | null>().as('dynamicAlbum'))
+      .groupBy(['shared_links.id', sql`"album".*`, sql`"dynamicAlbum".*`])
       .executeTakeFirstOrThrow();
   }
 }

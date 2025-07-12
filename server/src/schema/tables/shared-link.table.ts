@@ -2,14 +2,14 @@ import { SharedLinkType } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import {
-  Column,
-  CreateDateColumn,
-  ForeignKeyColumn,
-  Generated,
-  PrimaryGeneratedColumn,
-  Table,
-  Timestamp,
-  Unique,
+    Column,
+    CreateDateColumn,
+    ForeignKeyColumn,
+    Generated,
+    PrimaryGeneratedColumn,
+    Table,
+    Timestamp,
+    Unique,
 } from 'src/sql-tools';
 
 @Table('shared_links')
@@ -46,6 +46,9 @@ export class SharedLinkTable {
     indexName: 'IDX_sharedlink_albumId',
   })
   albumId!: string | null;
+
+  @Column({ type: 'uuid', nullable: true, indexName: 'IDX_sharedlink_dynamicAlbumId' })
+  dynamicAlbumId!: string | null;
 
   @Column({ type: 'boolean', default: true })
   allowDownload!: Generated<boolean>;

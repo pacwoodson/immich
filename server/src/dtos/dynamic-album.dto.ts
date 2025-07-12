@@ -78,7 +78,7 @@ export class DynamicAlbumShareDto {
   @ValidateUUID()
   userId!: string;
 
-  @ApiProperty({ enum: DynamicAlbumUserRole })
+  @ApiProperty({ enum: DynamicAlbumUserRole, enumName: 'DynamicAlbumUserRole' })
   role!: DynamicAlbumUserRole;
 
   @ApiProperty()
@@ -152,11 +152,11 @@ export class ShareDynamicAlbumDto {
   @ValidateUUID()
   userId!: string;
 
-  @ApiProperty({ enum: DynamicAlbumUserRole })
+  @ApiProperty({ enum: DynamicAlbumUserRole, enumName: 'DynamicAlbumUserRole' })
   role!: DynamicAlbumUserRole;
 }
 
 export class UpdateDynamicAlbumShareDto {
-  @ApiProperty({ enum: DynamicAlbumUserRole })
+  @ApiProperty({ enum: DynamicAlbumUserRole, enumName: 'DynamicAlbumUserRole' })
   role!: DynamicAlbumUserRole;
 }

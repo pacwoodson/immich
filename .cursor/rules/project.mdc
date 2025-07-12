@@ -32,12 +32,13 @@ When new endpoints are added or DTOs are edited, run 'make open-api' to update @
 ### Frontend
 With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.
 
-Always use $t('...') for texts in the frontend, and add translations accordingly.
+Always use $t('...') for texts in the frontend, and add translations accordingly. Only create english translations.
 
 I run the frontend myself and I will provide you errors that appear in the browser console. Don't run the frontend yourself and don't try to access it, if you need, ask me. 
 
 When working on new components of the frontend, always check how other similar components have been created (like comparing with normal albums features)
 
+When calling the backend api, always use the @immich/sdk package instead of using http calls to the server.
 
 
 ## Packing the code

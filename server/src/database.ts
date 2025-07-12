@@ -1,18 +1,19 @@
 import { Selectable } from 'kysely';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import {
-  AlbumUserRole,
-  AssetFileType,
-  AssetType,
-  AssetVisibility,
-  MemoryType,
-  Permission,
-  SharedLinkType,
-  SourceType,
-  UserAvatarColor,
-  UserStatus,
+    AlbumUserRole,
+    AssetFileType,
+    AssetType,
+    AssetVisibility,
+    MemoryType,
+    Permission,
+    SharedLinkType,
+    SourceType,
+    UserAvatarColor,
+    UserStatus,
 } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
+import { DynamicAlbumTable } from 'src/schema/tables/dynamic-album.table';
 import { ExifTable } from 'src/schema/tables/exif.table';
 import { UserMetadataItem } from 'src/types';
 
@@ -181,6 +182,8 @@ export type SharedLink = {
   id: string;
   album?: Album | null;
   albumId: string | null;
+  dynamicAlbum?: DynamicAlbum | null;
+  dynamicAlbumId: string | null;
   allowDownload: boolean;
   allowUpload: boolean;
   assets: MapAsset[];
@@ -270,6 +273,12 @@ export type AssetFace = {
   personId: string | null;
   sourceType: SourceType;
   person?: Person | null;
+};
+
+export type DynamicAlbum = Selectable<DynamicAlbumTable> & {
+  owner: User;
+  filters?: any[];
+  sharedUsers?: any[];
 };
 
 const userColumns = ['id', 'name', 'email', 'avatarColor', 'profileImagePath', 'profileChangedAt'] as const;

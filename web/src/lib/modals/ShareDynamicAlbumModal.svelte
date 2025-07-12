@@ -42,7 +42,7 @@
 
     // Remove already shared users from the album
     for (const sharedUser of album.sharedUsers || []) {
-      users = users.filter((user) => user.id !== sharedUser.user.id);
+      users = users.filter((user) => user.id !== sharedUser.userId);
     }
   });
 
@@ -73,13 +73,16 @@
         role,
       }));
 
-      // Use the shareDynamicAlbum API
-      await shareDynamicAlbum({
-        id: album.id,
-        shareDynamicAlbumDto: {
-          users: shareData.map(({ userId, role }) => ({ userId, role })),
-        },
-      });
+      // Share with each user individually since the API only supports one user at a time
+      for (const { userId, role } of shareData) {
+        await shareDynamicAlbum({
+          id: album.id,
+          shareDynamicAlbumDto: {
+            userId,
+            role,
+          },
+        });
+      }
 
       notificationController.show({
         message: $t('dynamic_album_shared_successfully'),

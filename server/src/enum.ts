@@ -193,6 +193,12 @@ export enum SharedLinkType {
    * or group of assets that are not in an album
    */
   INDIVIDUAL = 'INDIVIDUAL',
+
+  /**
+   * Dynamic album
+   * for sharing dynamic albums with filters
+   */
+  DYNAMIC_ALBUM = 'DYNAMIC_ALBUM',
 }
 
 export enum StorageFolder {
