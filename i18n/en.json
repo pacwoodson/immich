@@ -740,6 +740,8 @@
   "delete_shared_link_dialog_title": "Delete Shared Link",
   "delete_tag": "Delete tag",
   "delete_tag_confirmation_prompt": "Are you sure you want to delete {tagName} tag?",
+  "delete_empty_tags": "Delete empty tags",
+  "delete_empty_tags_confirmation_prompt": "Are you sure you want to delete all tags that don't contain any pictures? This action cannot be undone.",
   "delete_user": "Delete user",
   "deleted_shared_link": "Deleted shared link",
   "deletes_missing_assets": "Deletes assets missing from disk",
