@@ -84,6 +84,15 @@
   onMount(async () => {
     setupCanvas();
     await getPeople();
+
+    // Focus the search input when the modal opens
+    setTimeout(() => {
+      // Try to find the actual input element within the Input component
+      const inputElement = faceSelectorEl?.querySelector('input');
+      if (inputElement) {
+        inputElement.focus();
+      }
+    }, 200);
   });
 
   $effect(() => {
