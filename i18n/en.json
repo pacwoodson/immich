@@ -685,6 +685,7 @@
   "create_new": "CREATE NEW",
   "create_new_person": "Create new person",
   "create_new_person_hint": "Assign selected assets to a new person",
+  "create_person_with_name": "Create person '{name}'",
   "create_new_user": "Create new user",
   "create_shared_album_page_share_add_assets": "ADD ASSETS",
   "create_shared_album_page_share_select_photos": "Select Photos",

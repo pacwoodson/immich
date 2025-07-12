@@ -6,7 +6,7 @@
   import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
   import { getPeopleThumbnailUrl } from '$lib/utils';
   import { handleError } from '$lib/utils/handle-error';
-  import { createFace, getAllPeople, type PersonResponseDto } from '@immich/sdk';
+  import { createFace, createPerson, getAllPeople, type PersonResponseDto } from '@immich/sdk';
   import { Button, Input } from '@immich/ui';
   import { Canvas, InteractiveFabricObject, Rect } from 'fabric';
   import { onMount } from 'svelte';
@@ -34,6 +34,13 @@
     searchTerm
       ? candidates.filter((person) => person.name.toLowerCase().includes(searchTerm.toLowerCase()))
       : candidates,
+  );
+
+  // Check if search term doesn't match any existing person
+  let shouldShowCreateButton = $derived(
+    searchTerm.trim() &&
+    filteredCandidates.length === 0 &&
+    !candidates.some((person) => person.name.toLowerCase() === searchTerm.toLowerCase())
   );
 
   const configureControlStyle = () => {
@@ -310,6 +317,27 @@
       isFaceEditMode.value = false;
     }
   };
+
+  const createNewPerson = async () => {
+    try {
+      const newPerson = await createPerson({
+        personCreateDto: {
+          name: searchTerm.trim(),
+        },
+      });
+
+      // Add the new person to the candidates list
+      candidates = [...candidates, newPerson];
+
+      // Clear the search term to show all people including the new one
+      searchTerm = '';
+
+      // Automatically tag the face with the new person
+      await tagFace(newPerson);
+    } catch (error) {
+      handleError(error, 'Error creating new person');
+    }
+  };
 </script>
 
 <div class="absolute start-0 top-0">
@@ -351,8 +379,18 @@
           {/each}
         </div>
       {:else}
-        <div class="flex items-center justify-center py-4">
+        <div class="flex flex-col items-center justify-center py-4 gap-2">
           <p class="text-sm text-gray-500">{$t('no_people_found')}</p>
+          {#if shouldShowCreateButton}
+            <Button 
+              size="small" 
+              onclick={createNewPerson}
+              color="primary"
+              class="w-full"
+            >
+              {$t('create_person_with_name', { values: { name: searchTerm.trim() } })}
+            </Button>
+          {/if}
         </div>
       {/if}
     </div>
