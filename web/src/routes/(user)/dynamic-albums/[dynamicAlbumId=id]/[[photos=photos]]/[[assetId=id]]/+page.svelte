@@ -30,6 +30,7 @@
   import { modalManager } from '$lib/managers/modal-manager.svelte';
   import DynamicAlbumShareModal from '$lib/modals/DynamicAlbumShareModal.svelte';
   import DynamicAlbumOptionsModal from '$lib/modals/DynamicAlbumOptionsModal.svelte';
+  import EditDynamicAlbumModal from '$lib/modals/EditDynamicAlbumModal.svelte';
   import QrCodeModal from '$lib/modals/QrCodeModal.svelte';
   import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import { activityManager } from '$lib/managers/activity-manager.svelte';
@@ -73,6 +74,7 @@
     mdiImageOutline,
     mdiPlus,
     mdiPresentationPlay,
+    mdiRenameOutline,
     mdiShareVariantOutline,
   } from '@mdi/js';
   import { onDestroy, onMount } from 'svelte';
@@ -381,9 +383,25 @@
         await refreshDynamicAlbum();
         break;
       }
-      case 'editFilters': {
-        await refreshDynamicAlbum();
-        break;
+    }
+  };
+
+  const handleEditAlbum = async () => {
+    const editedAlbum = await modalManager.show(EditDynamicAlbumModal, { album: dynamicAlbum });
+    if (editedAlbum) {
+      // Update the dynamic album with the edited data
+      dynamicAlbum.name = editedAlbum.name;
+      dynamicAlbum.filters = editedAlbum.filters;
+      dynamicAlbum.updatedAt = editedAlbum.updatedAt;
+      
+      // Refresh the timeline manager to reflect the updated filters
+      if (viewMode === AlbumPageViewMode.VIEW) {
+        timelineManager.months = [];
+        await timelineManager.updateOptions({ 
+          dynamicAlbumId: dynamicAlbum.id, 
+          order: dynamicAlbumOrder,
+          _forceReload: Date.now()
+        });
       }
     }
   };
@@ -732,6 +750,14 @@
             <CastButton />
 
             {#if isOwned}
+              <IconButton
+                shape="round"
+                variant="ghost"
+                color="secondary"
+                aria-label={$t('edit_album')}
+                onclick={handleEditAlbum}
+                icon={mdiRenameOutline}
+              />
               <IconButton
                 shape="round"
                 variant="ghost"

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/elements/icon.svelte';
-  import Combobox, { type ComboBoxOption } from '$lib/components/shared-components/combobox.svelte';
+  import TagSelector from '$lib/components/shared-components/tag-selector.svelte';
   import {
     notificationController,
     NotificationType,
@@ -8,10 +8,12 @@
   import { handleError } from '$lib/utils/handle-error';
   import { getAllTags, updateDynamicAlbumInfo, type DynamicAlbumResponseDto, type TagResponseDto } from '@immich/sdk';
   import { Button, HStack, Modal, ModalBody, ModalFooter } from '@immich/ui';
-  import { mdiClose, mdiRenameOutline } from '@mdi/js';
+  import { mdiClose, mdiRenameOutline, mdiArrowUpThin, mdiArrowDownThin } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import { SvelteSet } from 'svelte/reactivity';
+  import type { RenderedOption } from '../components/elements/dropdown.svelte';
+  import SettingDropdown from '../components/shared-components/settings/setting-dropdown.svelte';
 
   interface Props {
     album: DynamicAlbumResponseDto;
@@ -24,24 +26,35 @@
   let allTags: TagResponseDto[] = $state([]);
   let tagMap = $derived(Object.fromEntries(allTags.map((tag) => [tag.id, tag])));
   let selectedTagIds = new SvelteSet<string>();
+  let selectedOperator = $state<'and' | 'or'>('and');
   let isSubmitting = $state(false);
   let disabled = $derived(isSubmitting || !albumName.trim() || selectedTagIds.size === 0);
+
+  // Operator options for the dropdown
+  const operatorOptions: Record<'and' | 'or', RenderedOption> = {
+    and: { icon: mdiArrowUpThin, title: $t('operator_and') },
+    or: { icon: mdiArrowDownThin, title: $t('operator_or') },
+  };
 
   onMount(async () => {
     allTags = await getAllTags();
 
-    // Pre-populate selected tags from existing filters
+    // Pre-populate selected tags and operator from existing filters
     for (const filter of album.filters) {
       if (filter.type === 'tag' && filter.value && typeof filter.value === 'object' && 'tagIds' in filter.value) {
         const tagIds = filter.value.tagIds as string[];
         for (const tagId of tagIds) {
           selectedTagIds.add(tagId);
         }
+        // Set the operator from existing filter
+        if (filter.value.operator) {
+          selectedOperator = filter.value.operator as 'and' | 'or';
+        }
       }
     }
   });
 
-  const handleSelect = (option?: ComboBoxOption) => {
+  const handleSelect = (option?: { id: string; value: string }) => {
     if (!option || !option.id) {
       return;
     }
@@ -66,10 +79,10 @@
           name: albumName.trim(),
           filters: [
             {
-              type: 'tag',
+              type: 'tag' as const,
               value: {
                 tagIds: [...selectedTagIds],
-                operator: 'and',
+                operator: selectedOperator,
               },
             },
           ],
@@ -123,46 +136,28 @@
         />
       </div>
 
+      <!-- Operator Selection -->
+      {#if selectedTagIds.size > 1}
+        <div class="my-4 flex flex-col gap-2">
+          <SettingDropdown
+            title={$t('filter_operator')}
+            subtitle={$t('filter_operator_description')}
+            options={Object.values(operatorOptions)}
+            selectedOption={operatorOptions[selectedOperator]}
+            onToggle={(option) => {
+              const newOperator = Object.keys(operatorOptions).find(key => operatorOptions[key as 'and' | 'or'] === option) as 'and' | 'or';
+              if (newOperator) {
+                selectedOperator = newOperator;
+              }
+            }}
+          />
+        </div>
+      {/if}
+      
       <!-- Tag Selection -->
-      <div class="my-4 flex flex-col gap-2">
-        <Combobox
-          onSelect={handleSelect}
-          label={$t('tags')}
-          defaultFirstOption
-          options={allTags.map((tag) => ({ id: tag.id, label: tag.value, value: tag.id }))}
-          placeholder={$t('search_tags')}
-        />
-      </div>
+      <TagSelector bind:selectedTagIds />
+
     </form>
-
-    <!-- Selected Tags Display -->
-    {#if selectedTagIds.size > 0}
-      <section class="flex flex-wrap pt-2 gap-1">
-        {#each selectedTagIds as tagId (tagId)}
-          {@const tag = tagMap[tagId]}
-          {#if tag}
-            <div class="flex group transition-all">
-              <span
-                class="inline-block h-min whitespace-nowrap ps-3 pe-1 group-hover:ps-3 py-1 text-center align-baseline leading-none text-gray-100 dark:text-immich-dark-gray bg-primary rounded-s-full hover:bg-immich-primary/80 dark:hover:bg-immich-dark-primary/80 transition-all"
-              >
-                <p class="text-sm">
-                  {tag.value}
-                </p>
-              </span>
-
-              <button
-                type="button"
-                class="text-gray-100 dark:text-immich-dark-gray bg-immich-primary/95 dark:bg-immich-dark-primary/95 rounded-e-full place-items-center place-content-center pe-2 ps-1 py-1 hover:bg-immich-primary/80 dark:hover:bg-immich-dark-primary/80 transition-all"
-                title={$t('remove_tag')}
-                onclick={() => handleRemove(tagId)}
-              >
-                <Icon path={mdiClose} />
-              </button>
-            </div>
-          {/if}
-        {/each}
-      </section>
-    {/if}
 
     {#if selectedTagIds.size === 0}
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
