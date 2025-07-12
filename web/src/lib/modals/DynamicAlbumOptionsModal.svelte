@@ -51,17 +51,28 @@
   let allTags: TagResponseDto[] = $state([]);
   let tagMap = $derived(Object.fromEntries(allTags.map((tag) => [tag.id, tag])));
   let selectedTagIds = new SvelteSet<string>();
+  let selectedOperator = $state<'and' | 'or'>('and');
   let isSubmitting = $state(false);
+
+  // Operator options for the dropdown
+  const operatorOptions: Record<'and' | 'or', RenderedOption> = {
+    and: { icon: mdiArrowUpThin, title: $t('operator_and') },
+    or: { icon: mdiArrowDownThin, title: $t('operator_or') },
+  };
 
   onMount(async () => {
     allTags = await getAllTags();
 
-    // Pre-populate selected tags from existing filters
+    // Pre-populate selected tags and operator from existing filters
     for (const filter of album.filters) {
       if (filter.type === 'tag' && filter.value && typeof filter.value === 'object' && 'tagIds' in filter.value) {
         const tagIds = filter.value.tagIds as string[];
         for (const tagId of tagIds) {
           selectedTagIds.add(tagId);
+        }
+        // Set the operator from existing filter
+        if (filter.value.operator) {
+          selectedOperator = filter.value.operator as 'and' | 'or';
         }
       }
     }
@@ -169,7 +180,7 @@
               type: 'tag',
               value: {
                 tagIds: [...selectedTagIds],
-                operator: 'and',
+                operator: selectedOperator,
               },
             },
           ],
@@ -196,13 +207,18 @@
 
   const handleCancelEditFilters = () => {
     isEditingFilters = false;
-    // Reset selected tags to original state
+    // Reset selected tags and operator to original state
     selectedTagIds.clear();
+    selectedOperator = 'and'; // Default fallback
     for (const filter of album.filters) {
       if (filter.type === 'tag' && filter.value && typeof filter.value === 'object' && 'tagIds' in filter.value) {
         const tagIds = filter.value.tagIds as string[];
         for (const tagId of tagIds) {
           selectedTagIds.add(tagId);
+        }
+        // Reset the operator from existing filter
+        if (filter.value.operator) {
+          selectedOperator = filter.value.operator as 'and' | 'or';
         }
       }
     }
@@ -262,6 +278,24 @@
                   placeholder={$t('search_tags')}
                 />
               </div>
+
+              <!-- Operator Selection -->
+              {#if selectedTagIds.size > 1}
+                <div class="flex flex-col gap-2">
+                  <SettingDropdown
+                    title={$t('filter_operator')}
+                    subtitle={$t('filter_operator_description')}
+                    options={Object.values(operatorOptions)}
+                    selectedOption={operatorOptions[selectedOperator]}
+                    onToggle={(option) => {
+                      const newOperator = Object.keys(operatorOptions).find(key => operatorOptions[key as 'and' | 'or'] === option) as 'and' | 'or';
+                      if (newOperator) {
+                        selectedOperator = newOperator;
+                      }
+                    }}
+                  />
+                </div>
+              {/if}
 
               <!-- Selected Tags Display -->
               {#if selectedTagIds.size > 0}

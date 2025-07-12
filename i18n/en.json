@@ -452,6 +452,8 @@
   "filter_type_metadata": "Metadata Filter",
   "operator_and": "AND",
   "operator_or": "OR",
+  "filter_operator": "Filter Operator",
+  "filter_operator_description": "Choose how multiple tags should be combined",
   "tags": "tags",
   "people": "people",
   "cities": "cities",

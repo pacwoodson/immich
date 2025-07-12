@@ -170,12 +170,13 @@
     
     // Refresh timeline manager to reflect the updated dynamic album content
     if (viewMode === AlbumPageViewMode.VIEW) {
-      // Force a reload by adding a timestamp to make the options different
+      // Clear the timeline manager's cache and force a complete reload
+      timelineManager.months = [];
       await timelineManager.updateOptions({ 
         dynamicAlbumId: dynamicAlbum.id, 
         order: dynamicAlbumOrder,
-        // Add a timestamp to force reload when filters change
-        ...(dynamicAlbum.updatedAt && { _forceReload: new Date(dynamicAlbum.updatedAt).getTime() })
+        // Add a unique timestamp to ensure options are always different
+        _forceReload: Date.now()
       });
     }
   };

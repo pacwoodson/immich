@@ -7,6 +7,7 @@ export type TimelineManagerOptions = Omit<AssetApiGetTimeBucketsRequest, 'size'>
   timelineAlbumId?: string;
   dynamicAlbumId?: string;
   deferInit?: boolean;
+  _forceReload?: number;
 };
 
 export type AssetDescriptor = { id: string };
