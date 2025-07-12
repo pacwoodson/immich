@@ -362,7 +362,9 @@ export type AlbumResponseDto = {
     assets: AssetResponseDto[];
     createdAt: string;
     description: string;
+    dynamic: boolean;
     endDate?: string;
+    filters?: object;
     hasSharedLink: boolean;
     id: string;
     isActivityEnabled: boolean;
@@ -383,6 +385,8 @@ export type CreateAlbumDto = {
     albumUsers?: AlbumUserCreateDto[];
     assetIds?: string[];
     description?: string;
+    dynamic?: boolean;
+    filters?: object;
 };
 export type AlbumStatisticsResponseDto = {
     notShared: number;
@@ -393,6 +397,8 @@ export type UpdateAlbumDto = {
     albumName?: string;
     albumThumbnailAssetId?: string;
     description?: string;
+    dynamic?: boolean;
+    filters?: object;
     isActivityEnabled?: boolean;
     order?: AssetOrder;
 };
@@ -589,14 +595,14 @@ export type DuplicateResponseDto = {
     duplicateId: string;
 };
 export type DynamicAlbumFilterDto = {
-    "type": Type;
+    "type": object;
     value: {
         [key: string]: any;
     };
 };
 export type DynamicAlbumShareDto = {
     createdAt: string;
-    role: DynamicAlbumUserRole;
+    role: object;
     userId: string;
 };
 export type DynamicAlbumResponseDto = {
@@ -631,11 +637,11 @@ export type UpdateDynamicAlbumDto = {
     order?: Order;
 };
 export type ShareDynamicAlbumDto = {
-    role: DynamicAlbumUserRole;
+    role: object;
     userId: string;
 };
 export type UpdateDynamicAlbumShareDto = {
-    role: DynamicAlbumUserRole;
+    role: object;
 };
 export type PersonResponseDto = {
     birthDate: string | null;
@@ -1239,7 +1245,6 @@ export type SharedLinkResponseDto = {
     assets: AssetResponseDto[];
     createdAt: string;
     description: string | null;
-    dynamicAlbum?: DynamicAlbumResponseDto;
     expiresAt: string | null;
     id: string;
     key: string;
@@ -1255,7 +1260,6 @@ export type SharedLinkCreateDto = {
     allowUpload?: boolean;
     assetIds?: string[];
     description?: string;
-    dynamicAlbumId?: string;
     expiresAt?: string | null;
     password?: string;
     showMetadata?: boolean;
@@ -3354,16 +3358,14 @@ export function lockSession({ id }: {
         method: "POST"
     }));
 }
-export function getAllSharedLinks({ albumId, dynamicAlbumId }: {
+export function getAllSharedLinks({ albumId }: {
     albumId?: string;
-    dynamicAlbumId?: string;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: SharedLinkResponseDto[];
     }>(`/shared-links${QS.query(QS.explode({
-        albumId,
-        dynamicAlbumId
+        albumId
     }))}`, {
         ...opts
     }));
@@ -4101,12 +4103,6 @@ export enum Permission {
     AlbumUpdate = "album.update",
     AlbumDelete = "album.delete",
     AlbumStatistics = "album.statistics",
-    DynamicAlbumCreate = "dynamicAlbum.create",
-    DynamicAlbumRead = "dynamicAlbum.read",
-    DynamicAlbumUpdate = "dynamicAlbum.update",
-    DynamicAlbumDelete = "dynamicAlbum.delete",
-    DynamicAlbumShare = "dynamicAlbum.share",
-    DynamicAlbumDownload = "dynamicAlbum.download",
     AlbumAddAsset = "album.addAsset",
     AlbumRemoveAsset = "album.removeAsset",
     AlbumShare = "album.share",
@@ -4194,22 +4190,9 @@ export enum AssetMediaSize {
     Preview = "preview",
     Thumbnail = "thumbnail"
 }
-export enum Type {
-    Tag = "tag",
-    Person = "person",
-    Location = "location",
-    DateRange = "date_range",
-    AssetType = "asset_type",
-    Metadata = "metadata"
-}
 export enum Order {
     Asc = "asc",
     Desc = "desc"
-}
-export enum DynamicAlbumUserRole {
-    Viewer = "viewer",
-    Editor = "editor",
-    Admin = "admin"
 }
 export enum ManualJobName {
     PersonCleanup = "person-cleanup",
@@ -4259,8 +4242,7 @@ export enum SearchSuggestionType {
 }
 export enum SharedLinkType {
     Album = "ALBUM",
-    Individual = "INDIVIDUAL",
-    DynamicAlbum = "DYNAMIC_ALBUM"
+    Individual = "INDIVIDUAL"
 }
 export enum Error2 {
     Duplicate = "duplicate",

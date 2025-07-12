@@ -21,6 +21,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   sharedWithUser: Object.freeze({
     id: 'album-2',
@@ -44,6 +46,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   sharedWithMultiple: Object.freeze({
     id: 'album-3',
@@ -71,6 +75,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   sharedWithAdmin: Object.freeze({
     id: 'album-3',
@@ -94,6 +100,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   oneAsset: Object.freeze({
     id: 'album-4',
@@ -112,6 +120,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   twoAssets: Object.freeze({
     id: 'album-4a',
@@ -130,6 +140,8 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
   emptyWithValidThumbnail: Object.freeze({
     id: 'album-5',
@@ -148,5 +160,7 @@ export const albumStub = {
     isActivityEnabled: true,
     order: AssetOrder.DESC,
     updateId: '42',
+    dynamic: false,
+    filters: undefined,
   }),
 };

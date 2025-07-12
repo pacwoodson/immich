@@ -60,6 +60,12 @@ export class AlbumTable {
   @Column({ default: AssetOrder.DESC })
   order!: Generated<AssetOrder>;
 
+  @Column({ type: 'boolean', default: false })
+  dynamic!: Generated<boolean>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  filters!: object | null;
+
   @UpdateIdColumn({ indexName: 'IDX_albums_update_id' })
   updateId!: Generated<string>;
 }

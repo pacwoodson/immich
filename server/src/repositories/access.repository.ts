@@ -2,10 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { ChunkedSet, DummyValue, GenerateSql } from 'src/decorators';
-import { AlbumUserRole, AssetVisibility, DynamicAlbumUserRole } from 'src/enum';
+import { AlbumUserRole, AssetVisibility } from 'src/enum';
 import { DB } from 'src/schema';
 import { asUuid } from 'src/utils/database';
-import { buildDynamicAlbumAssetQuery } from 'src/utils/dynamic-album-filter';
 
 class ActivityAccess {
   constructor(private db: Kysely<DB>) {}
@@ -265,63 +264,6 @@ class AssetAccess {
         return allowedIds;
       });
   }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkDynamicAlbumAssetAccess(dynamicAlbumId: string, assetIds: Set<string>) {
-    if (assetIds.size === 0) {
-      return new Set<string>();
-    }
-
-    // Get the dynamic album and its filters
-    const dynamicAlbum = await this.db
-      .selectFrom('dynamic_albums')
-      .selectAll('dynamic_albums')
-      .where('dynamic_albums.id', '=', dynamicAlbumId)
-      .where('dynamic_albums.deletedAt', 'is', null)
-      .executeTakeFirst();
-
-    if (!dynamicAlbum) {
-      return new Set<string>();
-    }
-
-    const filters = await this.db
-      .selectFrom('dynamic_album_filters')
-      .selectAll()
-      .where('dynamicAlbumId', '=', dynamicAlbumId)
-      .execute();
-
-    // Build the dynamic album asset query
-    const dynamicFilters = filters.map((filter) => ({
-      type: filter.filterType,
-      value: filter.filterValue,
-    }));
-
-    const query = buildDynamicAlbumAssetQuery(this.db, dynamicFilters, {
-      userId: dynamicAlbum.ownerId,
-      skip: undefined,
-      take: undefined,
-      order: 'desc',
-    });
-
-    // Get the assets that match the dynamic album filters
-    const matchingAssets = await query
-      .select(['assets.id', 'assets.livePhotoVideoId'])
-      .where('assets.id', 'in', [...assetIds])
-      .execute();
-
-    const allowedIds = new Set<string>();
-    for (const asset of matchingAssets) {
-      if (asset.id && assetIds.has(asset.id)) {
-        allowedIds.add(asset.id);
-      }
-      if (asset.livePhotoVideoId && assetIds.has(asset.livePhotoVideoId)) {
-        allowedIds.add(asset.livePhotoVideoId);
-      }
-    }
-
-    return allowedIds;
-  }
 }
 
 class AuthDeviceAccess {
@@ -523,78 +465,12 @@ class TagAccess {
   }
 }
 
-class DynamicAlbumAccess {
-  constructor(private db: Kysely<DB>) {}
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkOwnerAccess(userId: string, dynamicAlbumIds: Set<string>) {
-    if (dynamicAlbumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('dynamic_albums')
-      .select('dynamic_albums.id')
-      .where('dynamic_albums.id', 'in', [...dynamicAlbumIds])
-      .where('dynamic_albums.ownerId', '=', userId)
-      .where('dynamic_albums.deletedAt', 'is', null)
-      .execute()
-      .then((albums) => new Set(albums.map((album) => album.id)));
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkSharedAlbumAccess(userId: string, dynamicAlbumIds: Set<string>, access: AlbumUserRole) {
-    if (dynamicAlbumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    const accessRole =
-      access === AlbumUserRole.EDITOR
-        ? [DynamicAlbumUserRole.EDITOR]
-        : [DynamicAlbumUserRole.EDITOR, DynamicAlbumUserRole.VIEWER];
-
-    return this.db
-      .selectFrom('dynamic_albums')
-      .select('dynamic_albums.id')
-      .leftJoin('dynamic_album_shares as albumShares', 'albumShares.dynamicAlbumId', 'dynamic_albums.id')
-      .leftJoin('users', (join) => join.onRef('users.id', '=', 'albumShares.userId').on('users.deletedAt', 'is', null))
-      .where('dynamic_albums.id', 'in', [...dynamicAlbumIds])
-      .where('dynamic_albums.deletedAt', 'is', null)
-      .where('users.id', '=', userId)
-      .where('albumShares.role', 'in', [...accessRole])
-      .execute()
-      .then((albums) => new Set(albums.map((album) => album.id)));
-  }
-
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID_SET] })
-  @ChunkedSet({ paramIndex: 1 })
-  async checkSharedLinkAccess(sharedLinkId: string, dynamicAlbumIds: Set<string>) {
-    if (dynamicAlbumIds.size === 0) {
-      return new Set<string>();
-    }
-
-    return this.db
-      .selectFrom('shared_links')
-      .select('shared_links.dynamicAlbumId')
-      .where('shared_links.id', '=', sharedLinkId)
-      .where('shared_links.dynamicAlbumId', 'in', [...dynamicAlbumIds])
-      .execute()
-      .then(
-        (sharedLinks) =>
-          new Set(sharedLinks.flatMap((sharedLink) => (sharedLink.dynamicAlbumId ? [sharedLink.dynamicAlbumId] : []))),
-      );
-  }
-}
-
 @Injectable()
 export class AccessRepository {
   activity: ActivityAccess;
   album: AlbumAccess;
   asset: AssetAccess;
   authDevice: AuthDeviceAccess;
-  dynamicAlbum: DynamicAlbumAccess;
   memory: MemoryAccess;
   notification: NotificationAccess;
   person: PersonAccess;
@@ -609,7 +485,6 @@ export class AccessRepository {
     this.album = new AlbumAccess(db);
     this.asset = new AssetAccess(db);
     this.authDevice = new AuthDeviceAccess(db);
-    this.dynamicAlbum = new DynamicAlbumAccess(db);
     this.memory = new MemoryAccess(db);
     this.notification = new NotificationAccess(db);
     this.person = new PersonAccess(db);

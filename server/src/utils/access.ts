@@ -68,10 +68,6 @@ const checkSharedLinkAccess = async (
     }
 
     case Permission.ASSET_VIEW: {
-      // Check if this is a dynamic album shared link
-      if (sharedLink.dynamicAlbumId) {
-        return await access.asset.checkDynamicAlbumAssetAccess(sharedLink.dynamicAlbumId, ids);
-      }
       return await access.asset.checkSharedLinkAccess(sharedLinkId, ids);
     }
 
@@ -100,17 +96,8 @@ const checkSharedLinkAccess = async (
       return sharedLink.allowUpload ? await access.album.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
     }
 
-    case Permission.DYNAMIC_ALBUM_READ: {
-      return await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids);
-    }
-
-    case Permission.DYNAMIC_ALBUM_DOWNLOAD: {
-      return sharedLink.allowDownload ? await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids) : new Set();
-    }
-
     case Permission.TIMELINE_READ: {
-      // Allow timeline access if the shared link is for the requested dynamic album(s)
-      return await access.dynamicAlbum.checkSharedLinkAccess(sharedLinkId, ids);
+      return await access.asset.checkSharedLinkAccess(sharedLinkId, ids);
     }
 
     default: {
@@ -205,38 +192,6 @@ const checkOtherAccess = async (access: AccessRepository, request: OtherAccessRe
     case Permission.ALBUM_DOWNLOAD: {
       const isOwner = await access.album.checkOwnerAccess(auth.user.id, ids);
       const isShared = await access.album.checkSharedAlbumAccess(
-        auth.user.id,
-        setDifference(ids, isOwner),
-        AlbumUserRole.VIEWER,
-      );
-      return setUnion(isOwner, isShared);
-    }
-
-    case Permission.DYNAMIC_ALBUM_READ: {
-      const isOwner = await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
-      const isShared = await access.dynamicAlbum.checkSharedAlbumAccess(
-        auth.user.id,
-        setDifference(ids, isOwner),
-        AlbumUserRole.VIEWER,
-      );
-      return setUnion(isOwner, isShared);
-    }
-
-    case Permission.DYNAMIC_ALBUM_UPDATE: {
-      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
-    }
-
-    case Permission.DYNAMIC_ALBUM_DELETE: {
-      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
-    }
-
-    case Permission.DYNAMIC_ALBUM_SHARE: {
-      return await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
-    }
-
-    case Permission.DYNAMIC_ALBUM_DOWNLOAD: {
-      const isOwner = await access.dynamicAlbum.checkOwnerAccess(auth.user.id, ids);
-      const isShared = await access.dynamicAlbum.checkSharedAlbumAccess(
         auth.user.id,
         setDifference(ids, isOwner),
         AlbumUserRole.VIEWER,

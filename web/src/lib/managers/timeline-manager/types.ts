@@ -5,7 +5,6 @@ export type AssetApiGetTimeBucketsRequest = Parameters<typeof import('@immich/sd
 
 export type TimelineManagerOptions = Omit<AssetApiGetTimeBucketsRequest, 'size'> & {
   timelineAlbumId?: string;
-  dynamicAlbumId?: string;
   deferInit?: boolean;
   _forceReload?: number;
 };

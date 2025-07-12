@@ -31,7 +31,6 @@ import {
   type AssetResponseDto,
   type AssetTypeEnum,
   type DownloadInfoDto,
-  type DynamicAlbumResponseDto,
   type StackResponseDto,
   type UserPreferencesResponseDto,
   type UserResponseDto,
@@ -123,12 +122,6 @@ export const removeTag = async ({
 export const downloadAlbum = async (album: AlbumResponseDto) => {
   await downloadArchive(`${album.albumName}.zip`, {
     albumId: album.id,
-  });
-};
-
-export const downloadDynamicAlbum = async (dynamicAlbum: DynamicAlbumResponseDto) => {
-  await downloadArchive(`${dynamicAlbum.name}.zip`, {
-    dynamicAlbumId: dynamicAlbum.id,
   });
 };
 

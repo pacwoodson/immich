@@ -2800,536 +2800,6 @@
         ]
       }
     },
-    "/dynamic-albums": {
-      "get": {
-        "operationId": "getAllDynamicAlbums",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      },
-      "post": {
-        "operationId": "createDynamicAlbum",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateDynamicAlbumDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/shared": {
-      "get": {
-        "operationId": "getSharedDynamicAlbums",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}": {
-      "delete": {
-        "operationId": "deleteDynamicAlbum",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      },
-      "get": {
-        "operationId": "getDynamicAlbumInfo",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      },
-      "patch": {
-        "operationId": "updateDynamicAlbumInfo",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDynamicAlbumDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}/assets": {
-      "get": {
-        "operationId": "getDynamicAlbumAssets",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "skip",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "take",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}/assets/count": {
-      "get": {
-        "operationId": "getDynamicAlbumAssetCount",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "number"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}/assets/time-bucket/{timeBucket}": {
-      "get": {
-        "operationId": "getDynamicAlbumAssetsByTimeBucket",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "timeBucket",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}/share": {
-      "post": {
-        "operationId": "shareDynamicAlbum",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ShareDynamicAlbumDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
-    "/dynamic-albums/{id}/share/{userId}": {
-      "delete": {
-        "operationId": "removeDynamicAlbumShare",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      },
-      "put": {
-        "operationId": "updateDynamicAlbumShare",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDynamicAlbumShareDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "tags": [
-          "Dynamic Albums"
-        ]
-      }
-    },
     "/faces": {
       "get": {
         "operationId": "getFaces",
@@ -6603,15 +6073,6 @@
               "format": "uuid",
               "type": "string"
             }
-          },
-          {
-            "name": "dynamicAlbumId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -8131,16 +7592,6 @@
             }
           },
           {
-            "name": "dynamicAlbumId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets belonging to a specific dynamic album",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
             "name": "isFavorite",
             "required": false,
             "in": "query",
@@ -8280,16 +7731,6 @@
             "required": false,
             "in": "query",
             "description": "Filter assets belonging to a specific album",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "dynamicAlbumId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets belonging to a specific dynamic album",
             "schema": {
               "format": "uuid",
               "type": "string"
@@ -9373,9 +8814,16 @@
           "description": {
             "type": "string"
           },
+          "dynamic": {
+            "type": "boolean"
+          },
           "endDate": {
             "format": "date-time",
             "type": "string"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
           },
           "hasSharedLink": {
             "type": "boolean"
@@ -9423,6 +8871,8 @@
           "assets",
           "createdAt",
           "description",
+          "dynamic",
+          "filters",
           "hasSharedLink",
           "id",
           "isActivityEnabled",
@@ -10628,41 +10078,17 @@
           },
           "description": {
             "type": "string"
+          },
+          "dynamic": {
+            "type": "boolean"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
           "albumName"
-        ],
-        "type": "object"
-      },
-      "CreateDynamicAlbumDto": {
-        "properties": {
-          "description": {
-            "type": "string"
-          },
-          "filters": {
-            "items": {
-              "$ref": "#/components/schemas/DynamicAlbumFilterDto"
-            },
-            "type": "array"
-          },
-          "isActivityEnabled": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "order": {
-            "enum": [
-              "asc",
-              "desc"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "filters",
-          "name"
         ],
         "type": "object"
       },
@@ -10784,10 +10210,6 @@
             },
             "type": "array"
           },
-          "dynamicAlbumId": {
-            "format": "uuid",
-            "type": "string"
-          },
           "userId": {
             "format": "uuid",
             "type": "string"
@@ -10876,140 +10298,6 @@
           "duplicateId"
         ],
         "type": "object"
-      },
-      "DynamicAlbumFilterDto": {
-        "properties": {
-          "type": {
-            "enum": [
-              "tag",
-              "person",
-              "location",
-              "date_range",
-              "asset_type",
-              "metadata"
-            ],
-            "type": "string"
-          },
-          "value": {
-            "additionalProperties": true,
-            "type": "object"
-          }
-        },
-        "required": [
-          "type",
-          "value"
-        ],
-        "type": "object"
-      },
-      "DynamicAlbumResponseDto": {
-        "properties": {
-          "albumThumbnailAssetId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "assetCount": {
-            "type": "number"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "endDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "filters": {
-            "items": {
-              "$ref": "#/components/schemas/DynamicAlbumFilterDto"
-            },
-            "type": "array"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "isActivityEnabled": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "order": {
-            "enum": [
-              "asc",
-              "desc"
-            ],
-            "type": "string"
-          },
-          "ownerId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "sharedUsers": {
-            "items": {
-              "$ref": "#/components/schemas/DynamicAlbumShareDto"
-            },
-            "type": "array"
-          },
-          "startDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetCount",
-          "createdAt",
-          "description",
-          "filters",
-          "id",
-          "isActivityEnabled",
-          "name",
-          "order",
-          "ownerId",
-          "sharedUsers",
-          "updatedAt"
-        ],
-        "type": "object"
-      },
-      "DynamicAlbumShareDto": {
-        "properties": {
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DynamicAlbumUserRole"
-              }
-            ]
-          },
-          "userId": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "createdAt",
-          "role",
-          "userId"
-        ],
-        "type": "object"
-      },
-      "DynamicAlbumUserRole": {
-        "enum": [
-          "viewer",
-          "editor",
-          "admin"
-        ],
-        "type": "string"
       },
       "EmailNotificationsResponse": {
         "properties": {
@@ -12402,12 +11690,6 @@
           "album.update",
           "album.delete",
           "album.statistics",
-          "dynamicAlbum.create",
-          "dynamicAlbum.read",
-          "dynamicAlbum.update",
-          "dynamicAlbum.delete",
-          "dynamicAlbum.share",
-          "dynamicAlbum.download",
           "album.addAsset",
           "album.removeAsset",
           "album.share",
@@ -13586,26 +12868,6 @@
         },
         "type": "object"
       },
-      "ShareDynamicAlbumDto": {
-        "properties": {
-          "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DynamicAlbumUserRole"
-              }
-            ]
-          },
-          "userId": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "userId"
-        ],
-        "type": "object"
-      },
       "SharedLinkCreateDto": {
         "properties": {
           "albumId": {
@@ -13627,10 +12889,6 @@
             "type": "array"
           },
           "description": {
-            "type": "string"
-          },
-          "dynamicAlbumId": {
-            "format": "uuid",
             "type": "string"
           },
           "expiresAt": {
@@ -13713,9 +12971,6 @@
             "nullable": true,
             "type": "string"
           },
-          "dynamicAlbum": {
-            "$ref": "#/components/schemas/DynamicAlbumResponseDto"
-          },
           "expiresAt": {
             "format": "date-time",
             "nullable": true,
@@ -13768,8 +13023,7 @@
       "SharedLinkType": {
         "enum": [
           "ALBUM",
-          "INDIVIDUAL",
-          "DYNAMIC_ALBUM"
+          "INDIVIDUAL"
         ],
         "type": "string"
       },
@@ -16100,6 +15354,13 @@
           "description": {
             "type": "string"
           },
+          "dynamic": {
+            "type": "boolean"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
+          },
           "isActivityEnabled": {
             "type": "boolean"
           },
@@ -16163,52 +15424,6 @@
             ]
           }
         },
-        "type": "object"
-      },
-      "UpdateDynamicAlbumDto": {
-        "properties": {
-          "albumThumbnailAssetId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "filters": {
-            "items": {
-              "$ref": "#/components/schemas/DynamicAlbumFilterDto"
-            },
-            "type": "array"
-          },
-          "isActivityEnabled": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "string"
-          },
-          "order": {
-            "enum": [
-              "asc",
-              "desc"
-            ],
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "UpdateDynamicAlbumShareDto": {
-        "properties": {
-          "role": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DynamicAlbumUserRole"
-              }
-            ]
-          }
-        },
-        "required": [
-          "role"
-        ],
         "type": "object"
       },
       "UpdateLibraryDto": {

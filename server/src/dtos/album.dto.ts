@@ -46,6 +46,12 @@ export class CreateAlbumDto {
   @Optional()
   description?: string;
 
+  @ValidateBoolean({ optional: true })
+  dynamic?: boolean;
+
+  @Optional()
+  filters?: object | null;
+
   @Optional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -64,6 +70,12 @@ export class UpdateAlbumDto {
   @Optional()
   @IsString()
   description?: string;
+
+  @ValidateBoolean({ optional: true })
+  dynamic?: boolean;
+
+  @Optional()
+  filters?: object | null;
 
   @ValidateUUID({ optional: true })
   albumThumbnailAssetId?: string;
@@ -123,6 +135,8 @@ export class AlbumResponseDto {
   ownerId!: string;
   albumName!: string;
   description!: string;
+  dynamic!: boolean;
+  filters!: object | null;
   createdAt!: Date;
   updatedAt!: Date;
   albumThumbnailAssetId!: string | null;
@@ -148,6 +162,8 @@ export type MapAlbumDto = {
   sharedLinks?: AuthSharedLink[];
   albumName: string;
   description: string;
+  dynamic: boolean;
+  filters: object | null;
   albumThumbnailAssetId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -188,6 +204,8 @@ export const mapAlbum = (entity: MapAlbumDto, withAssets: boolean, auth?: AuthDt
   return {
     albumName: entity.albumName,
     description: entity.description,
+    dynamic: entity.dynamic,
+    filters: entity.filters,
     albumThumbnailAssetId: entity.albumThumbnailAssetId,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,

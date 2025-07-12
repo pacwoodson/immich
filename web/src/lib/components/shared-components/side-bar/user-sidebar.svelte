@@ -109,8 +109,6 @@
     {/snippet}
   </SideBarLink>
 
-  <SideBarLink title={$t('dynamic_albums')} routeId="/(user)/dynamic-albums" icon={mdiFolderOutline} />
-
   {#if $preferences.tags.enabled && $preferences.tags.sidebarWeb}
     <SideBarLink title={$t('tags')} routeId="/(user)/tags" icon={mdiTagMultipleOutline} flippedLogo />
   {/if}

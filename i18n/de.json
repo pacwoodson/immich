@@ -1955,17 +1955,9 @@
   "you_dont_have_any_shared_links": "Du hast keine geteilten Links",
   "your_wifi_name": "Dein WLAN-Name",
   "zoom_image": "Bild vergrößern",
-  "dynamic_albums": "Dynamische Alben",
-  "create_dynamic_album": "Dynamisches Album erstellen",
-  "edit_dynamic_album": "Dynamisches Album bearbeiten",
-  "dynamic_album_name_placeholder": "Namen des dynamischen Albums eingeben",
-  "dynamic_album_description_placeholder": "Beschreibung eingeben (optional)",
   "select_tags": "Tags auswählen",
   "selected_tags": "Ausgewählte Tags",
   "search_tags": "Tags suchen...",
   "remove_tag": "Tag entfernen",
-  "errors.failed_to_load_tags": "Tags konnten nicht geladen werden",
-  "errors.failed_to_create_dynamic_album": "Dynamisches Album konnte nicht erstellt werden",
-  "errors.failed_to_update_dynamic_album": "Dynamisches Album konnte nicht aktualisiert werden",
-  "unnamed_dynamic_album": "Unbenanntes dynamisches Album"
+  "errors.failed_to_load_tags": "Tags konnten nicht geladen werden"
 }

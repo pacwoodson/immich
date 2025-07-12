@@ -1,4 +1,4 @@
-import { asset_face_source_type, asset_visibility_enum, assets_status_enum, dynamic_album_filter_type_enum } from 'src/schema/enums';
+import { asset_face_source_type, asset_visibility_enum, assets_status_enum } from 'src/schema/enums';
 import {
   album_user_after_insert,
   album_users_delete_audit,
@@ -22,11 +22,6 @@ import { AlbumAuditTable } from 'src/schema/tables/album-audit.table';
 import { AlbumUserAuditTable } from 'src/schema/tables/album-user-audit.table';
 import { AlbumUserTable } from 'src/schema/tables/album-user.table';
 import { AlbumTable } from 'src/schema/tables/album.table';
-import { DynamicAlbumAuditTable } from 'src/schema/tables/dynamic-album-audit.table';
-import { DynamicAlbumFilterTable } from 'src/schema/tables/dynamic-album-filter.table';
-import { DynamicAlbumShareAuditTable } from 'src/schema/tables/dynamic-album-share-audit.table';
-import { DynamicAlbumShareTable } from 'src/schema/tables/dynamic-album-share.table';
-import { DynamicAlbumTable } from 'src/schema/tables/dynamic-album.table';
 import { ApiKeyTable } from 'src/schema/tables/api-key.table';
 import { AssetAuditTable } from 'src/schema/tables/asset-audit.table';
 import { AssetFaceTable } from 'src/schema/tables/asset-face.table';
@@ -76,11 +71,6 @@ export class ImmichDatabase {
     AlbumUserAuditTable,
     AlbumUserTable,
     AlbumTable,
-    DynamicAlbumAuditTable,
-    DynamicAlbumFilterTable,
-    DynamicAlbumShareAuditTable,
-    DynamicAlbumShareTable,
-    DynamicAlbumTable,
     ApiKeyTable,
     AssetAuditTable,
     AssetFaceTable,
@@ -136,7 +126,7 @@ export class ImmichDatabase {
     stacks_delete_audit,
   ];
 
-  enum = [assets_status_enum, asset_face_source_type, asset_visibility_enum, dynamic_album_filter_type_enum];
+  enum = [assets_status_enum, asset_face_source_type, asset_visibility_enum];
 }
 
 export interface Migrations {
@@ -153,11 +143,6 @@ export interface DB {
   album_assets_audit: AlbumAssetAuditTable;
   albums_shared_users_users: AlbumUserTable;
   album_users_audit: AlbumUserAuditTable;
-  dynamic_albums: DynamicAlbumTable;
-  dynamic_albums_audit: DynamicAlbumAuditTable;
-  dynamic_album_filters: DynamicAlbumFilterTable;
-  dynamic_album_shares: DynamicAlbumShareTable;
-  dynamic_album_shares_audit: DynamicAlbumShareAuditTable;
   api_keys: ApiKeyTable;
   asset_faces: AssetFaceTable;
   asset_files: AssetFileTable;

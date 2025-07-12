@@ -18,17 +18,6 @@
 <div class="relative shrink-0 size-24">
   {#if link?.album}
     <AlbumCover album={link.album} class={className} {preload} />
-  {:else if link?.dynamicAlbum}
-    {#if link.dynamicAlbum.albumThumbnailAssetId}
-      <AssetCover
-        alt={link.dynamicAlbum.name || $t('unnamed_album')}
-        class={className}
-        {preload}
-        src={getAssetThumbnailUrl(link.dynamicAlbum.albumThumbnailAssetId)}
-      />
-    {:else}
-      <NoCover alt={link.dynamicAlbum.name || $t('unnamed_album')} class={className} {preload} />
-    {/if}
   {:else if link.assets[0]}
     <AssetCover
       alt={$t('individual_share')}

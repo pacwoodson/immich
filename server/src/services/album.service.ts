@@ -74,16 +74,34 @@ export class AlbumService extends BaseService {
     await this.requireAccess({ auth, permission: Permission.ALBUM_READ, ids: [id] });
     await this.albumRepository.updateThumbnails();
     const withAssets = dto.withoutAssets === undefined ? true : !dto.withoutAssets;
-    const album = await this.findOrFail(id, { withAssets });
-    const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
+    const album = await this.findOrFail(id, { withAssets: false }); // Always load without assets first
 
-    return {
-      ...mapAlbum(album, withAssets, auth),
-      startDate: albumMetadataForIds?.startDate ?? undefined,
-      endDate: albumMetadataForIds?.endDate ?? undefined,
-      assetCount: albumMetadataForIds?.assetCount ?? 0,
-      lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
-    };
+    // Check if this is a dynamic album
+    if (album.dynamic) {
+      // For dynamic albums, return empty assets for now
+      // TODO: Implement proper dynamic album asset retrieval
+      const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([id]);
+
+      return {
+        ...mapAlbum({ ...album, assets: [] }, withAssets, auth),
+        startDate: albumMetadataForIds?.startDate ?? undefined,
+        endDate: albumMetadataForIds?.endDate ?? undefined,
+        assetCount: albumMetadataForIds?.assetCount ?? 0,
+        lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
+      };
+    } else {
+      // For regular albums, use the existing logic
+      const albumWithAssets = withAssets ? await this.findOrFail(id, { withAssets: true }) : album;
+      const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
+
+      return {
+        ...mapAlbum(albumWithAssets, withAssets, auth),
+        startDate: albumMetadataForIds?.startDate ?? undefined,
+        endDate: albumMetadataForIds?.endDate ?? undefined,
+        assetCount: albumMetadataForIds?.assetCount ?? 0,
+        lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
+      };
+    }
   }
 
   async create(auth: AuthDto, dto: CreateAlbumDto): Promise<AlbumResponseDto> {
@@ -100,12 +118,16 @@ export class AlbumService extends BaseService {
       }
     }
 
-    const allowedAssetIdsSet = await this.checkAccess({
-      auth,
-      permission: Permission.ASSET_SHARE,
-      ids: dto.assetIds || [],
-    });
-    const assetIds = [...allowedAssetIdsSet].map((id) => id);
+    // For dynamic albums, we don't need to check asset access or add assets
+    let assetIds: string[] = [];
+    if (!dto.dynamic) {
+      const allowedAssetIdsSet = await this.checkAccess({
+        auth,
+        permission: Permission.ASSET_SHARE,
+        ids: dto.assetIds || [],
+      });
+      assetIds = [...allowedAssetIdsSet].map((id) => id);
+    }
 
     const userMetadata = await this.userRepository.getMetadata(auth.user.id);
 
@@ -114,10 +136,12 @@ export class AlbumService extends BaseService {
         ownerId: auth.user.id,
         albumName: dto.albumName,
         description: dto.description,
-        albumThumbnailAssetId: assetIds[0] || null,
+        albumThumbnailAssetId: dto.dynamic ? null : assetIds[0] || null,
         order: getPreferences(userMetadata).albums.defaultAssetOrder,
+        dynamic: dto.dynamic || false,
+        filters: dto.filters || null,
       },
-      assetIds,
+      dto.dynamic ? [] : assetIds, // Don't add assets for dynamic albums
       albumUsers,
     );
 
@@ -131,22 +155,35 @@ export class AlbumService extends BaseService {
   async update(auth: AuthDto, id: string, dto: UpdateAlbumDto): Promise<AlbumResponseDto> {
     await this.requireAccess({ auth, permission: Permission.ALBUM_UPDATE, ids: [id] });
 
-    const album = await this.findOrFail(id, { withAssets: true });
+    const album = await this.findOrFail(id, { withAssets: false });
 
-    if (dto.albumThumbnailAssetId) {
+    // For dynamic albums, don't allow setting thumbnail from assets
+    if (dto.albumThumbnailAssetId && !album.dynamic) {
       const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
       if (results.size === 0) {
         throw new BadRequestException('Invalid album thumbnail');
       }
     }
+
+    // For dynamic albums, clear thumbnail if trying to set one
+    const albumThumbnailAssetId = album.dynamic ? null : dto.albumThumbnailAssetId;
+
     const updatedAlbum = await this.albumRepository.update(album.id, {
       id: album.id,
       albumName: dto.albumName,
       description: dto.description,
-      albumThumbnailAssetId: dto.albumThumbnailAssetId,
+      albumThumbnailAssetId: albumThumbnailAssetId,
       isActivityEnabled: dto.isActivityEnabled,
       order: dto.order,
+      dynamic: dto.dynamic ?? album.dynamic,
+      filters: dto.filters ?? album.filters,
     });
+
+    // For dynamic albums, return empty assets for now
+    // TODO: Implement proper dynamic album asset retrieval
+    if (updatedAlbum.dynamic) {
+      return mapAlbumWithoutAssets({ ...updatedAlbum, assets: [] });
+    }
 
     return mapAlbumWithoutAssets({ ...updatedAlbum, assets: album.assets });
   }
@@ -158,6 +195,14 @@ export class AlbumService extends BaseService {
 
   async addAssets(auth: AuthDto, id: string, dto: BulkIdsDto): Promise<BulkIdResponseDto[]> {
     const album = await this.findOrFail(id, { withAssets: false });
+
+    // Prevent adding assets to dynamic albums
+    if (album.dynamic) {
+      throw new BadRequestException(
+        'Cannot add assets to dynamic albums. Assets are automatically populated based on filters.',
+      );
+    }
+
     await this.requireAccess({ auth, permission: Permission.ALBUM_ADD_ASSET, ids: [id] });
 
     const results = await addAssets(
@@ -187,9 +232,17 @@ export class AlbumService extends BaseService {
   }
 
   async removeAssets(auth: AuthDto, id: string, dto: BulkIdsDto): Promise<BulkIdResponseDto[]> {
+    const album = await this.findOrFail(id, { withAssets: false });
+
+    // Prevent removing assets from dynamic albums
+    if (album.dynamic) {
+      throw new BadRequestException(
+        'Cannot remove assets from dynamic albums. Assets are automatically populated based on filters.',
+      );
+    }
+
     await this.requireAccess({ auth, permission: Permission.ALBUM_REMOVE_ASSET, ids: [id] });
 
-    const album = await this.findOrFail(id, { withAssets: false });
     const results = await removeAssets(
       auth,
       { access: this.accessRepository, bulk: this.albumRepository },

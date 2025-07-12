@@ -12,29 +12,29 @@ import { updateIntersectionMonthGroup } from '$lib/managers/timeline-manager/int
 import { updateGeometry } from '$lib/managers/timeline-manager/internal/layout-support.svelte';
 import { loadFromTimeBuckets } from '$lib/managers/timeline-manager/internal/load-support.svelte';
 import {
-    addAssetsToMonthGroups,
-    runAssetOperation,
+  addAssetsToMonthGroups,
+  runAssetOperation,
 } from '$lib/managers/timeline-manager/internal/operations-support.svelte';
 import {
-    findMonthGroupForAsset as findMonthGroupForAssetUtil,
-    findMonthGroupForDate,
-    getAssetWithOffset,
-    getMonthGroupByDate,
-    retrieveRange as retrieveRangeUtil,
+  findMonthGroupForAsset as findMonthGroupForAssetUtil,
+  findMonthGroupForDate,
+  getAssetWithOffset,
+  getMonthGroupByDate,
+  retrieveRange as retrieveRangeUtil,
 } from '$lib/managers/timeline-manager/internal/search-support.svelte';
 import { WebsocketSupport } from '$lib/managers/timeline-manager/internal/websocket-support.svelte';
 import { DayGroup } from './day-group.svelte';
 import { isMismatched, updateObject } from './internal/utils.svelte';
 import { MonthGroup } from './month-group.svelte';
 import type {
-    AssetDescriptor,
-    AssetOperation,
-    Direction,
-    ScrubberMonth,
-    TimelineAsset,
-    TimelineManagerLayoutOptions,
-    TimelineManagerOptions,
-    Viewport,
+  AssetDescriptor,
+  AssetOperation,
+  Direction,
+  ScrubberMonth,
+  TimelineAsset,
+  TimelineManagerLayoutOptions,
+  TimelineManagerOptions,
+  Viewport,
 } from './types';
 
 export class TimelineManager {
@@ -59,7 +59,7 @@ export class TimelineManager {
   initTask = new CancellableTask(
     () => {
       this.isInitialized = true;
-      if (this.#options.albumId || this.#options.personId || this.#options.dynamicAlbumId) {
+      if (this.#options.albumId || this.#options.personId) {
         return;
       }
       this.connect();

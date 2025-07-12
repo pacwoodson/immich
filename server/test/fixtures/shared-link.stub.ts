@@ -100,6 +100,8 @@ const albumResponse: AlbumResponseDto = {
   assetCount: 1,
   isActivityEnabled: true,
   order: AssetOrder.DESC,
+  dynamic: false,
+  filters: undefined,
 };
 
 export const sharedLinkStub = {

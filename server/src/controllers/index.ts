@@ -31,7 +31,6 @@ import { TrashController } from 'src/controllers/trash.controller';
 import { UserAdminController } from 'src/controllers/user-admin.controller';
 import { UserController } from 'src/controllers/user.controller';
 import { ViewController } from 'src/controllers/view.controller';
-import { DynamicAlbumController } from 'src/controllers/dynamic-album.controller';
 
 export const controllers = [
   APIKeyController,
@@ -43,7 +42,6 @@ export const controllers = [
   AuthController,
   DownloadController,
   DuplicateController,
-  DynamicAlbumController,
   FaceController,
   JobController,
   LibraryController,

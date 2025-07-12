@@ -13,7 +13,6 @@ import {
   UserStatus,
 } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
-import { DynamicAlbumTable } from 'src/schema/tables/dynamic-album.table';
 import { ExifTable } from 'src/schema/tables/exif.table';
 import { UserMetadataItem } from 'src/types';
 
@@ -176,15 +175,12 @@ export type AuthSharedLink = {
   allowUpload: boolean;
   allowDownload: boolean;
   password: string | null;
-  dynamicAlbumId: string | null;
 };
 
 export type SharedLink = {
   id: string;
   album?: Album | null;
   albumId: string | null;
-  dynamicAlbum?: DynamicAlbum | null;
-  dynamicAlbumId: string | null;
   allowDownload: boolean;
   allowUpload: boolean;
   assets: MapAsset[];
@@ -276,12 +272,6 @@ export type AssetFace = {
   person?: Person | null;
 };
 
-export type DynamicAlbum = Selectable<DynamicAlbumTable> & {
-  owner: User;
-  filters?: any[];
-  sharedUsers?: any[];
-};
-
 const userColumns = ['id', 'name', 'email', 'avatarColor', 'profileImagePath', 'profileChangedAt'] as const;
 const userWithPrefixColumns = [
   'users.id',
@@ -330,7 +320,6 @@ export const columns = {
     'shared_links.allowUpload',
     'shared_links.allowDownload',
     'shared_links.password',
-    'shared_links.dynamicAlbumId',
   ],
   user: userColumns,
   userWithPrefix: userWithPrefixColumns,
