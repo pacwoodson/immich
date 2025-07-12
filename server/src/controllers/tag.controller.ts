@@ -56,6 +56,13 @@ export class TagController {
     return this.service.update(auth, id, dto);
   }
 
+  @Delete('empty')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.TAG_DELETE })
+  deleteEmptyTags(@Auth() auth: AuthDto): Promise<void> {
+    return this.service.deleteEmptyTags(auth);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Authenticated({ permission: Permission.TAG_DELETE })
@@ -81,12 +88,5 @@ export class TagController {
     @Param() { id }: UUIDParamDto,
   ): Promise<BulkIdResponseDto[]> {
     return this.service.removeAssets(auth, id, dto);
-  }
-
-  @Delete('empty')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Authenticated({ permission: Permission.TAG_DELETE })
-  deleteEmptyTags(@Auth() auth: AuthDto): Promise<void> {
-    return this.service.deleteEmptyTags(auth);
   }
 }
