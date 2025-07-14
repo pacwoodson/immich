@@ -31,6 +31,7 @@ services:
       - ../open-api:/usr/src/open-api
       - ${UPLOAD_LOCATION}/photos:/usr/src/app/upload
       - ${UPLOAD_LOCATION}/photos/upload:/usr/src/app/upload/upload
+      - ${UPLOAD_LOCATION}/photos/external:/mnt/media/library
       - /usr/src/app/node_modules
       - /etc/localtime:/etc/localtime:ro
     env_file:
