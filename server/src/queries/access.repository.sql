@@ -151,30 +151,6 @@ where
   "sessions"."userId" = $1
   and "sessions"."id" in ($2)
 
--- AccessRepository.dynamicAlbum.checkOwnerAccess
-select
-  "dynamic_albums"."id"
-from
-  "dynamic_albums"
-where
-  "dynamic_albums"."id" in ($1)
-  and "dynamic_albums"."ownerId" = $2
-  and "dynamic_albums"."deletedAt" is null
-
--- AccessRepository.dynamicAlbum.checkSharedAlbumAccess
-select
-  "dynamic_albums"."id"
-from
-  "dynamic_albums"
-  left join "dynamic_album_shares" as "albumShares" on "albumShares"."dynamicAlbumId" = "dynamic_albums"."id"
-  left join "users" on "users"."id" = "albumShares"."userId"
-  and "users"."deletedAt" is null
-where
-  "dynamic_albums"."id" in ($1)
-  and "dynamic_albums"."deletedAt" is null
-  and "users"."id" = $2
-  and "albumShares"."role" in ($3, $4)
-
 -- AccessRepository.dynamicAlbum.checkSharedLinkAccess
 select
   "shared_links"."dynamicAlbumId"

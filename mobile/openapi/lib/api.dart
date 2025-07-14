@@ -38,7 +38,6 @@ part 'api/authentication_api.dart';
 part 'api/deprecated_api.dart';
 part 'api/download_api.dart';
 part 'api/duplicates_api.dart';
-part 'api/dynamic_albums_api.dart';
 part 'api/faces_api.dart';
 part 'api/jobs_api.dart';
 part 'api/libraries_api.dart';
