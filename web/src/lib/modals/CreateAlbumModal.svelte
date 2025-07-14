@@ -25,13 +25,13 @@
   let albumDescription = $state('');
   let isDynamic = $state(false);
   let selectedTagIds = new SvelteSet<string>();
-  let selectedOperator: 'and' | 'or' = $state('and');
+  let selectedOperator: 'and' | 'or' = $state('or');
   let isSubmitting = $state(false);
 
   // Operator options for the dropdown
   const operatorOptions: Record<'and' | 'or', RenderedOption> = {
-    and: { icon: mdiMultiplication, title: $t('operator_and') },
     or: { icon: mdiPlus, title: $t('operator_or') },
+    and: { icon: mdiMultiplication, title: $t('operator_and') },
   };
 
   // Form validation
