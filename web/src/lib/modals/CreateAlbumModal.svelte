@@ -17,14 +17,24 @@
     onClose: (album?: AlbumResponseDto) => void;
     shared?: boolean;
     assetIds?: string[];
+    initialIsDynamic?: boolean;
+    initialSelectedTagIds?: string[];
+    initialAlbumName?: string;
   }
 
-  let { onClose, shared = false, assetIds = [] }: Props = $props();
+  let {
+    onClose,
+    shared = false,
+    assetIds = [],
+    initialIsDynamic = false,
+    initialSelectedTagIds = [],
+    initialAlbumName = '',
+  }: Props = $props();
 
-  let albumName = $state('');
+  let albumName = $state(initialAlbumName);
   let albumDescription = $state('');
-  let isDynamic = $state(false);
-  let selectedTagIds = new SvelteSet<string>();
+  let isDynamic = $state(initialIsDynamic);
+  let selectedTagIds = $state(new SvelteSet<string>(initialSelectedTagIds));
   let selectedOperator: 'and' | 'or' = $state('or');
   let isSubmitting = $state(false);
 
@@ -157,7 +167,7 @@
           bind:value={albumDescription}
           placeholder={$t('enter_album_description')}
           rows="3"
-        />
+        ></textarea>
       </div>
 
       <!-- Dynamic Album Filters -->

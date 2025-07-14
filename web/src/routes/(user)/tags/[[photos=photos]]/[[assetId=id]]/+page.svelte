@@ -16,7 +16,7 @@
   import { joinPaths, TreeNode } from '$lib/utils/tree-utils';
   import { deleteTag, getAllTags, type TagResponseDto } from '@immich/sdk';
   import { Button, HStack, Text } from '@immich/ui';
-  import { mdiPencil, mdiPlus, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
+  import { mdiFilter, mdiPencil, mdiPlus, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
   import { onDestroy } from 'svelte';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
@@ -82,6 +82,24 @@
     // navigate to parent
     await navigateToView(tag.parent ? tag.parent.path : '');
   };
+
+  const handleCreateDynamicAlbum = async () => {
+    if (!tag) {
+      return;
+    }
+
+    const { default: CreateAlbumModal } = await import('$lib/modals/CreateAlbumModal.svelte');
+    const album = await modalManager.show(CreateAlbumModal, {
+      initialIsDynamic: true,
+      initialSelectedTagIds: [tag.id!],
+      initialAlbumName: `${tag.value}`,
+    });
+
+    if (album) {
+      // Navigate to the created album
+      await goto(`${AppRoute.ALBUMS}/${album.id}`);
+    }
+  };
 </script>
 
 <UserPageLayout title={data.meta.title}>
@@ -109,6 +127,15 @@
         </Button>
         <Button leadingIcon={mdiTrashCanOutline} onclick={handleDelete} size="small" variant="ghost" color="secondary">
           <Text class="hidden md:block">{$t('delete_tag')}</Text>
+        </Button>
+        <Button
+          leadingIcon={mdiFilter}
+          onclick={handleCreateDynamicAlbum}
+          size="small"
+          variant="ghost"
+          color="secondary"
+        >
+          <Text class="hidden md:block">{$t('create_dynamic_album_from_tag')}</Text>
         </Button>
       {/if}
     </HStack>

@@ -731,6 +731,7 @@
   "create_album_page_untitled": "Untitled",
   "create_dynamic_album": "Create dynamic album",
   "create_dynamic_album_description": "Create a smart album that automatically includes photos based on filters",
+  "create_dynamic_album_from_tag": "Create dynamic album from tag",
   "create_library": "Create Library",
   "create_link": "Create link",
   "create_link_to_share": "Create link to share",
