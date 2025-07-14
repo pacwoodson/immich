@@ -219,6 +219,33 @@ class AssetAccess {
       return new Set<string>();
     }
 
+    // First, check if this is a dynamic album shared link
+    const sharedLinkInfo = await this.db
+      .selectFrom('shared_links')
+      .leftJoin('albums', (join) =>
+        join.onRef('albums.id', '=', 'shared_links.albumId').on('albums.deletedAt', 'is', null),
+      )
+      .select(['shared_links.userId', 'albums.dynamic', 'albums.ownerId'])
+      .where('shared_links.id', '=', sharedLinkId)
+      .executeTakeFirst();
+
+    if (!sharedLinkInfo) {
+      return new Set<string>();
+    }
+
+    // If this is a dynamic album shared link, check if the assets belong to the album owner
+    if (sharedLinkInfo.dynamic && sharedLinkInfo.ownerId) {
+      return this.db
+        .selectFrom('assets')
+        .select('assets.id')
+        .where('assets.id', 'in', [...assetIds])
+        .where('assets.ownerId', '=', sharedLinkInfo.ownerId)
+        .where('assets.deletedAt', 'is', null)
+        .execute()
+        .then((assets) => new Set(assets.map((asset) => asset.id)));
+    }
+
+    // For regular albums, use the existing logic
     return this.db
       .selectFrom('shared_links')
       .leftJoin('albums', (join) =>

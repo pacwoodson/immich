@@ -34,8 +34,8 @@
 
   // Computed properties for dynamic albums
   let isDynamic = $derived(album?.dynamic === true);
-  let hasFilters = $derived(isDynamic && album?.filters && Object.keys(album.filters).length > 0);
-  let filterCount = $derived(hasFilters ? Object.keys(album.filters).length : 0);
+  let hasFilters = $derived(isDynamic && album?.filters && Object.keys(album.filters || {}).length > 0);
+  let filterCount = $derived(hasFilters ? Object.keys(album.filters || {}).length : 0);
 </script>
 
 <div
@@ -65,7 +65,9 @@
   <!-- Dynamic album indicator -->
   {#if isDynamic}
     <div class="absolute start-3 top-3 z-10" data-testid="dynamic-indicator">
-      <div class="flex items-center gap-1 rounded-full bg-immich-primary/90 px-2 py-1 text-xs text-white backdrop-blur-sm">
+      <div
+        class="flex items-center gap-1 rounded-full bg-immich-primary/90 px-2 py-1 text-xs text-white backdrop-blur-sm"
+      >
         <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
@@ -143,7 +145,7 @@
   .dynamic-album {
     position: relative;
   }
-  
+
   .dynamic-album::before {
     content: '';
     position: absolute;
@@ -157,7 +159,7 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   .dynamic-album:hover::before {
     opacity: 1;
   }

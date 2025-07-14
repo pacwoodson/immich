@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { SharedLink } from 'src/database';
 import { AssetIdErrorReason, AssetIdsResponseDto } from 'src/dtos/asset-ids.response.dto';
+import { mapAsset } from 'src/dtos/asset-response.dto';
 import { AssetIdsDto } from 'src/dtos/asset.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
@@ -102,7 +103,9 @@ export class SharedLinkService extends BaseService {
 
   // TODO: replace `userId` with permissions and access control checks
   private async findOrFail(userId: string, id: string) {
-    const sharedLink = await this.sharedLinkRepository.get(userId, id);
+    // For shared links, we need to get the shared link by ID without user restriction
+    // since the user accessing it might not be the owner
+    const sharedLink = await this.sharedLinkRepository.getById(id);
     if (!sharedLink) {
       throw new BadRequestException('Shared link not found');
     }
@@ -116,7 +119,7 @@ export class SharedLinkService extends BaseService {
       throw new BadRequestException('Invalid shared link type');
     }
 
-    const existingAssetIds = new Set(sharedLink.assets.map((asset) => asset.id));
+    const existingAssetIds = new Set(sharedLink.assets.map((asset: any) => asset.id));
     const notPresentAssetIds = dto.assetIds.filter((assetId) => !existingAssetIds.has(assetId));
     const allowedAssetIds = await this.checkAccess({
       auth,
@@ -158,14 +161,14 @@ export class SharedLinkService extends BaseService {
 
     const results: AssetIdsResponseDto[] = [];
     for (const assetId of dto.assetIds) {
-      const hasAsset = sharedLink.assets.find((asset) => asset.id === assetId);
+      const hasAsset = sharedLink.assets.find((asset: any) => asset.id === assetId);
       if (!hasAsset) {
         results.push({ assetId, success: false, error: AssetIdErrorReason.NOT_FOUND });
         continue;
       }
 
       results.push({ assetId, success: true });
-      sharedLink.assets = sharedLink.assets.filter((asset) => asset.id !== assetId);
+      sharedLink.assets = sharedLink.assets.filter((asset: any) => asset.id !== assetId);
     }
 
     await this.sharedLinkRepository.update(sharedLink);
@@ -196,8 +199,31 @@ export class SharedLinkService extends BaseService {
   private async mapToSharedLink(sharedLink: SharedLink, { withExif }: { withExif: boolean }) {
     const baseResponse = withExif ? mapSharedLink(sharedLink) : mapSharedLinkWithoutMetadata(sharedLink);
 
-    // The mapSharedLink function already handles dynamic albums correctly
-    // No additional processing needed here
+    // Handle dynamic albums by fetching assets based on filters
+    if (sharedLink.album?.dynamic && sharedLink.album?.filters) {
+      try {
+        // Convert album filters to search options
+        // Use the album owner's ID for the search, not the shared link user's ID
+        const searchOptions = this.convertFiltersToSearchOptions(sharedLink.album.filters, sharedLink.album.ownerId);
+
+        // Get assets based on filters
+        const searchResult = await this.searchRepository.searchMetadata(
+          { page: 1, size: 50000 }, // Large page size to get all matching assets
+          { ...searchOptions, orderDirection: sharedLink.album.order === 'asc' ? 'asc' : 'desc' },
+        );
+
+        // Update the response with the dynamic album assets
+        baseResponse.assets = searchResult.items.map((asset) => mapAsset(asset, { stripMetadata: !withExif }));
+
+        // Also update the album's asset count for metadata
+        if (baseResponse.album) {
+          baseResponse.album.assetCount = searchResult.items.length;
+        }
+      } catch (error) {
+        this.logger.error('Failed to fetch dynamic album assets for shared link', error);
+        // If search fails, keep the original assets (empty for dynamic albums)
+      }
+    }
 
     return baseResponse;
   }
@@ -213,5 +239,65 @@ export class SharedLinkService extends BaseService {
       sharedLinkTokens.push(token);
     }
     return sharedLinkTokens.join(',');
+  }
+
+  /**
+   * Convert dynamic album filters to search options for SearchRepository
+   */
+  private convertFiltersToSearchOptions(filters: any, userId: string): any {
+    const searchOptions: any = {
+      userIds: [userId],
+      withDeleted: false,
+    };
+
+    // Handle the actual filter structure: {tags: [...], operator: "and", ...}
+    if (filters.tags && Array.isArray(filters.tags)) {
+      searchOptions.tagIds = filters.tags;
+      // Include the operator for tag filtering
+      if (filters.operator) {
+        searchOptions.tagOperator = filters.operator;
+      }
+    }
+
+    if (filters.people && Array.isArray(filters.people)) {
+      searchOptions.personIds = filters.people;
+    }
+
+    if (filters.location) {
+      if (typeof filters.location === 'string') {
+        searchOptions.city = filters.location;
+      } else if (typeof filters.location === 'object') {
+        if (filters.location.city) searchOptions.city = filters.location.city;
+        if (filters.location.state) searchOptions.state = filters.location.state;
+        if (filters.location.country) searchOptions.country = filters.location.country;
+      }
+    }
+
+    if (filters.dateRange && typeof filters.dateRange === 'object') {
+      if (filters.dateRange.start) {
+        searchOptions.takenAfter = new Date(filters.dateRange.start);
+      }
+      if (filters.dateRange.end) {
+        searchOptions.takenBefore = new Date(filters.dateRange.end);
+      }
+    }
+
+    if (filters.assetType) {
+      if (filters.assetType === 'IMAGE' || filters.assetType === 'VIDEO') {
+        searchOptions.type = filters.assetType;
+      }
+    }
+
+    if (filters.metadata && typeof filters.metadata === 'object') {
+      if (filters.metadata.isFavorite !== undefined) {
+        searchOptions.isFavorite = filters.metadata.isFavorite;
+      }
+      if (filters.metadata.make) searchOptions.make = filters.metadata.make;
+      if (filters.metadata.model) searchOptions.model = filters.metadata.model;
+      if (filters.metadata.lensModel) searchOptions.lensModel = filters.metadata.lensModel;
+      if (filters.metadata.rating !== undefined) searchOptions.rating = filters.metadata.rating;
+    }
+
+    return searchOptions;
   }
 }

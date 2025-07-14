@@ -167,6 +167,89 @@ export class SharedLinkRepository {
       .execute();
   }
 
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async getById(id: string) {
+    return this.db
+      .selectFrom('shared_links')
+      .selectAll('shared_links')
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('shared_link__asset')
+            .whereRef('shared_links.id', '=', 'shared_link__asset.sharedLinksId')
+            .innerJoin('assets', 'assets.id', 'shared_link__asset.assetsId')
+            .where('assets.deletedAt', 'is', null)
+            .selectAll('assets')
+            .innerJoinLateral(
+              (eb) => eb.selectFrom('exif').selectAll('exif').whereRef('exif.assetId', '=', 'assets.id').as('exifInfo'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) => eb.fn.toJson('exifInfo').as('exifInfo'))
+            .orderBy('assets.fileCreatedAt', 'asc')
+            .as('a'),
+        (join) => join.onTrue(),
+      )
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom('albums')
+            .selectAll('albums')
+            .whereRef('albums.id', '=', 'shared_links.albumId')
+            .where('albums.deletedAt', 'is', null)
+            .leftJoin('albums_assets_assets', 'albums_assets_assets.albumsId', 'albums.id')
+            .leftJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('assets')
+                  .selectAll('assets')
+                  .whereRef('albums_assets_assets.assetsId', '=', 'assets.id')
+                  .where('assets.deletedAt', 'is', null)
+                  .innerJoinLateral(
+                    (eb) =>
+                      eb
+                        .selectFrom('exif')
+                        .selectAll('exif')
+                        .whereRef('exif.assetId', '=', 'assets.id')
+                        .as('assets_exifInfo'),
+                    (join) => join.onTrue(),
+                  )
+                  .select((eb) => eb.fn.toJson(eb.table('assets_exifInfo')).as('exifInfo'))
+                  .orderBy('assets.fileCreatedAt', 'asc')
+                  .as('assets'),
+              (join) => join.onTrue(),
+            )
+            .innerJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('users')
+                  .selectAll('users')
+                  .whereRef('users.id', '=', 'albums.ownerId')
+                  .where('users.deletedAt', 'is', null)
+                  .as('owner'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) =>
+              eb.fn.coalesce(eb.fn.jsonAgg('assets').filterWhere('assets.id', 'is not', null), sql`'[]'`).as('assets'),
+            )
+            .select((eb) => eb.fn.toJson('owner').as('owner'))
+            .groupBy(['albums.id', sql`"owner".*`])
+            .as('album'),
+        (join) => join.onTrue(),
+      )
+      .select((eb) =>
+        eb.fn
+          .coalesce(eb.fn.jsonAgg('a').filterWhere('a.id', 'is not', null), sql`'[]'`)
+          .$castTo<MapAsset[]>()
+          .as('assets'),
+      )
+      .groupBy(['shared_links.id', sql`"album".*`])
+      .select((eb) => eb.fn.toJson('album').$castTo<Album | null>().as('album'))
+      .where('shared_links.id', '=', id)
+      .where((eb) => eb.or([eb('shared_links.type', '=', SharedLinkType.INDIVIDUAL), eb('album.id', 'is not', null)]))
+      .orderBy('shared_links.createdAt', 'desc')
+      .executeTakeFirst();
+  }
+
   @GenerateSql({ params: [DummyValue.BUFFER] })
   async getByKey(key: Buffer) {
     return this.db
