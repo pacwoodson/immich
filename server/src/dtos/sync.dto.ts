@@ -171,6 +171,7 @@ export class SyncAlbumV1 {
   isActivityEnabled!: boolean;
   @ApiProperty({ enumName: 'AssetOrder', enum: AssetOrder })
   order!: AssetOrder;
+  dynamic!: boolean;
 }
 
 @ExtraModel()

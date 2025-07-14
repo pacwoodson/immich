@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { Kysely } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { DB } from 'src/schema';
-import { anyUuid, searchAssetBuilder } from 'src/utils/database';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
+import { anyUuid, convertDynamicAlbumFiltersToSearchOptions, searchAssetBuilder } from 'src/utils/database';
 
 const builder = (db: Kysely<DB>) =>
   db
@@ -41,6 +42,17 @@ export class DownloadRepository {
       .innerJoin('exif', 'assets.id', 'exif.assetId')
       .select(['assets.id', 'assets.livePhotoVideoId', 'exif.fileSizeInByte as size'])
       .stream();
+  }
+
+  /**
+   * Download assets for a dynamic album by converting filters to search options
+   * @param filters Dynamic album filters
+   * @param userId User ID for filtering
+   * @returns Stream of assets with download information
+   */
+  downloadDynamicAlbum(filters: DynamicAlbumFilters, userId: string) {
+    const searchOptions = convertDynamicAlbumFiltersToSearchOptions(filters, userId);
+    return this.downloadSearchResults(searchOptions);
   }
 
   downloadUserId(userId: string) {

@@ -2,18 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { MapMarkerDto, MapMarkerResponseDto, MapReverseGeocodeDto } from 'src/dtos/map.dto';
 import { BaseService } from 'src/services/base.service';
-import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { getMyPartnerIds } from 'src/utils/asset.util';
 
 @Injectable()
 export class MapService extends BaseService {
-  constructor(
-    private dynamicAlbumService: DynamicAlbumService,
-    ...args: ConstructorParameters<typeof BaseService>
-  ) {
-    super(...args);
-  }
-
   async getMapMarkers(auth: AuthDto, options: MapMarkerDto): Promise<MapMarkerResponseDto[]> {
     const userIds = [auth.user.id];
     if (options.withPartners) {
@@ -48,7 +40,7 @@ export class MapService extends BaseService {
     // Get map markers for regular albums
     const regularAlbumMarkers = await this.mapRepository.getMapMarkers(userIds, regularAlbumIds, options);
 
-    // Get map markers for dynamic albums using search functionality
+    // Get map markers for dynamic albums using the repository method
     const dynamicAlbumMarkers = await this.getMapMarkersForDynamicAlbums(dynamicAlbums, options);
 
     // Combine and return all markers
@@ -67,24 +59,24 @@ export class MapService extends BaseService {
 
     for (const album of dynamicAlbums) {
       try {
-        const markers = await this.dynamicAlbumService.getMapMarkers(
-          album.filters,
-          album.ownerId,
-          {
-            isArchived: options.isArchived,
-            isFavorite: options.isFavorite,
-            fileCreatedAfter: options.fileCreatedAfter,
-            fileCreatedBefore: options.fileCreatedBefore,
-          },
-          {
-            throwOnError: false, // Don't throw on individual album errors
-            timeout: 10000, // 10 second timeout for map operations
-          },
-        );
+        const assets = await this.dynamicAlbumRepository.getAssetsForMapMarkers(album.filters, album.ownerId, {
+          isArchived: options.isArchived,
+          isFavorite: options.isFavorite,
+          fileCreatedAfter: options.fileCreatedAfter,
+          fileCreatedBefore: options.fileCreatedBefore,
+        });
 
-        if (markers && Array.isArray(markers)) {
-          allMarkers.push(...markers);
-        }
+        // Convert assets to map markers
+        const markers = assets.map((asset: any) => ({
+          id: asset.id,
+          lat: asset.exifInfo?.latitude,
+          lon: asset.exifInfo?.longitude,
+          city: asset.exifInfo?.city,
+          state: asset.exifInfo?.state,
+          country: asset.exifInfo?.country,
+        }));
+
+        allMarkers.push(...markers);
       } catch (error) {
         this.logger.warn(`Failed to get map markers for dynamic album ${album.id}:`, error);
         // Continue processing other albums even if one fails

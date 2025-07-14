@@ -14,6 +14,8 @@ import { SystemMetadataRepository } from 'src/repositories/system-metadata.repos
 import { DB } from 'src/schema';
 import { GeodataPlacesTable } from 'src/schema/tables/geodata-places.table';
 import { NaturalEarthCountriesTable } from 'src/schema/tables/natural-earth-countries.table';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
+import { convertDynamicAlbumFiltersToSearchOptions, searchAssetBuilder } from 'src/utils/database';
 
 export interface MapMarkerSearchOptions {
   isArchived?: boolean;
@@ -127,6 +129,47 @@ export class MapRepository {
 
         return eb.or(expression);
       })
+      .orderBy('fileCreatedAt', 'desc')
+      .execute();
+  }
+
+  /**
+   * Get map markers for a dynamic album by converting filters to search options
+   * @param filters Dynamic album filters
+   * @param ownerId Owner ID for filtering
+   * @param options Map marker search options
+   * @returns Array of map markers
+   */
+  async getMapMarkersForDynamicAlbum(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    options: MapMarkerSearchOptions = {},
+  ): Promise<MapMarker[]> {
+    const searchOptions = convertDynamicAlbumFiltersToSearchOptions(filters, ownerId);
+
+    return searchAssetBuilder(this.db as unknown as Kysely<DB>, searchOptions)
+      .innerJoin('exif', (builder) =>
+        builder
+          .onRef('assets.id', '=', 'exif.assetId')
+          .on('exif.latitude', 'is not', null)
+          .on('exif.longitude', 'is not', null),
+      )
+      .select(['id', 'exif.latitude as lat', 'exif.longitude as lon', 'exif.city', 'exif.state', 'exif.country'])
+      .$narrowType<{ lat: NotNull; lon: NotNull }>()
+      .$if(options.isArchived === true, (qb) =>
+        qb.where((eb) =>
+          eb.or([
+            eb('assets.visibility', '=', AssetVisibility.TIMELINE),
+            eb('assets.visibility', '=', AssetVisibility.ARCHIVE),
+          ]),
+        ),
+      )
+      .$if(options.isArchived === false || options.isArchived === undefined, (qb) =>
+        qb.where('assets.visibility', '=', AssetVisibility.TIMELINE),
+      )
+      .$if(options.isFavorite !== undefined, (q) => q.where('isFavorite', '=', options.isFavorite!))
+      .$if(options.fileCreatedAfter !== undefined, (q) => q.where('fileCreatedAt', '>=', options.fileCreatedAfter!))
+      .$if(options.fileCreatedBefore !== undefined, (q) => q.where('fileCreatedAt', '<=', options.fileCreatedBefore!))
       .orderBy('fileCreatedAt', 'desc')
       .execute();
   }

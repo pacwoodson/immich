@@ -20,6 +20,12 @@ import { AssetFileType, AssetVisibility, DatabaseExtension, DatabaseSslMode } fr
 import { AssetSearchBuilderOptions } from 'src/repositories/search.repository';
 import { DB } from 'src/schema';
 import { DatabaseConnectionParams, VectorExtension } from 'src/types';
+import {
+  DynamicAlbumFilters,
+  sanitizeDynamicAlbumFilters,
+  validateDynamicAlbumFilters,
+} from 'src/types/dynamic-album.types';
+import { FilterConversionError, isValidSearchOptions, SearchOptions } from 'src/types/search.types';
 
 type Ssl = 'require' | 'allow' | 'prefer' | 'verify-full' | boolean | object;
 
@@ -445,4 +451,65 @@ export function vectorIndexQuery({ vectorExtension, table, indexName, lists }: V
       throw new Error(`Unsupported vector extension: '${vectorExtension}'`);
     }
   }
+}
+
+
+/**
+ * Convert dynamic album filters to search options
+ * @param filters Dynamic album filters
+ * @param userId User ID for filtering
+ * @returns Search options for asset filtering
+ */
+export function convertDynamicAlbumFiltersToSearchOptions(filters: DynamicAlbumFilters, userId: string): SearchOptions {
+  const errors: FilterConversionError[] = [];
+  let searchOptions: SearchOptions = {};
+
+  try {
+    // Sanitize filters
+    const sanitizedFilters = sanitizeDynamicAlbumFilters(filters);
+
+    // Validate filters
+    const validationResult = validateDynamicAlbumFilters(sanitizedFilters);
+    if (!validationResult.isValid) {
+      errors.push(...validationResult.errors);
+      return {};
+    }
+
+    // Convert to search options
+    if (sanitizedFilters.tags && sanitizedFilters.tags.length > 0) {
+      searchOptions.tagIds = sanitizedFilters.tags;
+      searchOptions.tagOperator = sanitizedFilters.operator === 'or' ? 'or' : 'and';
+    }
+
+    if (sanitizedFilters.dateRange) {
+      if (sanitizedFilters.dateRange.start) {
+        searchOptions.createdAfter = new Date(sanitizedFilters.dateRange.start);
+      }
+      if (sanitizedFilters.dateRange.end) {
+        searchOptions.createdBefore = new Date(sanitizedFilters.dateRange.end);
+      }
+    }
+
+    // Add user filter
+    searchOptions.userIds = [userId];
+
+    // Validate final search options
+    if (!isValidSearchOptions(searchOptions)) {
+      errors.push({
+        field: 'searchOptions',
+        message: 'Generated search options are invalid',
+        value: searchOptions,
+      });
+      return {};
+    }
+  } catch (error) {
+    errors.push({
+      field: 'conversion',
+      message: error instanceof Error ? error.message : 'Unknown conversion error',
+      value: error,
+    });
+    return {};
+  }
+
+  return searchOptions;
 }
