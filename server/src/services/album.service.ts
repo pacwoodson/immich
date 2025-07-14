@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DYNAMIC_ALBUM_CONFIG } from 'src/config/dynamic-albums.config';
 import {
   AddUsersDto,
   AlbumInfoDto,
@@ -491,17 +490,8 @@ export class AlbumService extends BaseService {
     operationOptions: DynamicAlbumOperationOptions = {},
   ): Promise<boolean> {
     const operation = async (): Promise<boolean> => {
-      // Get the first few assets from the dynamic album
-      const searchResult = await this.getAssetsForDynamicAlbum(
-        filters,
-        ownerId,
-        { size: DYNAMIC_ALBUM_CONFIG.THUMBNAIL_SEARCH_SIZE },
-        operationOptions,
-      );
-
-      // Check if the current thumbnail is still in the first few results
-      const assetIds = searchResult.items?.map((asset: any) => asset.id) || [];
-      return assetIds.includes(thumbnailId);
+      // Use the efficient method to check if the specific asset matches the filters
+      return this.dynamicAlbumRepository.isAssetInDynamicAlbum(thumbnailId, filters, ownerId, operationOptions);
     };
 
     return this.executeSafely(operation, `validate thumbnail for dynamic album ${albumId}`, false, operationOptions);
