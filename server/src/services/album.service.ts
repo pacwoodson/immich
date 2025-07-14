@@ -19,6 +19,7 @@ import { Permission } from 'src/enum';
 import { AlbumAssetCount, AlbumInfoOptions } from 'src/repositories/album.repository';
 import { BaseService } from 'src/services/base.service';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
+import { FilterUtil } from 'src/utils/filter.util';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
@@ -67,7 +68,7 @@ export class AlbumService extends BaseService {
     for (const dynamicAlbum of dynamicAlbums) {
       if (dynamicAlbum.filters) {
         try {
-          const searchOptions = this.convertFiltersToSearchOptions(dynamicAlbum.filters, ownerId);
+          const searchOptions = FilterUtil.convertFiltersToSearchOptions(dynamicAlbum.filters, ownerId);
           const searchResult = await this.searchRepository.searchMetadata(
             { page: 1, size: 50000 }, // Large page size to get all matching assets
             { ...searchOptions, orderDirection: dynamicAlbum.order === 'asc' ? 'asc' : 'desc' },
@@ -157,7 +158,7 @@ export class AlbumService extends BaseService {
     // Check if this is a dynamic album
     if (album.dynamic && album.filters) {
       // Convert album filters to search options for SearchRepository
-      const dynamicSearchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+      const dynamicSearchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, auth.user.id);
 
       // Always get the search result to calculate metadata, even if we don't need full assets
       const searchResult = await this.searchRepository.searchMetadata(
@@ -258,7 +259,7 @@ export class AlbumService extends BaseService {
     let dynamicAlbumThumbnailAssetId = null;
     if (dto.dynamic && dto.filters) {
       try {
-        const searchOptions = this.convertFiltersToSearchOptions(dto.filters, auth.user.id);
+        const searchOptions = FilterUtil.convertFiltersToSearchOptions(dto.filters, auth.user.id);
         const searchResult = await this.searchRepository.searchMetadata(
           { page: 1, size: 1 }, // Just get the first asset
           {
@@ -311,7 +312,7 @@ export class AlbumService extends BaseService {
       } else {
         // For dynamic albums, validate thumbnail asset matches current filters
         if (album.filters) {
-          const searchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+          const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, auth.user.id);
           const searchResult = await this.searchRepository.searchMetadata(
             { page: 1, size: 50000 },
             { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
@@ -329,7 +330,7 @@ export class AlbumService extends BaseService {
 
     if (album.dynamic && dto.filters && JSON.stringify(dto.filters) !== JSON.stringify(album.filters)) {
       // Filters have changed, check if current thumbnail is still valid
-      const searchOptions = this.convertFiltersToSearchOptions(dto.filters, auth.user.id);
+      const searchOptions = FilterUtil.convertFiltersToSearchOptions(dto.filters, auth.user.id);
       const searchResult = await this.searchRepository.searchMetadata(
         { page: 1, size: 50000 },
         { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
@@ -488,66 +489,6 @@ export class AlbumService extends BaseService {
   async updateUser(auth: AuthDto, id: string, userId: string, dto: UpdateAlbumUserDto): Promise<void> {
     await this.requireAccess({ auth, permission: Permission.ALBUM_SHARE, ids: [id] });
     await this.albumUserRepository.update({ albumsId: id, usersId: userId }, { role: dto.role });
-  }
-
-  /**
-   * Convert dynamic album filters to search options for SearchRepository
-   */
-  private convertFiltersToSearchOptions(filters: any, userId: string): any {
-    const searchOptions: any = {
-      userIds: [userId],
-      withDeleted: false,
-    };
-
-    // Handle the actual filter structure: {tags: [...], operator: "and", ...}
-    if (filters.tags && Array.isArray(filters.tags)) {
-      searchOptions.tagIds = filters.tags;
-      // Include the operator for tag filtering
-      if (filters.operator) {
-        searchOptions.tagOperator = filters.operator;
-      }
-    }
-
-    if (filters.people && Array.isArray(filters.people)) {
-      searchOptions.personIds = filters.people;
-    }
-
-    if (filters.location) {
-      if (typeof filters.location === 'string') {
-        searchOptions.city = filters.location;
-      } else if (typeof filters.location === 'object') {
-        if (filters.location.city) searchOptions.city = filters.location.city;
-        if (filters.location.state) searchOptions.state = filters.location.state;
-        if (filters.location.country) searchOptions.country = filters.location.country;
-      }
-    }
-
-    if (filters.dateRange && typeof filters.dateRange === 'object') {
-      if (filters.dateRange.start) {
-        searchOptions.takenAfter = new Date(filters.dateRange.start);
-      }
-      if (filters.dateRange.end) {
-        searchOptions.takenBefore = new Date(filters.dateRange.end);
-      }
-    }
-
-    if (filters.assetType) {
-      if (filters.assetType === 'IMAGE' || filters.assetType === 'VIDEO') {
-        searchOptions.type = filters.assetType;
-      }
-    }
-
-    if (filters.metadata && typeof filters.metadata === 'object') {
-      if (filters.metadata.isFavorite !== undefined) {
-        searchOptions.isFavorite = filters.metadata.isFavorite;
-      }
-      if (filters.metadata.make) searchOptions.make = filters.metadata.make;
-      if (filters.metadata.model) searchOptions.model = filters.metadata.model;
-      if (filters.metadata.lensModel) searchOptions.lensModel = filters.metadata.lensModel;
-      if (filters.metadata.rating !== undefined) searchOptions.rating = filters.metadata.rating;
-    }
-
-    return searchOptions;
   }
 
   private async findOrFail(id: string, options: AlbumInfoOptions) {

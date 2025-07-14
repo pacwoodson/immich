@@ -372,7 +372,7 @@ export class SyncService extends BaseService {
         }
 
         const startId = getStartId(createId, backfillCheckpoint);
-        const backfill = this.syncRepository.albumAsset.getBackfill(album.id, startId, endId);
+        const backfill = await this.syncRepository.albumAsset.getBackfill(album.id, startId, endId);
 
         for await (const { updateId, ...data } of backfill) {
           send(response, { type: backfillType, ids: [createId, updateId], data: mapSyncAssetV1(data) });
@@ -388,7 +388,7 @@ export class SyncService extends BaseService {
       });
     }
 
-    const upserts = this.syncRepository.albumAsset.getUpserts(auth.user.id, checkpointMap[upsertType]);
+    const upserts = await this.syncRepository.albumAsset.getUpserts(auth.user.id, checkpointMap[upsertType]);
     for await (const { updateId, ...data } of upserts) {
       send(response, { type: upsertType, ids: [updateId], data: mapSyncAssetV1(data) });
     }
@@ -415,7 +415,7 @@ export class SyncService extends BaseService {
         }
 
         const startId = getStartId(createId, backfillCheckpoint);
-        const backfill = this.syncRepository.albumAssetExif.getBackfill(album.id, startId, endId);
+        const backfill = await this.syncRepository.albumAssetExif.getBackfill(album.id, startId, endId);
 
         for await (const { updateId, ...data } of backfill) {
           send(response, { type: backfillType, ids: [createId, updateId], data });
@@ -431,7 +431,7 @@ export class SyncService extends BaseService {
       });
     }
 
-    const upserts = this.syncRepository.albumAssetExif.getUpserts(auth.user.id, checkpointMap[upsertType]);
+    const upserts = await this.syncRepository.albumAssetExif.getUpserts(auth.user.id, checkpointMap[upsertType]);
     for await (const { updateId, ...data } of upserts) {
       send(response, { type: upsertType, ids: [updateId], data });
     }
@@ -464,7 +464,7 @@ export class SyncService extends BaseService {
         }
 
         const startId = getStartId(createId, backfillCheckpoint);
-        const backfill = this.syncRepository.albumToAsset.getBackfill(album.id, startId, endId);
+        const backfill = await this.syncRepository.albumToAsset.getBackfill(album.id, startId, endId);
 
         for await (const { updateId, ...data } of backfill) {
           send(response, { type: backfillType, ids: [createId, updateId], data });
@@ -480,7 +480,7 @@ export class SyncService extends BaseService {
       });
     }
 
-    const upserts = this.syncRepository.albumToAsset.getUpserts(auth.user.id, checkpointMap[upsertType]);
+    const upserts = await this.syncRepository.albumToAsset.getUpserts(auth.user.id, checkpointMap[upsertType]);
     for await (const { updateId, ...data } of upserts) {
       send(response, { type: upsertType, ids: [updateId], data });
     }

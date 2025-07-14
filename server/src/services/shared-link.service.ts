@@ -15,6 +15,7 @@ import {
 } from 'src/dtos/shared-link.dto';
 import { Permission, SharedLinkType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
+import { FilterUtil } from 'src/utils/filter.util';
 import { getExternalDomain, OpenGraphTags } from 'src/utils/misc';
 
 @Injectable()
@@ -204,7 +205,10 @@ export class SharedLinkService extends BaseService {
       try {
         // Convert album filters to search options
         // Use the album owner's ID for the search, not the shared link user's ID
-        const searchOptions = this.convertFiltersToSearchOptions(sharedLink.album.filters, sharedLink.album.ownerId);
+        const searchOptions = FilterUtil.convertFiltersToSearchOptions(
+          sharedLink.album.filters,
+          sharedLink.album.ownerId,
+        );
 
         // Get assets based on filters
         const searchResult = await this.searchRepository.searchMetadata(
@@ -239,65 +243,5 @@ export class SharedLinkService extends BaseService {
       sharedLinkTokens.push(token);
     }
     return sharedLinkTokens.join(',');
-  }
-
-  /**
-   * Convert dynamic album filters to search options for SearchRepository
-   */
-  private convertFiltersToSearchOptions(filters: any, userId: string): any {
-    const searchOptions: any = {
-      userIds: [userId],
-      withDeleted: false,
-    };
-
-    // Handle the actual filter structure: {tags: [...], operator: "and", ...}
-    if (filters.tags && Array.isArray(filters.tags)) {
-      searchOptions.tagIds = filters.tags;
-      // Include the operator for tag filtering
-      if (filters.operator) {
-        searchOptions.tagOperator = filters.operator;
-      }
-    }
-
-    if (filters.people && Array.isArray(filters.people)) {
-      searchOptions.personIds = filters.people;
-    }
-
-    if (filters.location) {
-      if (typeof filters.location === 'string') {
-        searchOptions.city = filters.location;
-      } else if (typeof filters.location === 'object') {
-        if (filters.location.city) searchOptions.city = filters.location.city;
-        if (filters.location.state) searchOptions.state = filters.location.state;
-        if (filters.location.country) searchOptions.country = filters.location.country;
-      }
-    }
-
-    if (filters.dateRange && typeof filters.dateRange === 'object') {
-      if (filters.dateRange.start) {
-        searchOptions.takenAfter = new Date(filters.dateRange.start);
-      }
-      if (filters.dateRange.end) {
-        searchOptions.takenBefore = new Date(filters.dateRange.end);
-      }
-    }
-
-    if (filters.assetType) {
-      if (filters.assetType === 'IMAGE' || filters.assetType === 'VIDEO') {
-        searchOptions.type = filters.assetType;
-      }
-    }
-
-    if (filters.metadata && typeof filters.metadata === 'object') {
-      if (filters.metadata.isFavorite !== undefined) {
-        searchOptions.isFavorite = filters.metadata.isFavorite;
-      }
-      if (filters.metadata.make) searchOptions.make = filters.metadata.make;
-      if (filters.metadata.model) searchOptions.model = filters.metadata.model;
-      if (filters.metadata.lensModel) searchOptions.lensModel = filters.metadata.lensModel;
-      if (filters.metadata.rating !== undefined) searchOptions.rating = filters.metadata.rating;
-    }
-
-    return searchOptions;
   }
 }

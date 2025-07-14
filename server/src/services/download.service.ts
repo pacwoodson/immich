@@ -71,7 +71,7 @@ export class DownloadService extends BaseService {
     }
 
     if (motionIds.size > 0) {
-      const motionAssets = this.downloadRepository.downloadMotionAssetIds([...motionIds]);
+      const motionAssets = this.downloadRepository.downloadAssetPaths([...motionIds]);
       for await (const motionAsset of motionAssets) {
         if (StorageCore.isAndroidMotionPath(motionAsset.originalPath) && !preferences.download.includeEmbeddedVideos) {
           continue;

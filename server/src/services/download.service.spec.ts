@@ -255,7 +255,7 @@ describe(DownloadService.name, () => {
           { id: 'asset-2', livePhotoVideoId: 'asset-4', size: 100_000 },
         ]),
       );
-      mocks.downloadRepository.downloadMotionAssetIds.mockReturnValue(
+      mocks.downloadRepository.downloadAssetPaths.mockReturnValue(
         makeStream([
           { id: 'asset-3', livePhotoVideoId: null, size: 23_456, originalPath: '/path/to/file.mp4' },
           { id: 'asset-4', livePhotoVideoId: null, size: 123_000, originalPath: '/path/to/file.mp4' },
@@ -279,7 +279,7 @@ describe(DownloadService.name, () => {
       mocks.downloadRepository.downloadAssetIds.mockReturnValue(
         makeStream([{ id: 'asset-1', livePhotoVideoId: 'asset-3', size: 5000 }]),
       );
-      mocks.downloadRepository.downloadMotionAssetIds.mockReturnValue(
+      mocks.downloadRepository.downloadAssetPaths.mockReturnValue(
         makeStream([
           { id: 'asset-2', livePhotoVideoId: null, size: 23_456, originalPath: 'upload/encoded-video/uuid-MP.mp4' },
         ]),
