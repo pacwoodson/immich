@@ -1868,18 +1868,6 @@ export function addAssetsToAlbum({ id, key, bulkIdsDto }: {
         body: bulkIdsDto
     })));
 }
-export function setDynamicAlbumThumbnail({ assetId, id }: {
-    assetId: string;
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: AlbumResponseDto;
-    }>(`/albums/${encodeURIComponent(id)}/thumbnail/${encodeURIComponent(assetId)}`, {
-        ...opts,
-        method: "PUT"
-    }));
-}
 export function removeUserFromAlbum({ id, userId }: {
     id: string;
     userId: string;

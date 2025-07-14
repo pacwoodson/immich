@@ -27,7 +27,7 @@ Server api is available at http://localhost:2283
 
 ### Backend
 
-When new endpoints are added or DTOs are edited, run 'make open-api' to update @immich/sdk package with open-api
+When new endpoints are added or DTOs are edited, run 'make open-api' in the root folder to update @immich/sdk package with open-api
 
 ### Frontend
 With svelte, don't use Self-closing HTML tags for non-void ambiguous elements.

@@ -5,7 +5,7 @@
     NotificationType,
   } from '$lib/components/shared-components/notification/notification';
   import { handleError } from '$lib/utils/handle-error';
-  import { setDynamicAlbumThumbnail, updateAlbumInfo, type AlbumResponseDto, type AssetResponseDto } from '@immich/sdk';
+  import { updateAlbumInfo, type AlbumResponseDto, type AssetResponseDto } from '@immich/sdk';
   import { mdiImageOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
@@ -18,21 +18,12 @@
 
   const handleUpdateThumbnail = async () => {
     try {
-      if (album.dynamic) {
-        // For dynamic albums, use the new endpoint
-        await setDynamicAlbumThumbnail({
-          id: album.id,
-          assetId: asset.id,
-        });
-      } else {
-        // For regular albums, use the existing method
-        await updateAlbumInfo({
-          id: album.id,
-          updateAlbumDto: {
-            albumThumbnailAssetId: asset.id,
-          },
-        });
-      }
+      await updateAlbumInfo({
+        id: album.id,
+        updateAlbumDto: {
+          albumThumbnailAssetId: asset.id,
+        },
+      });
 
       notificationController.show({
         type: NotificationType.Info,

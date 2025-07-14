@@ -116,14 +116,4 @@ export class AlbumController {
   ) {
     return this.service.removeUser(auth, id, userId);
   }
-
-  @Put(':id/thumbnail/:assetId')
-  @Authenticated({ permission: Permission.ALBUM_UPDATE })
-  setDynamicAlbumThumbnail(
-    @Auth() auth: AuthDto,
-    @Param() { id }: UUIDParamDto,
-    @Param('assetId', new ParseMeUUIDPipe({ version: '4' })) assetId: string,
-  ): Promise<AlbumResponseDto> {
-    return this.service.setDynamicAlbumThumbnail(auth, id, assetId);
-  }
 }
