@@ -14,13 +14,13 @@
     type AlbumGroupOptionMetadata,
     type AlbumSortOptionMetadata,
     collapseAllAlbumGroups,
-    createAlbumAndRedirect,
     expandAllAlbumGroups,
     findFilterOption,
     findGroupOptionMetadata,
     findSortOptionMetadata,
     getSelectedAlbumGroupOption,
     groupOptionsMetadata,
+    showCreateAlbumModal,
     sortOptionsMetadata,
   } from '$lib/utils/album-utils';
   import { Button, IconButton, Text } from '@immich/ui';
@@ -130,7 +130,7 @@
 <!-- Create Album -->
 <Button
   leadingIcon={mdiPlusBoxOutline}
-  onclick={() => createAlbumAndRedirect()}
+  onclick={() => showCreateAlbumModal()}
   size="small"
   variant="ghost"
   color="secondary"

@@ -13,7 +13,7 @@
     SortOrder,
     type AlbumViewSettings,
   } from '$lib/stores/preferences.store';
-  import { createAlbumAndRedirect } from '$lib/utils/album-utils';
+  import { showCreateAlbumModal } from '$lib/utils/album-utils';
   import { Button, HStack, Text } from '@immich/ui';
   import { mdiLink, mdiPlusBoxOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
@@ -41,7 +41,7 @@
     <HStack gap={0}>
       <Button
         leadingIcon={mdiPlusBoxOutline}
-        onclick={() => createAlbumAndRedirect()}
+        onclick={() => showCreateAlbumModal()}
         size="small"
         variant="ghost"
         color="secondary"

@@ -44,6 +44,16 @@ export const createAlbumAndRedirect = async (name?: string, assetIds?: string[])
   }
 };
 
+export const showCreateAlbumModal = async (assetIds?: string[]) => {
+  const { modalManager } = await import('$lib/managers/modal-manager.svelte');
+  const { default: CreateAlbumModal } = await import('$lib/modals/CreateAlbumModal.svelte');
+
+  const album = await modalManager.show(CreateAlbumModal, { assetIds });
+  if (album) {
+    await goto(`${AppRoute.ALBUMS}/${album.id}`);
+  }
+};
+
 /**
  * -------------
  * Album Sorting

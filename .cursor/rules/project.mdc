@@ -47,3 +47,7 @@ When you need to pack the code: You have to do that separately for server and fr
 
 - `npx repomix@latest ./server/src -o ./agent/code-packs/server-src.md`
 - `npx repomix@latest ./web/src -o ./agent/code-packs/web-src.md`
+
+## building
+
+Agent can build and check code compilation error by running `cd server && npm run check`
