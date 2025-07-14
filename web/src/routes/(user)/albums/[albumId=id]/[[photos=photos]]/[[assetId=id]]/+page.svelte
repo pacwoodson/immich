@@ -27,6 +27,7 @@
   import ButtonContextMenu from '$lib/components/shared-components/context-menu/button-context-menu.svelte';
   import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import ControlAppBar from '$lib/components/shared-components/control-app-bar.svelte';
+  import FilterDisplay from '$lib/components/shared-components/filter-display.svelte';
   import {
     NotificationType,
     notificationController,
@@ -40,6 +41,7 @@
   import AlbumOptionsModal from '$lib/modals/AlbumOptionsModal.svelte';
   import AlbumShareModal from '$lib/modals/AlbumShareModal.svelte';
   import AlbumUsersModal from '$lib/modals/AlbumUsersModal.svelte';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import QrCodeModal from '$lib/modals/QrCodeModal.svelte';
   import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
@@ -68,6 +70,7 @@
     deleteAlbum,
     getAlbumInfo,
     updateAlbumInfo,
+    type AlbumResponseDto,
     type AlbumUserAddDto,
   } from '@immich/sdk';
   import { Button, IconButton } from '@immich/ui';
@@ -80,6 +83,7 @@
     mdiImageOutline,
     mdiImagePlusOutline,
     mdiLink,
+    mdiPencilOutline,
     mdiPlus,
     mdiPresentationPlay,
     mdiShareVariantOutline,
@@ -105,6 +109,7 @@
   let isCreatingSharedAlbum = $state(false);
   let isShowActivity = $state(false);
   let albumOrder: AssetOrder | undefined = $state(data.album.order);
+  let showDynamicAlbumEditModal = $state(false);
 
   const assetInteraction = new AssetInteraction();
   const timelineInteraction = new AssetInteraction();
@@ -320,7 +325,8 @@
     }
   });
 
-  let album = $derived(data.album);
+  let album = $state(data.album);
+
   let albumId = $derived(album.id);
 
   $effect(() => {
@@ -439,6 +445,21 @@
       }
     }
   };
+
+  const handleEditDynamicAlbumFilters = async () => {
+    const result = await modalManager.show(DynamicAlbumFiltersModal, { album });
+
+    if (
+      result &&
+      typeof result === 'object' &&
+      'action' in result &&
+      result.action === 'updated' &&
+      'album' in result
+    ) {
+      album = result.album as AlbumResponseDto;
+      await refreshAlbum();
+    }
+  };
 </script>
 
 <div class="flex overflow-hidden" use:scrollMemoryClearer={{ routeStartsWith: AppRoute.ALBUMS }}>
@@ -524,6 +545,31 @@
               {/if}
               <!-- ALBUM DESCRIPTION -->
               <AlbumDescription id={album.id} bind:description={album.description} {isOwned} />
+
+              <!-- DYNAMIC ALBUM FILTERS -->
+              {#if album.dynamic && album.filters && typeof album.filters === 'object'}
+                {@const filters = album.filters as any}
+                {#if filters.tags || filters.people || filters.location || filters.dateRange || filters.assetType || filters.metadata}
+                  <div class="mt-6">
+                    <div class="mb-3 flex items-center justify-between">
+                      <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                        {$t('filters')}
+                      </h3>
+                      {#if isOwned}
+                        <IconButton
+                          aria-label={$t('edit')}
+                          color="secondary"
+                          size="small"
+                          shape="round"
+                          icon={mdiPencilOutline}
+                          onclick={handleEditDynamicAlbumFilters}
+                        />
+                      {/if}
+                    </div>
+                    <FilterDisplay filters={album.filters} />
+                  </div>
+                {/if}
+              {/if}
             </section>
           {/if}
 
