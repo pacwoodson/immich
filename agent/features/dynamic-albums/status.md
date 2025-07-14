@@ -80,12 +80,12 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ Filter validation and processing
 - ✅ Asset count preview based on filters
 
-#### Dynamic Album Management 🟡
+#### Dynamic Album Management ✅
 - ✅ Visual distinction between album types
 - ✅ Filter editing and updating
 - ✅ Automatic asset population based on filters
 - ✅ Disabled manual asset management for dynamic albums
-- ❌ **ISSUE**: Dynamic album thumbnails
+- ✅ Dynamic album thumbnail validation and setting
 
 #### User Experience 🟡
 - ✅ Unified interface for both album types
@@ -112,7 +112,7 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ **`getAll()`**: Separates regular and dynamic albums, uses different approaches for metadata calculation
 - ✅ **`get()`**: Has specific logic for dynamic albums using search functionality
 - ✅ **`create()`**: Handles dynamic album creation without requiring initial assets
-- ✅ **`update()`**: Prevents thumbnail setting for dynamic albums
+- ✅ **`update()`**: Properly validates thumbnails for dynamic albums by checking against filter results
 - ✅ **`addAssets()`/`removeAssets()`**: Explicitly blocks operations on dynamic albums
 
 #### TimelineService (`server/src/services/timeline.service.ts`)
@@ -140,7 +140,7 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 #### AlbumRepository (`server/src/repositories/album.repository.ts`)
 - ✅ **`getMetadataForIds()`**: Explicitly states it only handles regular albums
 - ✅ Standard CRUD operations work for both types
-- ✅ **`updateThumbnails()`**: Only affects regular albums (uses `albums_assets_assets` join)
+- ✅ **`updateThumbnails()`**: Fixed to exclude dynamic albums and prevent thumbnail corruption
 
 #### DownloadRepository (`server/src/repositories/download.repository.ts`)
 - ✅ **`downloadAlbumId()`**: Has `isDynamic` parameter and dedicated `downloadDynamicAlbum()` method
@@ -162,14 +162,14 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 ### Critical Issues
 1. **Map Markers for Dynamic Albums**: ✅ Fixed - MapService now handles dynamic albums using search functionality
 2. **Mobile Sync for Dynamic Albums**: Dynamic albums are not synced to mobile clients because SyncRepository only handles regular albums
-3. **Dynamic Album Thumbnails**: Thumbnail generation/display not working for dynamic albums
+3. **Dynamic Album Thumbnails**: ✅ Fixed - Both thumbnail validation and automatic thumbnail corruption have been resolved
 4. **Filter Count Display**: ✅ Fixed - Filter count now displaying correctly in albums list page
 
 ### Technical Debt
 - ✅ MapService/Repository updated for dynamic album support
 - SyncRepository needs dynamic album sync functionality
-- Thumbnail generation logic needs to work with dynamic albums
-- Frontend filter count calculation needs fixing
+- ✅ Thumbnail generation/corruption issues resolved for dynamic albums
+- ✅ Frontend filter count calculation fixed
 
 ## Testing Status 🟡
 - ✅ Backend unit tests updated with new fields

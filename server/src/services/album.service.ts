@@ -303,9 +303,24 @@ export class AlbumService extends BaseService {
 
     if (dto.albumThumbnailAssetId) {
       // For regular albums, validate thumbnail asset exists in album
-      const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
-      if (results.size === 0) {
-        throw new BadRequestException('Invalid album thumbnail');
+      if (!album.dynamic) {
+        const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
+        if (results.size === 0) {
+          throw new BadRequestException('Invalid album thumbnail');
+        }
+      } else {
+        // For dynamic albums, validate thumbnail asset matches current filters
+        if (album.filters) {
+          const searchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+          const searchResult = await this.searchRepository.searchMetadata(
+            { page: 1, size: 50000 },
+            { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+          );
+          const assetIds = searchResult.items.map((asset: any) => asset.id);
+          if (!assetIds.includes(dto.albumThumbnailAssetId)) {
+            throw new BadRequestException('Invalid album thumbnail - asset does not match album filters');
+          }
+        }
       }
     }
 

@@ -336,6 +336,9 @@ export class AlbumRepository {
    * - Removing references of thumbnails to assets outside the album
    * - Setting a thumbnail when none is set and the album contains assets
    *
+   * This method only handles regular (non-dynamic) albums.
+   * Dynamic album thumbnails are handled in the service layer.
+   *
    * @returns Amount of updated album thumbnails or undefined when unknown
    */
   async updateThumbnails(): Promise<number | undefined> {
@@ -350,20 +353,24 @@ export class AlbumRepository {
           .limit(1),
       }))
       .where((eb) =>
-        eb.or([
-          eb.and([
-            eb('albumThumbnailAssetId', 'is', null),
-            eb.exists(this.updateThumbnailBuilder(eb).select(sql`1`.as('1'))), // Has assets
-          ]),
-          eb.and([
-            eb('albumThumbnailAssetId', 'is not', null),
-            eb.not(
-              eb.exists(
-                this.updateThumbnailBuilder(eb)
-                  .select(sql`1`.as('1'))
-                  .whereRef('albums.albumThumbnailAssetId', '=', 'album_assets.assetsId'), // Has invalid assets
+        eb.and([
+          // Only process regular albums (not dynamic albums)
+          eb.or([eb('dynamic', 'is', null), eb('dynamic', '=', false)]),
+          eb.or([
+            eb.and([
+              eb('albumThumbnailAssetId', 'is', null),
+              eb.exists(this.updateThumbnailBuilder(eb).select(sql`1`.as('1'))), // Has assets
+            ]),
+            eb.and([
+              eb('albumThumbnailAssetId', 'is not', null),
+              eb.not(
+                eb.exists(
+                  this.updateThumbnailBuilder(eb)
+                    .select(sql`1`.as('1'))
+                    .whereRef('albums.albumThumbnailAssetId', '=', 'album_assets.assetsId'), // Has invalid assets
+                ),
               ),
-            ),
+            ]),
           ]),
         ]),
       )
