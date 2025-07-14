@@ -22,7 +22,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   sharedWithUser: Object.freeze({
     id: 'album-2',
@@ -47,7 +47,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   sharedWithMultiple: Object.freeze({
     id: 'album-3',
@@ -76,7 +76,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   sharedWithAdmin: Object.freeze({
     id: 'album-3',
@@ -101,7 +101,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   oneAsset: Object.freeze({
     id: 'album-4',
@@ -121,7 +121,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   twoAssets: Object.freeze({
     id: 'album-4a',
@@ -141,7 +141,7 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
   emptyWithValidThumbnail: Object.freeze({
     id: 'album-5',
@@ -161,6 +161,6 @@ export const albumStub = {
     order: AssetOrder.DESC,
     updateId: '42',
     dynamic: false,
-    filters: undefined,
+    filters: null,
   }),
 };

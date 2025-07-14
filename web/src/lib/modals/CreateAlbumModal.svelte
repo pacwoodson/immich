@@ -9,7 +9,7 @@
   import { handleError } from '$lib/utils/handle-error';
   import { createAlbum, type AlbumResponseDto } from '@immich/sdk';
   import { Button, HStack, Modal, ModalBody, ModalFooter } from '@immich/ui';
-  import { mdiArrowDownThin, mdiArrowUpThin, mdiFilter, mdiFolderOutline } from '@mdi/js';
+  import { mdiFilter, mdiFolderOutline, mdiMultiplication, mdiPlus } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import { SvelteSet } from 'svelte/reactivity';
 
@@ -30,8 +30,8 @@
 
   // Operator options for the dropdown
   const operatorOptions: Record<'and' | 'or', RenderedOption> = {
-    and: { icon: mdiArrowUpThin, title: $t('operator_and') },
-    or: { icon: mdiArrowDownThin, title: $t('operator_or') },
+    and: { icon: mdiMultiplication, title: $t('operator_and') },
+    or: { icon: mdiPlus, title: $t('operator_or') },
   };
 
   // Form validation
@@ -163,16 +163,7 @@
       <!-- Dynamic Album Filters -->
       {#if isDynamic}
         <div class="my-4 flex flex-col gap-2">
-          <label class="immich-form-label flex items-center gap-2">
-            <mdiTag class="w-4 h-4" />
-            {$t('tags')}
-          </label>
           <TagSelector bind:selectedTagIds />
-          {#if selectedTagIds.size === 0}
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              {$t('select_tags_for_dynamic_album')}
-            </p>
-          {/if}
         </div>
 
         <!-- Operator Selection -->

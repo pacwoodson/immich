@@ -101,7 +101,7 @@ const albumResponse: AlbumResponseDto = {
   isActivityEnabled: true,
   order: AssetOrder.DESC,
   dynamic: false,
-  filters: undefined,
+  filters: null,
 };
 
 export const sharedLinkStub = {
@@ -185,6 +185,8 @@ export const sharedLinkStub = {
       sharedLinks: [],
       isActivityEnabled: true,
       order: AssetOrder.DESC,
+      dynamic: false,
+      filters: null,
       assets: [
         {
           id: 'id_1',

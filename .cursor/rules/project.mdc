@@ -50,4 +50,4 @@ When you need to pack the code: You have to do that separately for server and fr
 
 ## building
 
-Agent can build and check code compilation error by running `cd server && npm run check`
+Agent can build and check code compilation error by running `npm run check` in the server folder

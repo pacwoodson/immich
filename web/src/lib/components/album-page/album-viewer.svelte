@@ -107,7 +107,7 @@
       {#snippet trailing()}
         <CastButton />
 
-        {#if sharedLink.allowUpload}
+        {#if sharedLink.allowUpload && !album.dynamic}
           <IconButton
             shape="round"
             color="secondary"

@@ -530,17 +530,21 @@
           {#if album.assetCount === 0}
             <section id="empty-album" class=" mt-[200px] flex place-content-center place-items-center">
               <div class="w-[300px]">
-                <p class="text-xs dark:text-immich-dark-fg">{$t('add_photos').toUpperCase()}</p>
-                <button
-                  type="button"
-                  onclick={() => (viewMode = AlbumPageViewMode.SELECT_ASSETS)}
-                  class="mt-5 bg-subtle flex w-full place-items-center gap-6 rounded-2xl border px-8 py-8 text-immich-fg transition-all hover:bg-gray-100 dark:hover:bg-gray-500/20 hover:text-immich-primary dark:border-none dark:text-immich-dark-fg dark:hover:text-immich-dark-primary"
-                >
-                  <span class="text-text-immich-primary dark:text-immich-dark-primary"
-                    ><Icon path={mdiPlus} size="24" />
-                  </span>
-                  <span class="text-lg">{$t('select_photos')}</span>
-                </button>
+                {#if !album.dynamic}
+                  <p class="text-xs dark:text-immich-dark-fg">{$t('add_photos').toUpperCase()}</p>
+                  <button
+                    type="button"
+                    onclick={() => (viewMode = AlbumPageViewMode.SELECT_ASSETS)}
+                    class="mt-5 bg-subtle flex w-full place-items-center gap-6 rounded-2xl border px-8 py-8 text-immich-fg transition-all hover:bg-gray-100 dark:hover:bg-gray-500/20 hover:text-immich-primary dark:border-none dark:text-immich-dark-fg dark:hover:text-immich-dark-primary"
+                  >
+                    <span class="text-text-immich-primary dark:text-immich-dark-primary"
+                      ><Icon path={mdiPlus} size="24" />
+                    </span>
+                    <span class="text-lg">{$t('select_photos')}</span>
+                  </button>
+                {:else}
+                  <p class="text-center text-gray-500 dark:text-gray-400">{$t('no_assets_found_in_dynamic_album')}</p>
+                {/if}
               </div>
             </section>
           {/if}
@@ -617,7 +621,7 @@
           {#snippet trailing()}
             <CastButton />
 
-            {#if isEditor}
+            {#if isEditor && !album.dynamic}
               <IconButton
                 variant="ghost"
                 shape="round"
@@ -699,7 +703,7 @@
         </ControlAppBar>
       {/if}
 
-      {#if viewMode === AlbumPageViewMode.SELECT_ASSETS}
+      {#if viewMode === AlbumPageViewMode.SELECT_ASSETS && !album.dynamic}
         <ControlAppBar onClose={handleCloseSelectAssets}>
           {#snippet leading()}
             <p class="text-lg dark:text-immich-dark-fg">
@@ -712,16 +716,18 @@
           {/snippet}
 
           {#snippet trailing()}
-            <button
-              type="button"
-              onclick={handleSelectFromComputer}
-              class="rounded-lg px-6 py-2 text-sm font-medium text-immich-primary transition-all hover:bg-immich-primary/10 dark:text-immich-dark-primary dark:hover:bg-immich-dark-primary/25"
-            >
-              {$t('select_from_computer')}
-            </button>
-            <Button size="small" disabled={!timelineInteraction.selectionActive} onclick={handleAddAssets}
-              >{$t('done')}</Button
-            >
+            {#if !album.dynamic}
+              <button
+                type="button"
+                onclick={handleSelectFromComputer}
+                class="rounded-lg px-6 py-2 text-sm font-medium text-immich-primary transition-all hover:bg-immich-primary/10 dark:text-immich-dark-primary dark:hover:bg-immich-dark-primary/25"
+              >
+                {$t('select_from_computer')}
+              </button>
+              <Button size="small" disabled={!timelineInteraction.selectionActive} onclick={handleAddAssets}
+                >{$t('done')}</Button
+              >
+            {/if}
           {/snippet}
         </ControlAppBar>
       {/if}

@@ -1338,6 +1338,7 @@
   "no_albums_message": "Create an album to organize your photos and videos",
   "no_albums_with_name_yet": "It looks like you do not have any albums with this name yet.",
   "no_albums_yet": "It looks like you do not have any albums yet.",
+  "no_assets_found_in_dynamic_album": "No assets match the filters in this dynamic album.",
   "no_archived_assets_message": "Archive photos and videos to hide them from your Photos view",
   "no_assets_message": "CLICK TO UPLOAD YOUR FIRST PHOTO",
   "no_assets_to_show": "No assets to show",

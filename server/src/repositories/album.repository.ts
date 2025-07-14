@@ -121,51 +121,21 @@ export class AlbumRepository {
       return [];
     }
 
-    // First, get album information to determine which are dynamic
-    const albums = await this.db
-      .selectFrom('albums')
-      .select(['id', 'dynamic', 'filters'])
-      .where('id', 'in', ids)
+    // This method only handles regular (non-dynamic) albums.
+    // Dynamic album metadata is calculated in the service layer using search functionality.
+    return this.db
+      .selectFrom('assets')
+      .$call(withDefaultVisibility)
+      .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
+      .select('album_assets.albumsId as albumId')
+      .select((eb) => eb.fn.min(sql<Date>`("assets"."localDateTime" AT TIME ZONE 'UTC'::text)::date`).as('startDate'))
+      .select((eb) => eb.fn.max(sql<Date>`("assets"."localDateTime" AT TIME ZONE 'UTC'::text)::date`).as('endDate'))
+      .select((eb) => eb.fn.max('assets.updatedAt').as('lastModifiedAssetTimestamp'))
+      .select((eb) => sql<number>`${eb.fn.count('assets.id')}::int`.as('assetCount'))
+      .where('album_assets.albumsId', 'in', ids)
+      .where('assets.deletedAt', 'is', null)
+      .groupBy('album_assets.albumsId')
       .execute();
-
-    const regularAlbumIds = albums.filter((album) => !album.dynamic).map((album) => album.id);
-    const dynamicAlbums = albums.filter((album) => album.dynamic);
-
-    const results: AlbumAssetCount[] = [];
-
-    // Get metadata for regular albums
-    if (regularAlbumIds.length > 0) {
-      const regularResults = await this.db
-        .selectFrom('assets')
-        .$call(withDefaultVisibility)
-        .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
-        .select('album_assets.albumsId as albumId')
-        .select((eb) => eb.fn.min(sql<Date>`("assets"."localDateTime" AT TIME ZONE 'UTC'::text)::date`).as('startDate'))
-        .select((eb) => eb.fn.max(sql<Date>`("assets"."localDateTime" AT TIME ZONE 'UTC'::text)::date`).as('endDate'))
-        .select((eb) => eb.fn.max('assets.updatedAt').as('lastModifiedAssetTimestamp'))
-        .select((eb) => sql<number>`${eb.fn.count('assets.id')}::int`.as('assetCount'))
-        .where('album_assets.albumsId', 'in', regularAlbumIds)
-        .where('assets.deletedAt', 'is', null)
-        .groupBy('album_assets.albumsId')
-        .execute();
-
-      results.push(...regularResults);
-    }
-
-    // Get metadata for dynamic albums
-    for (const dynamicAlbum of dynamicAlbums) {
-      // For now, return empty metadata for dynamic albums
-      // TODO: Implement proper metadata calculation for dynamic albums
-      results.push({
-        albumId: dynamicAlbum.id,
-        assetCount: 0,
-        startDate: null,
-        endDate: null,
-        lastModifiedAssetTimestamp: null,
-      });
-    }
-
-    return results;
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })

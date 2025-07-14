@@ -51,12 +51,79 @@ export class AlbumService extends BaseService {
       albums = await this.albumRepository.getOwned(ownerId);
     }
 
-    // Get asset count for each album. Then map the result to an object:
-    // { [albumId]: assetCount }
-    const results = await this.albumRepository.getMetadataForIds(albums.map((album) => album.id));
+    // Separate regular and dynamic albums
+    const regularAlbums = albums.filter((album) => !album.dynamic);
+    const dynamicAlbums = albums.filter((album) => album.dynamic);
+
+    // Get asset count for regular albums using the repository
+    const regularAlbumIds = regularAlbums.map((album) => album.id);
+    const results = regularAlbumIds.length > 0 ? await this.albumRepository.getMetadataForIds(regularAlbumIds) : [];
     const albumMetadata: Record<string, AlbumAssetCount> = {};
     for (const metadata of results) {
       albumMetadata[metadata.albumId] = metadata;
+    }
+
+    // Calculate metadata for dynamic albums using search
+    for (const dynamicAlbum of dynamicAlbums) {
+      if (dynamicAlbum.filters) {
+        try {
+          const searchOptions = this.convertFiltersToSearchOptions(dynamicAlbum.filters, ownerId);
+          const searchResult = await this.searchRepository.searchMetadata(
+            { page: 1, size: 50000 }, // Large page size to get all matching assets
+            { ...searchOptions, orderDirection: dynamicAlbum.order === 'asc' ? 'asc' : 'desc' },
+          );
+
+          const assets = searchResult.items;
+
+          if (assets.length > 0) {
+            const dates = assets
+              .map((asset: any) => asset.fileCreatedAt || asset.localDateTime)
+              .filter(Boolean)
+              .map((date: any) => new Date(date))
+              .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+            const updatedDates = assets
+              .map((asset: any) => asset.updatedAt)
+              .filter(Boolean)
+              .map((date: any) => new Date(date))
+              .sort((a: Date, b: Date) => b.getTime() - a.getTime());
+
+            albumMetadata[dynamicAlbum.id] = {
+              albumId: dynamicAlbum.id,
+              assetCount: assets.length,
+              startDate: dates.length > 0 ? dates[0] : null,
+              endDate: dates.length > 0 ? dates[dates.length - 1] : null,
+              lastModifiedAssetTimestamp: updatedDates.length > 0 ? updatedDates[0] : null,
+            };
+          } else {
+            albumMetadata[dynamicAlbum.id] = {
+              albumId: dynamicAlbum.id,
+              assetCount: 0,
+              startDate: null,
+              endDate: null,
+              lastModifiedAssetTimestamp: null,
+            };
+          }
+        } catch (error) {
+          // If search fails, use empty metadata
+          albumMetadata[dynamicAlbum.id] = {
+            albumId: dynamicAlbum.id,
+            assetCount: 0,
+            startDate: null,
+            endDate: null,
+            lastModifiedAssetTimestamp: null,
+          };
+        }
+      } else {
+        // No filters, so no assets
+        albumMetadata[dynamicAlbum.id] = {
+          albumId: dynamicAlbum.id,
+          assetCount: 0,
+          startDate: null,
+          endDate: null,
+          lastModifiedAssetTimestamp: null,
+        };
+      }
     }
 
     return albums.map((album) => ({
@@ -71,37 +138,90 @@ export class AlbumService extends BaseService {
   }
 
   async get(auth: AuthDto, id: string, dto: AlbumInfoDto): Promise<AlbumResponseDto> {
+    // throw new Error('Not implemented');
+    this.logger.debug(`AlbumService.get called with id: ${id}, withoutAssets: ${dto.withoutAssets}`);
     await this.requireAccess({ auth, permission: Permission.ALBUM_READ, ids: [id] });
     await this.albumRepository.updateThumbnails();
     const withAssets = dto.withoutAssets === undefined ? true : !dto.withoutAssets;
     const album = await this.findOrFail(id, { withAssets: false }); // Always load without assets first
 
+    this.logger.debug(
+      `Album data loaded: ${JSON.stringify(
+        {
+          id: album.id,
+          dynamic: album.dynamic,
+          filters: album.filters,
+          albumName: album.albumName,
+        },
+        null,
+        2,
+      )}`,
+    );
+
     // Check if this is a dynamic album
-    if (album.dynamic) {
-      // For dynamic albums, return empty assets for now
-      // TODO: Implement proper dynamic album asset retrieval
-      const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([id]);
+    this.logger.debug(`Album check - dynamic: ${album.dynamic}, filters: ${!!album.filters}`);
+    if (album.dynamic && album.filters) {
+      this.logger.debug('Processing dynamic album - entering logic');
+      // Convert album filters to search options for SearchRepository
+      const dynamicSearchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+
+      // Always get the search result to calculate metadata, even if we don't need full assets
+      const searchResult = await this.searchRepository.searchMetadata(
+        { page: 1, size: 50000 }, // Large page size to get all matching assets
+        { ...dynamicSearchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+      );
+
+      const foundAssets = searchResult.items;
+      this.logger.debug(`Found ${foundAssets.length} assets for dynamic album`);
+
+      // For dynamic albums, calculate metadata from the actual search results
+      let startDate: Date | undefined;
+      let endDate: Date | undefined;
+      let lastModifiedAssetTimestamp: Date | undefined;
+
+      if (foundAssets.length > 0) {
+        const dates = foundAssets
+          .map((asset: any) => asset.fileCreatedAt || asset.localDateTime)
+          .filter(Boolean)
+          .map((date: any) => new Date(date))
+          .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+        if (dates.length > 0) {
+          startDate = dates[0];
+          endDate = dates[dates.length - 1];
+        }
+
+        const updatedDates = foundAssets
+          .map((asset: any) => asset.updatedAt)
+          .filter(Boolean)
+          .map((date: any) => new Date(date))
+          .sort((a: Date, b: Date) => b.getTime() - a.getTime());
+
+        if (updatedDates.length > 0) {
+          lastModifiedAssetTimestamp = updatedDates[0];
+        }
+      }
 
       return {
-        ...mapAlbum({ ...album, assets: [] }, withAssets, auth),
-        startDate: albumMetadataForIds?.startDate ?? undefined,
-        endDate: albumMetadataForIds?.endDate ?? undefined,
-        assetCount: albumMetadataForIds?.assetCount ?? 0,
-        lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
-      };
-    } else {
-      // For regular albums, use the existing logic
-      const albumWithAssets = withAssets ? await this.findOrFail(id, { withAssets: true }) : album;
-      const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
-
-      return {
-        ...mapAlbum(albumWithAssets, withAssets, auth),
-        startDate: albumMetadataForIds?.startDate ?? undefined,
-        endDate: albumMetadataForIds?.endDate ?? undefined,
-        assetCount: albumMetadataForIds?.assetCount ?? 0,
-        lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
+        ...mapAlbum({ ...album, assets: withAssets ? foundAssets : [] }, withAssets, auth),
+        startDate,
+        endDate,
+        assetCount: foundAssets.length,
+        lastModifiedAssetTimestamp,
       };
     }
+
+    // For regular albums, use the existing logic
+    const albumWithAssets = withAssets ? await this.findOrFail(id, { withAssets: true }) : album;
+    const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
+
+    return {
+      ...mapAlbum(albumWithAssets, withAssets, auth),
+      startDate: albumMetadataForIds?.startDate ?? undefined,
+      endDate: albumMetadataForIds?.endDate ?? undefined,
+      assetCount: albumMetadataForIds?.assetCount ?? 0,
+      lastModifiedAssetTimestamp: albumMetadataForIds?.lastModifiedAssetTimestamp ?? undefined,
+    };
   }
 
   async create(auth: AuthDto, dto: CreateAlbumDto): Promise<AlbumResponseDto> {
@@ -311,6 +431,62 @@ export class AlbumService extends BaseService {
   async updateUser(auth: AuthDto, id: string, userId: string, dto: UpdateAlbumUserDto): Promise<void> {
     await this.requireAccess({ auth, permission: Permission.ALBUM_SHARE, ids: [id] });
     await this.albumUserRepository.update({ albumsId: id, usersId: userId }, { role: dto.role });
+  }
+
+  /**
+   * Convert dynamic album filters to search options for SearchRepository
+   */
+  private convertFiltersToSearchOptions(filters: any, userId: string): any {
+    const searchOptions: any = {
+      userIds: [userId],
+      withDeleted: false,
+    };
+
+    // Handle the actual filter structure: {tags: [...], operator: "and", ...}
+    if (filters.tags && Array.isArray(filters.tags)) {
+      searchOptions.tagIds = filters.tags;
+    }
+
+    if (filters.people && Array.isArray(filters.people)) {
+      searchOptions.personIds = filters.people;
+    }
+
+    if (filters.location) {
+      if (typeof filters.location === 'string') {
+        searchOptions.city = filters.location;
+      } else if (typeof filters.location === 'object') {
+        if (filters.location.city) searchOptions.city = filters.location.city;
+        if (filters.location.state) searchOptions.state = filters.location.state;
+        if (filters.location.country) searchOptions.country = filters.location.country;
+      }
+    }
+
+    if (filters.dateRange && typeof filters.dateRange === 'object') {
+      if (filters.dateRange.start) {
+        searchOptions.takenAfter = new Date(filters.dateRange.start);
+      }
+      if (filters.dateRange.end) {
+        searchOptions.takenBefore = new Date(filters.dateRange.end);
+      }
+    }
+
+    if (filters.assetType) {
+      if (filters.assetType === 'IMAGE' || filters.assetType === 'VIDEO') {
+        searchOptions.type = filters.assetType;
+      }
+    }
+
+    if (filters.metadata && typeof filters.metadata === 'object') {
+      if (filters.metadata.isFavorite !== undefined) {
+        searchOptions.isFavorite = filters.metadata.isFavorite;
+      }
+      if (filters.metadata.make) searchOptions.make = filters.metadata.make;
+      if (filters.metadata.model) searchOptions.model = filters.metadata.model;
+      if (filters.metadata.lensModel) searchOptions.lensModel = filters.metadata.lensModel;
+      if (filters.metadata.rating !== undefined) searchOptions.rating = filters.metadata.rating;
+    }
+
+    return searchOptions;
   }
 
   private async findOrFail(id: string, options: AlbumInfoOptions) {
