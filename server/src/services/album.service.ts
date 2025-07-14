@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { DYNAMIC_ALBUM_CONFIG } from 'src/config/dynamic-albums.config';
 import {
   AddUsersDto,
   AlbumInfoDto,
@@ -15,22 +16,29 @@ import {
 } from 'src/dtos/album.dto';
 import { BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
-import { Permission } from 'src/enum';
+import { AssetOrder, Permission } from 'src/enum';
 import { AlbumAssetCount, AlbumInfoOptions } from 'src/repositories/album.repository';
 import { BaseService } from 'src/services/base.service';
-import { DynamicAlbumService } from 'src/services/dynamic-album.service';
-import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
+import {
+  DynamicAlbumFilters,
+  DynamicAlbumMetadata,
+  DynamicAlbumOperationOptions,
+  DynamicAlbumSearchOptions,
+  sanitizeDynamicAlbumFilters,
+  validateDynamicAlbumFilters,
+} from 'src/types/dynamic-album.types';
+import {
+  FilterConversionError,
+  FilterConversionResult,
+  isValidSearchOptions,
+  SearchOptions,
+} from 'src/types/search.types';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
 export class AlbumService extends BaseService {
-  constructor(
-    private dynamicAlbumService: DynamicAlbumService,
-    ...args: ConstructorParameters<typeof BaseService>
-  ) {
-    super(...args);
-  }
+  private readonly filterCache = new Map<string, { result: FilterConversionResult; timestamp: number }>();
 
   async getStatistics({ user: { id: ownerId } }: AuthDto): Promise<AlbumStatisticsResponseDto> {
     const [owned, shared, notShared] = await Promise.all([
@@ -70,15 +78,13 @@ export class AlbumService extends BaseService {
     // Calculate metadata for dynamic albums using the centralized service
     for (const dynamicAlbum of dynamicAlbums) {
       if (dynamicAlbum.filters) {
-        const metadata = await this.dynamicAlbumService.calculateMetadata(
-          dynamicAlbum.filters as DynamicAlbumFilters,
-          ownerId,
-          { throwOnError: false },
-        );
+        const metadata = await this.calculateMetadata(dynamicAlbum.filters as DynamicAlbumFilters, ownerId, {
+          throwOnError: false,
+        });
 
         // Update thumbnail if needed and no thumbnail is set
         if (!dynamicAlbum.albumThumbnailAssetId && metadata.assetCount > 0) {
-          const thumbnailAssetId = await this.dynamicAlbumService.getThumbnailAssetId(
+          const thumbnailAssetId = await this.getThumbnailAssetId(
             dynamicAlbum.filters as DynamicAlbumFilters,
             ownerId,
             { throwOnError: false },
@@ -131,7 +137,7 @@ export class AlbumService extends BaseService {
     // Check if this is a dynamic album
     if (album.dynamic && album.filters) {
       // Use the centralized service to get assets and metadata
-      const searchResult = await this.dynamicAlbumService.getAssetsForDynamicAlbum(
+      const searchResult = await this.getAssetsForDynamicAlbum(
         album.filters as DynamicAlbumFilters,
         auth.user.id,
         { size: 50000, order: album.order },
@@ -141,11 +147,9 @@ export class AlbumService extends BaseService {
       const foundAssets = searchResult.items || [];
 
       // Calculate metadata using the centralized service
-      const metadata = await this.dynamicAlbumService.calculateMetadata(
-        album.filters as DynamicAlbumFilters,
-        auth.user.id,
-        { throwOnError: false },
-      );
+      const metadata = await this.calculateMetadata(album.filters as DynamicAlbumFilters, auth.user.id, {
+        throwOnError: false,
+      });
 
       // Update thumbnail if needed
       if (!album.albumThumbnailAssetId && foundAssets.length > 0) {
@@ -210,8 +214,8 @@ export class AlbumService extends BaseService {
     let dynamicAlbumThumbnailAssetId = null;
     if (dto.dynamic && dto.filters) {
       try {
-        // Use DynamicAlbumService to get thumbnail asset
-        dynamicAlbumThumbnailAssetId = await this.dynamicAlbumService.getThumbnailAssetId(dto.filters, auth.user.id, {
+        // Use  to get thumbnail asset
+        dynamicAlbumThumbnailAssetId = await this.getThumbnailAssetId(dto.filters, auth.user.id, {
           throwOnError: false, // Don't throw on thumbnail selection errors
           timeout: 10000, // 10 second timeout for thumbnail selection
         });
@@ -257,17 +261,10 @@ export class AlbumService extends BaseService {
       } else {
         // For dynamic albums, validate thumbnail asset matches current filters
         if (album.filters) {
-          // Use DynamicAlbumService to validate thumbnail
-          const isValid = await this.dynamicAlbumService.validateThumbnail(
-            id,
-            dto.albumThumbnailAssetId,
-            album.filters,
-            auth.user.id,
-            {
-              throwOnError: false, // Don't throw, we'll handle validation ourselves
-              timeout: 10000, // 10 second timeout for validation
-            },
-          );
+          const isValid = await this.validateThumbnail(id, dto.albumThumbnailAssetId, album.filters, auth.user.id, {
+            throwOnError: false, // Don't throw, we'll handle validation ourselves
+            timeout: 10000, // 10 second timeout for validation
+          });
 
           if (!isValid) {
             throw new BadRequestException('Invalid album thumbnail - asset does not match album filters');
@@ -280,9 +277,8 @@ export class AlbumService extends BaseService {
     let finalAlbumThumbnailAssetId = dto.albumThumbnailAssetId;
 
     if (album.dynamic && dto.filters && JSON.stringify(dto.filters) !== JSON.stringify(album.filters)) {
-      // Use DynamicAlbumService to update thumbnail if needed
       try {
-        const updatedThumbnailId = await this.dynamicAlbumService.updateThumbnailIfNeeded(
+        const updatedThumbnailId = await this.updateThumbnailIfNeeded(
           id,
           dto.filters,
           dto.albumThumbnailAssetId ?? null, // Convert undefined to null for the method
@@ -453,5 +449,375 @@ export class AlbumService extends BaseService {
       throw new BadRequestException('Album not found');
     }
     return album;
+  }
+
+  // Dynamic Album Methods
+
+  /**
+   * Get assets for a dynamic album with comprehensive options
+   */
+  async getAssetsForDynamicAlbum(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    options: DynamicAlbumSearchOptions = {},
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<any> {
+    const operation = async () => {
+      const conversionResult = this.convertFiltersToSearchOptions(filters, ownerId, operationOptions.useCache);
+
+      // Log conversion warnings if any
+      if (conversionResult.warnings.length > 0) {
+        this.logger.warn('Filter conversion warnings:', conversionResult.warnings);
+      }
+
+      // Handle conversion errors
+      if (conversionResult.errors.length > 0) {
+        const errorMessage = `Filter conversion failed: ${conversionResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, conversionResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        // Return empty result for safety
+        return { items: [], hasNextPage: false };
+      }
+
+      return await this.searchRepository.searchMetadata(
+        {
+          page: options.page ?? 1,
+          size: Math.min(
+            options.size ?? DYNAMIC_ALBUM_CONFIG.DEFAULT_SEARCH_SIZE,
+            DYNAMIC_ALBUM_CONFIG.MAX_SEARCH_SIZE,
+          ),
+        },
+        {
+          ...conversionResult.searchOptions,
+          orderDirection: this.getOrderDirection(options.order),
+          withExif: options.withExif ?? false,
+          withStacked: options.withStacked ?? false,
+        },
+      );
+    };
+
+    return this.executeSafely(
+      operation,
+      'get assets for dynamic album',
+      { items: [], hasNextPage: false },
+      operationOptions,
+    );
+  }
+
+  /**
+   * Calculate metadata for a dynamic album
+   */
+  async calculateMetadata(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<DynamicAlbumMetadata> {
+    const operation = async (): Promise<DynamicAlbumMetadata> => {
+      // Validate filters before processing
+      const validationResult = validateDynamicAlbumFilters(filters);
+      if (!validationResult.isValid) {
+        const errorMessage = `Invalid filters: ${validationResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, validationResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        // Return empty metadata for invalid filters
+        return {
+          assetCount: 0,
+          startDate: null,
+          endDate: null,
+          lastModifiedAssetTimestamp: null,
+        };
+      }
+
+      const searchResult = await this.getAssetsForDynamicAlbum(
+        filters,
+        ownerId,
+        { size: DYNAMIC_ALBUM_CONFIG.DEFAULT_SEARCH_SIZE },
+        operationOptions,
+      );
+
+      const assets = searchResult.items || [];
+
+      if (assets.length === 0) {
+        return {
+          assetCount: 0,
+          startDate: null,
+          endDate: null,
+          lastModifiedAssetTimestamp: null,
+        };
+      }
+
+      // Calculate date ranges
+      const dates = assets
+        .map((asset: any) => asset.fileCreatedAt || asset.localDateTime)
+        .filter(Boolean)
+        .map((date: any) => new Date(date))
+        .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
+      const updatedDates = assets
+        .map((asset: any) => asset.updatedAt)
+        .filter(Boolean)
+        .map((date: any) => new Date(date))
+        .sort((a: Date, b: Date) => b.getTime() - a.getTime());
+
+      return {
+        assetCount: assets.length,
+        startDate: dates.length > 0 ? dates[0] : null,
+        endDate: dates.length > 0 ? dates[dates.length - 1] : null,
+        lastModifiedAssetTimestamp: updatedDates.length > 0 ? updatedDates[0] : null,
+      };
+    };
+
+    const defaultMetadata: DynamicAlbumMetadata = {
+      assetCount: 0,
+      startDate: null,
+      endDate: null,
+      lastModifiedAssetTimestamp: null,
+    };
+
+    return this.executeSafely(operation, 'calculate metadata for dynamic album', defaultMetadata, operationOptions);
+  }
+
+  /**
+   * Get thumbnail asset ID for a dynamic album
+   */
+  async getThumbnailAssetId(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<string | null> {
+    const operation = async (): Promise<string | null> => {
+      const searchResult = await this.getAssetsForDynamicAlbum(
+        filters,
+        ownerId,
+        { size: DYNAMIC_ALBUM_CONFIG.THUMBNAIL_SEARCH_SIZE },
+        operationOptions,
+      );
+
+      return searchResult.items?.length > 0 ? searchResult.items[0].id : null;
+    };
+
+    return this.executeSafely(operation, 'get thumbnail for dynamic album', null, operationOptions);
+  }
+
+  /**
+   * Validate that a thumbnail asset belongs to a dynamic album
+   */
+  async validateThumbnail(
+    albumId: string,
+    thumbnailAssetId: string,
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<boolean> {
+    const operation = async (): Promise<boolean> => {
+      const searchResult = await this.getAssetsForDynamicAlbum(
+        filters,
+        ownerId,
+        { size: DYNAMIC_ALBUM_CONFIG.DEFAULT_SEARCH_SIZE },
+        operationOptions,
+      );
+
+      const assetIds = searchResult.items?.map((asset: any) => asset.id) || [];
+      return assetIds.includes(thumbnailAssetId);
+    };
+
+    return this.executeSafely(operation, `validate thumbnail for dynamic album ${albumId}`, false, operationOptions);
+  }
+
+  /**
+   * Update thumbnail if needed for a dynamic album
+   */
+  async updateThumbnailIfNeeded(
+    albumId: string,
+    filters: DynamicAlbumFilters,
+    currentThumbnailId: string | null,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<string | null> {
+    const operation = async (): Promise<string | null> => {
+      // If we already have a valid thumbnail, keep it
+      if (currentThumbnailId) {
+        const isValid = await this.validateThumbnail(albumId, currentThumbnailId, filters, ownerId, operationOptions);
+        if (isValid) {
+          return currentThumbnailId;
+        }
+      }
+
+      // Get a new thumbnail
+      const newThumbnailId = await this.getThumbnailAssetId(filters, ownerId, operationOptions);
+      if (newThumbnailId) {
+        await this.albumRepository.update(albumId, {
+          id: albumId,
+          albumThumbnailAssetId: newThumbnailId,
+        });
+      }
+
+      return newThumbnailId;
+    };
+
+    return this.executeSafely(
+      operation,
+      `update thumbnail for dynamic album ${albumId}`,
+      currentThumbnailId,
+      operationOptions,
+    );
+  }
+
+  /**
+   * Get search options for a dynamic album
+   */
+  async getSearchOptionsForDynamicAlbum(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<any> {
+    const operation = async () => {
+      const conversionResult = this.convertFiltersToSearchOptions(filters, ownerId, operationOptions.useCache);
+
+      if (conversionResult.errors.length > 0) {
+        const errorMessage = `Filter conversion failed: ${conversionResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, conversionResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        return {};
+      }
+
+      return conversionResult.searchOptions;
+    };
+
+    return this.executeSafely(operation, 'get search options for dynamic album', {}, operationOptions);
+  }
+
+  private convertFiltersToSearchOptions(
+    filters: DynamicAlbumFilters,
+    userId: string,
+    useCache = true,
+  ): FilterConversionResult {
+    const cacheKey = `${JSON.stringify(filters)}-${userId}`;
+    const now = Date.now();
+
+    // Check cache first
+    if (useCache) {
+      const cached = this.filterCache.get(cacheKey);
+      if (cached && now - cached.timestamp < DYNAMIC_ALBUM_CONFIG.FILTER_CACHE_TTL_MS) {
+        return cached.result;
+      }
+    }
+
+    // Perform conversion
+    const result = this.performFilterConversion(filters, userId);
+
+    // Cache the result
+    if (useCache) {
+      this.filterCache.set(cacheKey, { result, timestamp: now });
+      this.cleanupFilterCache();
+    }
+
+    return result;
+  }
+
+  private performFilterConversion(filters: unknown, userId: string): FilterConversionResult {
+    const errors: FilterConversionError[] = [];
+    const warnings: string[] = [];
+    let searchOptions: SearchOptions = {};
+
+    try {
+      // Sanitize filters
+      const sanitizedFilters = sanitizeDynamicAlbumFilters(filters);
+
+      // Validate filters
+      const validationResult = validateDynamicAlbumFilters(sanitizedFilters);
+      if (!validationResult.isValid) {
+        errors.push(...validationResult.errors);
+        return { searchOptions, errors, warnings };
+      }
+
+      // Convert to search options
+      if (sanitizedFilters.tags && sanitizedFilters.tags.length > 0) {
+        searchOptions.tagIds = sanitizedFilters.tags;
+        searchOptions.tagOperator = sanitizedFilters.operator === 'or' ? 'or' : 'and';
+      }
+
+      if (sanitizedFilters.dateRange) {
+        if (sanitizedFilters.dateRange.start) {
+          searchOptions.createdAfter = new Date(sanitizedFilters.dateRange.start);
+        }
+        if (sanitizedFilters.dateRange.end) {
+          searchOptions.createdBefore = new Date(sanitizedFilters.dateRange.end);
+        }
+      }
+
+      // Add user filter
+      searchOptions.userIds = [userId];
+
+      // Validate final search options
+      if (!isValidSearchOptions(searchOptions)) {
+        errors.push({
+          field: 'searchOptions',
+          message: 'Generated search options are invalid',
+          value: searchOptions,
+        });
+      }
+    } catch (error) {
+      errors.push({
+        field: 'conversion',
+        message: error instanceof Error ? error.message : 'Unknown conversion error',
+        value: error,
+      });
+    }
+
+    return { searchOptions, errors, warnings };
+  }
+
+  private getOrderDirection(order?: AssetOrder): 'asc' | 'desc' {
+    return order === AssetOrder.ASC ? 'asc' : 'desc';
+  }
+
+  private async executeSafely<T>(
+    operation: () => Promise<T>,
+    context: string,
+    defaultValue: T,
+    options: DynamicAlbumOperationOptions = {},
+  ): Promise<T> {
+    const timeout = options.timeout ?? 30000; // 30 second default timeout
+
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Operation timed out: ${context}`)), timeout);
+      });
+
+      const result = await Promise.race([operation(), timeoutPromise]);
+      return result;
+    } catch (error) {
+      this.logger.error(`Error in ${context}:`, error);
+
+      if (options.throwOnError) {
+        throw error;
+      }
+
+      return defaultValue;
+    }
+  }
+
+  private cleanupFilterCache(): void {
+    const now = Date.now();
+    const maxAge = DYNAMIC_ALBUM_CONFIG.FILTER_CACHE_TTL_MS;
+
+    for (const [key, value] of this.filterCache.entries()) {
+      if (now - value.timestamp > maxAge) {
+        this.filterCache.delete(key);
+      }
+    }
   }
 }

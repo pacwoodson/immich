@@ -123,6 +123,7 @@ class AlbumSync extends BaseSync {
       .orderBy('albums.updateId', 'asc')
       .leftJoin('albums_shared_users_users as album_users', 'albums.id', 'album_users.albumsId')
       .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
       .select([
         'albums.id',
         'albums.ownerId',
@@ -134,6 +135,7 @@ class AlbumSync extends BaseSync {
         'albums.isActivityEnabled',
         'albums.order',
         'albums.updateId',
+        'albums.dynamic',
       ])
       .stream();
   }
@@ -168,6 +170,7 @@ class AlbumAssetSync extends BaseSync {
       .innerJoin('albums', 'albums.id', 'album_assets.albumsId')
       .leftJoin('albums_shared_users_users as album_users', 'album_users.albumsId', 'album_assets.albumsId')
       .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
       .stream();
   }
 }
@@ -201,6 +204,7 @@ class AlbumAssetExifSync extends BaseSync {
       .innerJoin('albums', 'albums.id', 'album_assets.albumsId')
       .leftJoin('albums_shared_users_users as album_users', 'album_users.albumsId', 'album_assets.albumsId')
       .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
       .stream();
   }
 }
@@ -232,12 +236,15 @@ class AlbumToAssetSync extends BaseSync {
             .selectFrom('albums')
             .select(['id'])
             .where('ownerId', '=', userId)
+            .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
             .union((eb) =>
               eb.parens(
                 eb
                   .selectFrom('albums_shared_users_users as albumUsers')
                   .select(['albumUsers.albumsId as id'])
-                  .where('albumUsers.usersId', '=', userId),
+                  .where('albumUsers.usersId', '=', userId)
+                  .innerJoin('albums', 'albums.id', 'albumUsers.albumsId')
+                  .where('albums.dynamic', '=', false), // Exclude dynamic albums from sync
               ),
             ),
         ),
@@ -257,6 +264,7 @@ class AlbumToAssetSync extends BaseSync {
       .innerJoin('albums', 'albums.id', 'album_assets.albumsId')
       .leftJoin('albums_shared_users_users as album_users', 'album_users.albumsId', 'album_assets.albumsId')
       .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
       .stream();
   }
 }
@@ -289,12 +297,15 @@ class AlbumUserSync extends BaseSync {
             .selectFrom('albums')
             .select(['id'])
             .where('ownerId', '=', userId)
+            .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
             .union((eb) =>
               eb.parens(
                 eb
                   .selectFrom('albums_shared_users_users as albumUsers')
                   .select(['albumUsers.albumsId as id'])
-                  .where('albumUsers.usersId', '=', userId),
+                  .where('albumUsers.usersId', '=', userId)
+                  .innerJoin('albums', 'albums.id', 'albumUsers.albumsId')
+                  .where('albums.dynamic', '=', false), // Exclude dynamic albums from sync
               ),
             ),
         ),
@@ -320,12 +331,15 @@ class AlbumUserSync extends BaseSync {
             .selectFrom('albums')
             .select(['id'])
             .where('ownerId', '=', userId)
+            .where('albums.dynamic', '=', false) // Exclude dynamic albums from sync
             .union((eb) =>
               eb.parens(
                 eb
                   .selectFrom('albums_shared_users_users as albumUsers')
                   .select(['albumUsers.albumsId as id'])
-                  .where('albumUsers.usersId', '=', userId),
+                  .where('albumUsers.usersId', '=', userId)
+                  .innerJoin('albums', 'albums.id', 'albumUsers.albumsId')
+                  .where('albums.dynamic', '=', false), // Exclude dynamic albums from sync
               ),
             ),
         ),

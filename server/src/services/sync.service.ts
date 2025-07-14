@@ -308,6 +308,12 @@ export class SyncService extends BaseService {
     const upsertType = SyncEntityType.AlbumV1;
     const upserts = this.syncRepository.album.getUpserts(auth.user.id, checkpointMap[upsertType]);
     for await (const { updateId, ...data } of upserts) {
+      // Validate that this is not a dynamic album
+      if (data.dynamic) {
+        throw new BadRequestException(
+          `Cannot sync dynamic album ${updateId}. Dynamic albums are not supported for synchronization.`,
+        );
+      }
       send(response, { type: upsertType, ids: [updateId], data });
     }
   }
