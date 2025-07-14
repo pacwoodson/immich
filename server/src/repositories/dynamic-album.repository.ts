@@ -343,8 +343,8 @@ export class DynamicAlbumRepository {
 
       const bucketSearchOptions = {
         ...searchOptions,
-        createdAfter: timeBucketDate,
-        createdBefore: nextMonth,
+        takenAfter: timeBucketDate,
+        takenBefore: nextMonth,
         orderDirection: this.getOrderDirection(order),
       };
 

@@ -71,11 +71,22 @@ export class TimelineService extends BaseService {
   }
 
   private async getTimeBucketForDynamicAlbum(auth: AuthDto, dto: TimeBucketAssetDto, filters: any): Promise<string> {
+    // Convert the timeBucket from ISO format to YYYY-MM-DD format for consistency
+    let timeBucketDate: Date;
+    try {
+      timeBucketDate = new Date(dto.timeBucket);
+    } catch (error) {
+      throw new BadRequestException(`Invalid timeBucket format: ${dto.timeBucket}`);
+    }
+
+    // Format as YYYY-MM-DD to match the format used in getTimeBucketsForDynamicAlbum
+    const formattedTimeBucket = `${timeBucketDate.getFullYear()}-${String(timeBucketDate.getMonth() + 1).padStart(2, '0')}-01`;
+
     // Use the dynamic album repository to get assets for the specific time bucket
     const bucketAssets = await this.dynamicAlbumRepository.getAssetsForTimeBucket(
       filters,
       auth.user.id,
-      dto.timeBucket,
+      formattedTimeBucket,
       dto.order,
     );
 

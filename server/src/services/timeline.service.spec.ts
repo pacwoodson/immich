@@ -172,5 +172,55 @@ describe(TimelineService.name, () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should handle dynamic albums correctly', async () => {
+      const mockAlbum = {
+        id: 'album-id',
+        dynamic: true,
+        filters: { tags: ['tag-1'] },
+      };
+      const mockAssets = [
+        {
+          id: 'asset-1',
+          ownerId: 'user-1',
+          visibility: 'TIMELINE',
+          isFavorite: false,
+          type: 'IMAGE',
+          thumbhash: null,
+          fileCreatedAt: '2023-09-15T10:00:00.000Z',
+          localDateTime: '2023-09-15T10:00:00.000Z',
+          duration: null,
+          exifInfo: { city: null, country: null },
+          livePhotoVideoId: null,
+          status: 'AVAILABLE',
+        },
+      ];
+
+      mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set(['album-id']));
+      mocks.album.getById.mockResolvedValue(mockAlbum);
+      mocks.dynamicAlbum.getAssetsForTimeBucket.mockResolvedValue(mockAssets);
+
+      const result = await sut.getTimeBucket(authStub.admin, {
+        timeBucket: '2023-09-01T00:00:00.000Z',
+        albumId: 'album-id',
+      });
+
+      expect(mocks.album.getById).toHaveBeenCalledWith('album-id', { withAssets: false });
+      expect(mocks.dynamicAlbum.getAssetsForTimeBucket).toHaveBeenCalledWith(
+        { tags: ['tag-1'] },
+        authStub.admin.user.id,
+        '2023-09-01',
+        'desc',
+      );
+
+      // Verify the result is a JSON string with the expected structure
+      const parsedResult = JSON.parse(result);
+      expect(parsedResult.id).toEqual(['asset-1']);
+      expect(parsedResult.ownerId).toEqual(['user-1']);
+      expect(parsedResult.visibility).toEqual(['TIMELINE']);
+      expect(parsedResult.isFavorite).toEqual([false]);
+      expect(parsedResult.isImage).toEqual([true]);
+      expect(parsedResult.isTrashed).toEqual([false]);
+    });
   });
 });
