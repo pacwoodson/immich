@@ -34,8 +34,29 @@
 
   // Computed properties for dynamic albums
   let isDynamic = $derived(album?.dynamic === true);
-  let hasFilters = $derived(isDynamic && album?.filters && Object.keys(album.filters || {}).length > 0);
-  let filterCount = $derived(hasFilters ? Object.keys(album.filters || {}).length : 0);
+
+  // Count actual filter types, excluding the 'operator' property which is just metadata
+  let getFilterCount = $derived(() => {
+    if (!isDynamic || !album?.filters || typeof album.filters !== 'object') {
+      return 0;
+    }
+
+    const filters = album.filters as any;
+    let count = 0;
+
+    // Count each filter type that has content
+    if (filters.tags && Array.isArray(filters.tags) && filters.tags.length > 0) count++;
+    if (filters.people && Array.isArray(filters.people) && filters.people.length > 0) count++;
+    if (filters.location && Object.keys(filters.location || {}).length > 0) count++;
+    if (filters.dateRange && Object.keys(filters.dateRange || {}).length > 0) count++;
+    if (filters.assetType) count++;
+    if (filters.metadata && Object.keys(filters.metadata || {}).length > 0) count++;
+
+    return count;
+  });
+
+  let hasFilters = $derived(getFilterCount() > 0);
+  let filterCount = $derived(getFilterCount());
 </script>
 
 <div
