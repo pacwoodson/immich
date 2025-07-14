@@ -7,12 +7,19 @@ import {
   DynamicAlbumMetadata,
   DynamicAlbumOperationOptions,
   DynamicAlbumSearchOptions,
+  sanitizeDynamicAlbumFilters,
+  validateDynamicAlbumFilters,
 } from 'src/types/dynamic-album.types';
-import { FilterUtil } from 'src/utils/filter.util';
+import {
+  FilterConversionError,
+  FilterConversionResult,
+  isValidSearchOptions,
+  SearchOptions,
+} from 'src/types/search.types';
 
 @Injectable()
 export class DynamicAlbumService extends BaseService {
-  private readonly filterCache = new Map<string, { result: any; timestamp: number }>();
+  private readonly filterCache = new Map<string, { result: FilterConversionResult; timestamp: number }>();
 
   /**
    * Get assets for a dynamic album with comprehensive options
@@ -24,7 +31,25 @@ export class DynamicAlbumService extends BaseService {
     operationOptions: DynamicAlbumOperationOptions = {},
   ): Promise<any> {
     const operation = async () => {
-      const searchOptions = this.convertFiltersToSearchOptions(filters, ownerId, operationOptions.useCache);
+      const conversionResult = this.convertFiltersToSearchOptions(filters, ownerId, operationOptions.useCache);
+
+      // Log conversion warnings if any
+      if (conversionResult.warnings.length > 0) {
+        this.logger.warn('Filter conversion warnings:', conversionResult.warnings);
+      }
+
+      // Handle conversion errors
+      if (conversionResult.errors.length > 0) {
+        const errorMessage = `Filter conversion failed: ${conversionResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, conversionResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        // Return empty result for safety
+        return { items: [], hasNextPage: false };
+      }
 
       return await this.searchRepository.searchMetadata(
         {
@@ -35,7 +60,7 @@ export class DynamicAlbumService extends BaseService {
           ),
         },
         {
-          ...searchOptions,
+          ...conversionResult.searchOptions,
           orderDirection: this.getOrderDirection(options.order),
           withExif: options.withExif ?? false,
           withStacked: options.withStacked ?? false,
@@ -60,6 +85,25 @@ export class DynamicAlbumService extends BaseService {
     operationOptions: DynamicAlbumOperationOptions = {},
   ): Promise<DynamicAlbumMetadata> {
     const operation = async (): Promise<DynamicAlbumMetadata> => {
+      // Validate filters before processing
+      const validationResult = validateDynamicAlbumFilters(filters);
+      if (!validationResult.isValid) {
+        const errorMessage = `Invalid filters: ${validationResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, validationResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        // Return empty metadata for invalid filters
+        return {
+          assetCount: 0,
+          startDate: null,
+          endDate: null,
+          lastModifiedAssetTimestamp: null,
+        };
+      }
+
       const searchResult = await this.getAssetsForDynamicAlbum(
         filters,
         ownerId,
@@ -255,9 +299,53 @@ export class DynamicAlbumService extends BaseService {
   }
 
   /**
-   * Convert filters to search options with caching
+   * Get search options for dynamic album filters (for use by repositories)
    */
-  private convertFiltersToSearchOptions(filters: DynamicAlbumFilters, userId: string, useCache = true): any {
+  async getSearchOptionsForDynamicAlbum(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<any> {
+    const operation = async () => {
+      const conversionResult = this.convertFiltersToSearchOptions(filters, ownerId, operationOptions.useCache);
+
+      // Log conversion warnings if any
+      if (conversionResult.warnings.length > 0) {
+        this.logger.warn('Filter conversion warnings:', conversionResult.warnings);
+      }
+
+      // Handle conversion errors
+      if (conversionResult.errors.length > 0) {
+        const errorMessage = `Filter conversion failed: ${conversionResult.errors.map((e) => e.message).join(', ')}`;
+        this.logger.error(errorMessage, conversionResult.errors);
+
+        if (operationOptions.throwOnError) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        // Return empty search options for safety
+        return {};
+      }
+
+      return conversionResult.searchOptions;
+    };
+
+    return this.executeSafely(
+      operation,
+      'getSearchOptionsForDynamicAlbum',
+      {}, // Default to empty search options
+      operationOptions,
+    );
+  }
+
+  /**
+   * Convert filters to search options with caching and proper error handling
+   */
+  private convertFiltersToSearchOptions(
+    filters: DynamicAlbumFilters,
+    userId: string,
+    useCache = true,
+  ): FilterConversionResult {
     const cacheKey = `${JSON.stringify(filters)}-${userId}`;
 
     if (useCache && this.filterCache.has(cacheKey)) {
@@ -269,9 +357,9 @@ export class DynamicAlbumService extends BaseService {
       }
     }
 
-    const result = FilterUtil.convertFiltersToSearchOptions(filters, userId);
+    const result = this.performFilterConversion(filters, userId);
 
-    if (useCache) {
+    if (useCache && result.errors.length === 0) {
       this.filterCache.set(cacheKey, { result, timestamp: Date.now() });
 
       // Clean up old cache entries periodically
@@ -281,6 +369,133 @@ export class DynamicAlbumService extends BaseService {
     }
 
     return result;
+  }
+
+  /**
+   * Convert filters to search options with comprehensive validation
+   * @param filters Dynamic album filters
+   * @param userId User ID
+   * @returns FilterConversionResult with search options and any errors/warnings
+   */
+  private performFilterConversion(filters: unknown, userId: string): FilterConversionResult {
+    const errors: FilterConversionError[] = [];
+    const warnings: string[] = [];
+
+    // Validate userId
+    if (!userId || typeof userId !== 'string') {
+      errors.push({
+        field: 'userId',
+        message: 'Valid userId is required',
+        value: userId,
+      });
+      return {
+        searchOptions: { userIds: [] },
+        errors,
+        warnings,
+      };
+    }
+
+    // Validate and sanitize filters
+    const validationResult = validateDynamicAlbumFilters(filters);
+    if (!validationResult.isValid) {
+      errors.push(
+        ...validationResult.errors.map((err) => ({
+          field: err.field,
+          message: err.message,
+          value: err.value,
+        })),
+      );
+      return {
+        searchOptions: { userIds: [userId], withDeleted: false },
+        errors,
+        warnings: [...warnings, ...validationResult.warnings],
+      };
+    }
+
+    warnings.push(...validationResult.warnings);
+    const sanitizedFilters = sanitizeDynamicAlbumFilters(filters);
+
+    // Initialize search options with defaults
+    const searchOptions: SearchOptions = {
+      userIds: [userId],
+      withDeleted: false,
+    };
+
+    try {
+      // Handle tags filter
+      if (sanitizedFilters.tags && Array.isArray(sanitizedFilters.tags) && sanitizedFilters.tags.length > 0) {
+        searchOptions.tagIds = sanitizedFilters.tags;
+        // Include the operator for tag filtering
+        if (sanitizedFilters.operator) {
+          searchOptions.tagOperator = sanitizedFilters.operator;
+        }
+      }
+
+      // Handle people filter
+      if (sanitizedFilters.people && Array.isArray(sanitizedFilters.people) && sanitizedFilters.people.length > 0) {
+        searchOptions.personIds = sanitizedFilters.people;
+      }
+
+      // Handle location filter
+      if (sanitizedFilters.location) {
+        if (typeof sanitizedFilters.location === 'string') {
+          searchOptions.city = sanitizedFilters.location;
+        } else if (typeof sanitizedFilters.location === 'object') {
+          if (sanitizedFilters.location.city) searchOptions.city = sanitizedFilters.location.city;
+          if (sanitizedFilters.location.state) searchOptions.state = sanitizedFilters.location.state;
+          if (sanitizedFilters.location.country) searchOptions.country = sanitizedFilters.location.country;
+        }
+      }
+
+      // Handle date range filter
+      if (sanitizedFilters.dateRange && typeof sanitizedFilters.dateRange === 'object') {
+        if (sanitizedFilters.dateRange.start) {
+          searchOptions.takenAfter = new Date(sanitizedFilters.dateRange.start);
+        }
+        if (sanitizedFilters.dateRange.end) {
+          searchOptions.takenBefore = new Date(sanitizedFilters.dateRange.end);
+        }
+      }
+
+      // Handle asset type filter
+      if (sanitizedFilters.assetType) {
+        if (sanitizedFilters.assetType === 'IMAGE' || sanitizedFilters.assetType === 'VIDEO') {
+          searchOptions.type = sanitizedFilters.assetType as any; // TODO: Improve enum mapping
+        }
+      }
+
+      // Handle metadata filter
+      if (sanitizedFilters.metadata && typeof sanitizedFilters.metadata === 'object') {
+        if (sanitizedFilters.metadata.isFavorite !== undefined) {
+          searchOptions.isFavorite = sanitizedFilters.metadata.isFavorite;
+        }
+        if (sanitizedFilters.metadata.make) searchOptions.make = sanitizedFilters.metadata.make;
+        if (sanitizedFilters.metadata.model) searchOptions.model = sanitizedFilters.metadata.model;
+        if (sanitizedFilters.metadata.lensModel) searchOptions.lensModel = sanitizedFilters.metadata.lensModel;
+        if (sanitizedFilters.metadata.rating !== undefined) searchOptions.rating = sanitizedFilters.metadata.rating;
+      }
+
+      // Validate the final search options
+      if (!isValidSearchOptions(searchOptions)) {
+        errors.push({
+          field: 'searchOptions',
+          message: 'Generated search options are invalid',
+          value: searchOptions,
+        });
+      }
+    } catch (error) {
+      errors.push({
+        field: 'conversion',
+        message: `Error during filter conversion: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        value: filters,
+      });
+    }
+
+    return {
+      searchOptions,
+      errors,
+      warnings,
+    };
   }
 
   /**

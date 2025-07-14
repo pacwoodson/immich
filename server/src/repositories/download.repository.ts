@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Kysely } from 'kysely';
+import type { Kysely } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { DB } from 'src/schema';
 import { anyUuid, searchAssetBuilder } from 'src/utils/database';
-import { FilterUtil } from 'src/utils/filter.util';
 
 const builder = (db: Kysely<DB>) =>
   db
@@ -24,12 +23,7 @@ export class DownloadRepository {
     return builder(this.db).select(['assets.originalPath']).where('assets.id', '=', anyUuid(ids)).stream();
   }
 
-  downloadAlbumId(albumId: string, isDynamic: boolean = false, filters?: any, userId?: string) {
-    // For dynamic albums, use search functionality
-    if (isDynamic && filters && userId) {
-      return this.downloadDynamicAlbum(filters, userId);
-    }
-
+  downloadAlbumId(albumId: string) {
     // For regular albums, use the existing logic
     return builder(this.db)
       .innerJoin('albums_assets_assets', 'assets.id', 'albums_assets_assets.assetsId')
@@ -37,11 +31,12 @@ export class DownloadRepository {
       .stream();
   }
 
-  private downloadDynamicAlbum(filters: any, userId: string) {
-    // Convert filters to search options using the centralized utility
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(filters, userId);
-
-    // Use searchAssetBuilder to create the query and then add the download-specific fields
+  /**
+   * Download assets based on search options (used for dynamic albums)
+   * @param searchOptions Search options for filtering assets
+   * @returns Stream of assets with download information
+   */
+  downloadSearchResults(searchOptions: any) {
     return searchAssetBuilder(this.db, searchOptions)
       .innerJoin('exif', 'assets.id', 'exif.assetId')
       .select(['assets.id', 'assets.livePhotoVideoId', 'exif.fileSizeInByte as size'])

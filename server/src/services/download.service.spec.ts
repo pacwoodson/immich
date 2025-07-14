@@ -190,7 +190,7 @@ describe(DownloadService.name, () => {
     it('should return a list of archives (albumId)', async () => {
       mocks.user.getMetadata.mockResolvedValue([]);
       mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set(['album-1']));
-      mocks.downloadRepository.downloadAlbumId.mockReturnValue(
+      mocks.downloadRepository.downloadAlbumId.mockResolvedValue(
         makeStream([
           { id: 'asset-1', livePhotoVideoId: null, size: 100_000 },
           { id: 'asset-2', livePhotoVideoId: null, size: 5000 },

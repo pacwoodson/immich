@@ -58,6 +58,7 @@ import { ViewRepository } from 'src/repositories/view-repository';
 import { DB } from 'src/schema';
 import { AuthService } from 'src/services/auth.service';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { RepositoryInterface } from 'src/types';
 import { asPostgresConnectionConfig, getKyselyConfig } from 'src/utils/database';
 import { IAccessRepositoryMock, newAccessRepositoryMock } from 'test/repositories/access.repository.mock';
@@ -195,6 +196,7 @@ export type ServiceOverrides = {
   database: DatabaseRepository;
   downloadRepository: DownloadRepository;
   duplicateRepository: DuplicateRepository;
+  dynamicAlbum: DynamicAlbumService;
   email: EmailRepository;
   event: EventRepository;
   job: JobRepository;
@@ -232,18 +234,41 @@ type As<T> = T extends RepositoryInterface<infer U> ? U : never;
 type IAccessRepository = { [K in keyof AccessRepository]: RepositoryInterface<AccessRepository[K]> };
 
 export type ServiceMocks = {
-  [K in keyof Omit<ServiceOverrides, 'access' | 'telemetry'>]: Mocked<RepositoryInterface<ServiceOverrides[K]>>;
-} & { access: IAccessRepositoryMock; telemetry: ITelemetryRepositoryMock };
+  [K in keyof Omit<ServiceOverrides, 'access' | 'telemetry' | 'dynamicAlbum'>]: Mocked<
+    RepositoryInterface<ServiceOverrides[K]>
+  >;
+} & {
+  access: IAccessRepositoryMock;
+  telemetry: ITelemetryRepositoryMock;
+  dynamicAlbum: Mocked<DynamicAlbumService>;
+};
 
 type BaseServiceArgs = ConstructorParameters<typeof BaseService>;
 type Constructor<Type, Args extends Array<any>> = {
   new (...deps: Args): Type;
 };
 
-export const newTestService = <T extends BaseService>(
+type ServiceWithDynamicAlbumArgs = [DynamicAlbumService, ...BaseServiceArgs];
+type ServiceWithDynamicAlbumConstructor<Type> = {
+  new (dynamicAlbumService: DynamicAlbumService, ...deps: BaseServiceArgs): Type;
+};
+
+// Overloaded function signatures
+export function newTestService<T extends BaseService>(
+  Service: ServiceWithDynamicAlbumConstructor<T>,
+  overrides?: Partial<ServiceOverrides>,
+): { sut: T; mocks: ServiceMocks };
+
+export function newTestService<T extends BaseService>(
   Service: Constructor<T, BaseServiceArgs>,
+  overrides?: Partial<ServiceOverrides>,
+): { sut: T; mocks: ServiceMocks };
+
+// Implementation
+export function newTestService<T extends BaseService>(
+  Service: Constructor<T, BaseServiceArgs> | ServiceWithDynamicAlbumConstructor<T>,
   overrides: Partial<ServiceOverrides> = {},
-) => {
+): { sut: T; mocks: ServiceMocks } {
   const loggerMock = { setContext: () => {} };
   const configMock = { getEnv: () => ({}) };
 
@@ -264,6 +289,7 @@ export const newTestService = <T extends BaseService>(
     database: newDatabaseRepositoryMock(),
     downloadRepository: automock(DownloadRepository, { strict: false }),
     duplicateRepository: automock(DuplicateRepository),
+    dynamicAlbum: automock(DynamicAlbumService, { strict: false }),
     email: automock(EmailRepository, { args: [loggerMock] }),
     // eslint-disable-next-line no-sparse-arrays
     event: automock(EventRepository, { args: [, , loggerMock], strict: false }),
@@ -301,59 +327,115 @@ export const newTestService = <T extends BaseService>(
     view: automock(ViewRepository),
   };
 
-  const sut = new Service(
-    overrides.logger || (mocks.logger as As<LoggingRepository>),
-    overrides.access || (mocks.access as IAccessRepository as AccessRepository),
-    overrides.activity || (mocks.activity as As<ActivityRepository>),
-    overrides.album || (mocks.album as As<AlbumRepository>),
-    overrides.albumUser || (mocks.albumUser as As<AlbumUserRepository>),
-    overrides.apiKey || (mocks.apiKey as As<ApiKeyRepository>),
-    overrides.asset || (mocks.asset as As<AssetRepository>),
-    overrides.assetJob || (mocks.assetJob as As<AssetJobRepository>),
-    overrides.audit || (mocks.audit as As<AuditRepository>),
-    overrides.config || (mocks.config as As<ConfigRepository> as ConfigRepository),
-    overrides.cron || (mocks.cron as As<CronRepository>),
-    overrides.crypto || (mocks.crypto as As<CryptoRepository>),
-    overrides.database || (mocks.database as As<DatabaseRepository>),
-    overrides.downloadRepository || (mocks.downloadRepository as As<DownloadRepository>),
-    overrides.duplicateRepository || (mocks.duplicateRepository as As<DuplicateRepository>),
-    overrides.email || (mocks.email as As<EmailRepository>),
-    overrides.event || (mocks.event as As<EventRepository>),
-    overrides.job || (mocks.job as As<JobRepository>),
-    overrides.library || (mocks.library as As<LibraryRepository>),
-    overrides.machineLearning || (mocks.machineLearning as As<MachineLearningRepository>),
-    overrides.map || (mocks.map as As<MapRepository>),
-    overrides.media || (mocks.media as As<MediaRepository>),
-    overrides.memory || (mocks.memory as As<MemoryRepository>),
-    overrides.metadata || (mocks.metadata as As<MetadataRepository>),
-    overrides.move || (mocks.move as As<MoveRepository>),
-    overrides.notification || (mocks.notification as As<NotificationRepository>),
-    overrides.oauth || (mocks.oauth as As<OAuthRepository>),
-    overrides.partner || (mocks.partner as As<PartnerRepository>),
-    overrides.person || (mocks.person as As<PersonRepository>),
-    overrides.process || (mocks.process as As<ProcessRepository>),
-    overrides.search || (mocks.search as As<SearchRepository>),
-    overrides.serverInfo || (mocks.serverInfo as As<ServerInfoRepository>),
-    overrides.session || (mocks.session as As<SessionRepository>),
-    overrides.sharedLink || (mocks.sharedLink as As<SharedLinkRepository>),
-    overrides.stack || (mocks.stack as As<StackRepository>),
-    overrides.storage || (mocks.storage as As<StorageRepository>),
-    overrides.sync || (mocks.sync as As<SyncRepository>),
-    overrides.syncCheckpoint || (mocks.syncCheckpoint as As<SyncCheckpointRepository>),
-    overrides.systemMetadata || (mocks.systemMetadata as As<SystemMetadataRepository>),
-    overrides.tag || (mocks.tag as As<TagRepository>),
-    overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
-    overrides.trash || (mocks.trash as As<TrashRepository>),
-    overrides.user || (mocks.user as As<UserRepository>),
-    overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
-    overrides.view || (mocks.view as As<ViewRepository>),
-  );
+  // Check if this service requires DynamicAlbumService as first parameter
+  // We can detect this by checking the constructor parameter length
+  const needsDynamicAlbumService = Service.length > BaseService.length;
 
-  return {
-    sut,
-    mocks,
-  };
-};
+  let sut: T;
+
+  if (needsDynamicAlbumService) {
+    // Services with DynamicAlbumService as first parameter
+    sut = new (Service as ServiceWithDynamicAlbumConstructor<T>)(
+      overrides.dynamicAlbum || (mocks.dynamicAlbum as DynamicAlbumService),
+      overrides.logger || (mocks.logger as As<LoggingRepository>),
+      overrides.access || (mocks.access as IAccessRepository as AccessRepository),
+      overrides.activity || (mocks.activity as As<ActivityRepository>),
+      overrides.album || (mocks.album as As<AlbumRepository>),
+      overrides.albumUser || (mocks.albumUser as As<AlbumUserRepository>),
+      overrides.apiKey || (mocks.apiKey as As<ApiKeyRepository>),
+      overrides.asset || (mocks.asset as As<AssetRepository>),
+      overrides.assetJob || (mocks.assetJob as As<AssetJobRepository>),
+      overrides.audit || (mocks.audit as As<AuditRepository>),
+      overrides.config || (mocks.config as As<ConfigRepository> as ConfigRepository),
+      overrides.cron || (mocks.cron as As<CronRepository>),
+      overrides.crypto || (mocks.crypto as As<CryptoRepository>),
+      overrides.database || (mocks.database as As<DatabaseRepository>),
+      overrides.downloadRepository || (mocks.downloadRepository as As<DownloadRepository>),
+      overrides.duplicateRepository || (mocks.duplicateRepository as As<DuplicateRepository>),
+      overrides.email || (mocks.email as As<EmailRepository>),
+      overrides.event || (mocks.event as As<EventRepository>),
+      overrides.job || (mocks.job as As<JobRepository>),
+      overrides.library || (mocks.library as As<LibraryRepository>),
+      overrides.machineLearning || (mocks.machineLearning as As<MachineLearningRepository>),
+      overrides.map || (mocks.map as As<MapRepository>),
+      overrides.media || (mocks.media as As<MediaRepository>),
+      overrides.memory || (mocks.memory as As<MemoryRepository>),
+      overrides.metadata || (mocks.metadata as As<MetadataRepository>),
+      overrides.move || (mocks.move as As<MoveRepository>),
+      overrides.notification || (mocks.notification as As<NotificationRepository>),
+      overrides.oauth || (mocks.oauth as As<OAuthRepository>),
+      overrides.partner || (mocks.partner as As<PartnerRepository>),
+      overrides.person || (mocks.person as As<PersonRepository>),
+      overrides.process || (mocks.process as As<ProcessRepository>),
+      overrides.search || (mocks.search as As<SearchRepository>),
+      overrides.serverInfo || (mocks.serverInfo as As<ServerInfoRepository>),
+      overrides.session || (mocks.session as As<SessionRepository>),
+      overrides.sharedLink || (mocks.sharedLink as As<SharedLinkRepository>),
+      overrides.stack || (mocks.stack as As<StackRepository>),
+      overrides.storage || (mocks.storage as As<StorageRepository>),
+      overrides.sync || (mocks.sync as As<SyncRepository>),
+      overrides.syncCheckpoint || (mocks.syncCheckpoint as As<SyncCheckpointRepository>),
+      overrides.systemMetadata || (mocks.systemMetadata as As<SystemMetadataRepository>),
+      overrides.tag || (mocks.tag as As<TagRepository>),
+      overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
+      overrides.trash || (mocks.trash as As<TrashRepository>),
+      overrides.user || (mocks.user as As<UserRepository>),
+      overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
+      overrides.view || (mocks.view as As<ViewRepository>),
+    );
+  } else {
+    // Standard services without DynamicAlbumService
+    sut = new (Service as Constructor<T, BaseServiceArgs>)(
+      overrides.logger || (mocks.logger as As<LoggingRepository>),
+      overrides.access || (mocks.access as IAccessRepository as AccessRepository),
+      overrides.activity || (mocks.activity as As<ActivityRepository>),
+      overrides.album || (mocks.album as As<AlbumRepository>),
+      overrides.albumUser || (mocks.albumUser as As<AlbumUserRepository>),
+      overrides.apiKey || (mocks.apiKey as As<ApiKeyRepository>),
+      overrides.asset || (mocks.asset as As<AssetRepository>),
+      overrides.assetJob || (mocks.assetJob as As<AssetJobRepository>),
+      overrides.audit || (mocks.audit as As<AuditRepository>),
+      overrides.config || (mocks.config as As<ConfigRepository> as ConfigRepository),
+      overrides.cron || (mocks.cron as As<CronRepository>),
+      overrides.crypto || (mocks.crypto as As<CryptoRepository>),
+      overrides.database || (mocks.database as As<DatabaseRepository>),
+      overrides.downloadRepository || (mocks.downloadRepository as As<DownloadRepository>),
+      overrides.duplicateRepository || (mocks.duplicateRepository as As<DuplicateRepository>),
+      overrides.email || (mocks.email as As<EmailRepository>),
+      overrides.event || (mocks.event as As<EventRepository>),
+      overrides.job || (mocks.job as As<JobRepository>),
+      overrides.library || (mocks.library as As<LibraryRepository>),
+      overrides.machineLearning || (mocks.machineLearning as As<MachineLearningRepository>),
+      overrides.map || (mocks.map as As<MapRepository>),
+      overrides.media || (mocks.media as As<MediaRepository>),
+      overrides.memory || (mocks.memory as As<MemoryRepository>),
+      overrides.metadata || (mocks.metadata as As<MetadataRepository>),
+      overrides.move || (mocks.move as As<MoveRepository>),
+      overrides.notification || (mocks.notification as As<NotificationRepository>),
+      overrides.oauth || (mocks.oauth as As<OAuthRepository>),
+      overrides.partner || (mocks.partner as As<PartnerRepository>),
+      overrides.person || (mocks.person as As<PersonRepository>),
+      overrides.process || (mocks.process as As<ProcessRepository>),
+      overrides.search || (mocks.search as As<SearchRepository>),
+      overrides.serverInfo || (mocks.serverInfo as As<ServerInfoRepository>),
+      overrides.session || (mocks.session as As<SessionRepository>),
+      overrides.sharedLink || (mocks.sharedLink as As<SharedLinkRepository>),
+      overrides.stack || (mocks.stack as As<StackRepository>),
+      overrides.storage || (mocks.storage as As<StorageRepository>),
+      overrides.sync || (mocks.sync as As<SyncRepository>),
+      overrides.syncCheckpoint || (mocks.syncCheckpoint as As<SyncCheckpointRepository>),
+      overrides.systemMetadata || (mocks.systemMetadata as As<SystemMetadataRepository>),
+      overrides.tag || (mocks.tag as As<TagRepository>),
+      overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
+      overrides.trash || (mocks.trash as As<TrashRepository>),
+      overrides.user || (mocks.user as As<UserRepository>),
+      overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
+      overrides.view || (mocks.view as As<ViewRepository>),
+    );
+  }
+
+  return { sut, mocks };
+}
 
 const createPNG = (r: number, g: number, b: number) => {
   const image = new PNG({ width: 1, height: 1 });

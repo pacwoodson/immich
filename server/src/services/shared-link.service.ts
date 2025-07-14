@@ -13,13 +13,20 @@ import {
   SharedLinkResponseDto,
   SharedLinkSearchDto,
 } from 'src/dtos/shared-link.dto';
-import { Permission, SharedLinkType } from 'src/enum';
+import { AssetOrder, Permission, SharedLinkType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
-import { FilterUtil } from 'src/utils/filter.util';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { getExternalDomain, OpenGraphTags } from 'src/utils/misc';
 
 @Injectable()
 export class SharedLinkService extends BaseService {
+  constructor(
+    private dynamicAlbumService: DynamicAlbumService,
+    ...args: ConstructorParameters<typeof BaseService>
+  ) {
+    super(...args);
+  }
+
   async getAll(auth: AuthDto, { albumId }: SharedLinkSearchDto): Promise<SharedLinkResponseDto[]> {
     const links = await this.sharedLinkRepository.getAll({ userId: auth.user.id, albumId });
     return links.map((link) => mapSharedLink(link));
@@ -203,25 +210,28 @@ export class SharedLinkService extends BaseService {
     // Handle dynamic albums by fetching assets based on filters
     if (sharedLink.album?.dynamic && sharedLink.album?.filters) {
       try {
-        // Convert album filters to search options
-        // Use the album owner's ID for the search, not the shared link user's ID
-        const searchOptions = FilterUtil.convertFiltersToSearchOptions(
+        const searchResult = await this.dynamicAlbumService.getAssetsForDynamicAlbum(
           sharedLink.album.filters,
           sharedLink.album.ownerId,
+          {
+            page: 1,
+            size: 50000, // Large page size to get all matching assets
+            order: sharedLink.album.order === 'asc' ? AssetOrder.ASC : AssetOrder.DESC,
+          },
+          {
+            throwOnError: false, // Don't throw on shared link errors
+            timeout: 15000, // 15 second timeout for shared links
+          },
         );
 
-        // Get assets based on filters
-        const searchResult = await this.searchRepository.searchMetadata(
-          { page: 1, size: 50000 }, // Large page size to get all matching assets
-          { ...searchOptions, orderDirection: sharedLink.album.order === 'asc' ? 'asc' : 'desc' },
-        );
+        if (searchResult && searchResult.items) {
+          // Update the response with the dynamic album assets
+          baseResponse.assets = searchResult.items.map((asset: any) => mapAsset(asset, { stripMetadata: !withExif }));
 
-        // Update the response with the dynamic album assets
-        baseResponse.assets = searchResult.items.map((asset) => mapAsset(asset, { stripMetadata: !withExif }));
-
-        // Also update the album's asset count for metadata
-        if (baseResponse.album) {
-          baseResponse.album.assetCount = searchResult.items.length;
+          // Also update the album's asset count for metadata
+          if (baseResponse.album) {
+            baseResponse.album.assetCount = searchResult.items.length;
+          }
         }
       } catch (error) {
         this.logger.error('Failed to fetch dynamic album assets for shared link', error);

@@ -2,11 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { MapMarkerDto, MapMarkerResponseDto, MapReverseGeocodeDto } from 'src/dtos/map.dto';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { getMyPartnerIds } from 'src/utils/asset.util';
-import { FilterUtil } from 'src/utils/filter.util';
 
 @Injectable()
 export class MapService extends BaseService {
+  constructor(
+    private dynamicAlbumService: DynamicAlbumService,
+    ...args: ConstructorParameters<typeof BaseService>
+  ) {
+    super(...args);
+  }
+
   async getMapMarkers(auth: AuthDto, options: MapMarkerDto): Promise<MapMarkerResponseDto[]> {
     const userIds = [auth.user.id];
     if (options.withPartners) {
@@ -60,43 +67,27 @@ export class MapService extends BaseService {
 
     for (const album of dynamicAlbums) {
       try {
-        // Convert album filters to search options
-        const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-
-        // Add map-specific options
-        const mapSearchOptions = {
-          ...searchOptions,
-          // Only include assets with GPS coordinates
-          withExif: true,
-          // Apply map-specific filters
-          isArchived: options.isArchived,
-          isFavorite: options.isFavorite,
-          fileCreatedAfter: options.fileCreatedAfter,
-          fileCreatedBefore: options.fileCreatedBefore,
-        };
-
-        // Get assets for this dynamic album using search
-        const searchResult = await this.searchRepository.searchMetadata(
-          { page: 1, size: 50000 }, // Large page size to get all matching assets
-          mapSearchOptions,
+        const markers = await this.dynamicAlbumService.getMapMarkers(
+          album.filters,
+          album.ownerId,
+          {
+            isArchived: options.isArchived,
+            isFavorite: options.isFavorite,
+            fileCreatedAfter: options.fileCreatedAfter,
+            fileCreatedBefore: options.fileCreatedBefore,
+          },
+          {
+            throwOnError: false, // Don't throw on individual album errors
+            timeout: 10000, // 10 second timeout for map operations
+          },
         );
 
-        // Filter assets to only include those with GPS coordinates and convert to map markers
-        const markers = searchResult.items
-          .filter((asset: any) => asset.exif?.latitude && asset.exif?.longitude)
-          .map((asset: any) => ({
-            id: asset.id,
-            lat: asset.exif.latitude,
-            lon: asset.exif.longitude,
-            city: asset.exif.city || null,
-            state: asset.exif.state || null,
-            country: asset.exif.country || null,
-          }));
-
-        allMarkers.push(...markers);
+        if (markers && Array.isArray(markers)) {
+          allMarkers.push(...markers);
+        }
       } catch (error) {
-        this.logger.error(`Failed to get map markers for dynamic album ${album.id}`, error);
-        // Continue with other albums even if one fails
+        this.logger.warn(`Failed to get map markers for dynamic album ${album.id}:`, error);
+        // Continue processing other albums even if one fails
       }
     }
 

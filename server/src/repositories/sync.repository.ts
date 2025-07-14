@@ -3,11 +3,11 @@ import { Kysely, SelectQueryBuilder, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { columns } from 'src/database';
 import { DummyValue, GenerateSql } from 'src/decorators';
+import { AssetOrder } from 'src/enum';
 import { AlbumRepository } from 'src/repositories/album.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { DB } from 'src/schema';
 import { SyncAck } from 'src/types';
-import { FilterUtil } from 'src/utils/filter.util';
 
 type AuditTables =
   | 'users_audit'
@@ -53,21 +53,21 @@ export class SyncRepository {
     private searchRepository: SearchRepository,
     private albumRepository: AlbumRepository,
   ) {
-    this.album = new AlbumSync(this.db);
-    this.albumAsset = new AlbumAssetSync(this.db, this.searchRepository, this.albumRepository);
-    this.albumAssetExif = new AlbumAssetExifSync(this.db, this.searchRepository, this.albumRepository);
-    this.albumToAsset = new AlbumToAssetSync(this.db, this.searchRepository, this.albumRepository);
-    this.albumUser = new AlbumUserSync(this.db);
-    this.asset = new AssetSync(this.db);
-    this.assetExif = new AssetExifSync(this.db);
-    this.memory = new MemorySync(this.db);
-    this.memoryToAsset = new MemoryToAssetSync(this.db);
-    this.partner = new PartnerSync(this.db);
-    this.partnerAsset = new PartnerAssetsSync(this.db);
-    this.partnerAssetExif = new PartnerAssetExifsSync(this.db);
-    this.partnerStack = new PartnerStackSync(this.db);
-    this.stack = new StackSync(this.db);
-    this.user = new UserSync(this.db);
+    this.album = new AlbumSync(db);
+    this.albumAsset = new AlbumAssetSync(db, searchRepository, albumRepository);
+    this.albumAssetExif = new AlbumAssetExifSync(db, searchRepository, albumRepository);
+    this.albumToAsset = new AlbumToAssetSync(db, searchRepository, albumRepository);
+    this.albumUser = new AlbumUserSync(db);
+    this.asset = new AssetSync(db);
+    this.assetExif = new AssetExifSync(db);
+    this.memory = new MemorySync(db);
+    this.memoryToAsset = new MemoryToAssetSync(db);
+    this.partner = new PartnerSync(db);
+    this.partnerAsset = new PartnerAssetsSync(db);
+    this.partnerAssetExif = new PartnerAssetExifsSync(db);
+    this.partnerStack = new PartnerStackSync(db);
+    this.stack = new StackSync(db);
+    this.user = new UserSync(db);
   }
 }
 
@@ -157,20 +157,6 @@ class AlbumAssetSync extends BaseSync {
 
   @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID], stream: true })
   getBackfill(albumId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
-    // Note: For dynamic albums, we need to do async operations, so we'll wrap this
-    return this.getBackfillInternal(albumId, afterUpdateId, beforeUpdateId);
-  }
-
-  private async getBackfillInternal(albumId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
-    // Check if this is a dynamic album
-    const album = await this.albumRepository.getById(albumId, { withAssets: false });
-
-    if (album?.dynamic && album.filters) {
-      // For dynamic albums, use search functionality to get assets
-      return this.getDynamicAlbumAssetsForBackfill(album, afterUpdateId, beforeUpdateId);
-    }
-
-    // For regular albums, use the existing logic
     return this.db
       .selectFrom('assets')
       .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
@@ -184,128 +170,79 @@ class AlbumAssetSync extends BaseSync {
       .stream();
   }
 
-  private async getDynamicAlbumAssetsForBackfill(
-    album: any,
+  /**
+   * Get dynamic album assets for backfill using pre-processed search options
+   */
+  async getDynamicAlbumAssetsForBackfill(
+    albumId: string,
+    searchOptions: any,
     afterUpdateId: string | undefined,
     beforeUpdateId: string,
   ) {
-    // Convert album filters to search options
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-
-    // Get assets that match the dynamic album filters
     const searchResult = await this.searchRepository.searchMetadata(
-      { page: 1, size: 50000 }, // Large page size to get all matching assets
-      { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+      { page: 1, size: 50000 },
+      {
+        ...searchOptions,
+        withDeleted: false,
+        orderDirection: AssetOrder.DESC,
+      },
     );
 
-    // Filter assets by updateId range and convert to sync format
-    const filteredAssets = searchResult.items
+    // Convert search results to asset format for sync
+    return searchResult.items
       .filter((asset: any) => {
-        const updateId = asset.updateId;
-        const afterCondition = !afterUpdateId || updateId >= afterUpdateId;
-        const beforeCondition = updateId <= beforeUpdateId;
-        return afterCondition && beforeCondition;
+        if (afterUpdateId && asset.updateId <= afterUpdateId) return false;
+        if (beforeUpdateId && asset.updateId > beforeUpdateId) return false;
+        return true;
       })
       .map((asset: any) => ({
         ...asset,
-        updateId: asset.updateId,
-      }))
-      .sort((a: any, b: any) => a.updateId.localeCompare(b.updateId));
-
-    // Convert to async generator to match the stream interface
-    async function* streamAssets() {
-      for (const asset of filteredAssets) {
-        yield asset;
-      }
-    }
-
-    return streamAssets();
+        albumId,
+      }));
   }
 
   @GenerateSql({ params: [DummyValue.UUID], stream: true })
   getUpserts(userId: string, ack?: SyncAck) {
-    // Note: For dynamic albums, we need to do async operations, so we'll wrap this
-    return this.getUpsertsInternal(userId, ack);
+    return this.db
+      .selectFrom('assets')
+      .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
+      .select(columns.syncAsset)
+      .select('assets.updateId')
+      .where('assets.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .$if(!!ack, (qb) => qb.where('assets.updateId', '>', ack!.updateId))
+      .orderBy('assets.updateId', 'asc')
+      .innerJoin('albums', 'albums.id', 'album_assets.albumsId')
+      .leftJoin('albums_shared_users_users as album_users', 'album_users.albumsId', 'album_assets.albumsId')
+      .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .where('albums.dynamic', '=', false) // Only regular albums in standard sync
+      .stream();
   }
 
-  private async getUpsertsInternal(userId: string, ack?: SyncAck) {
-    // First, get all albums this user has access to and separate regular from dynamic
-    const [ownedAlbums, sharedAlbums] = await Promise.all([
-      this.albumRepository.getOwned(userId),
-      this.albumRepository.getShared(userId),
-    ]);
-
-    const allAlbums = [...ownedAlbums, ...sharedAlbums];
-    const regularAlbums = allAlbums.filter((album) => !album.dynamic);
-    const dynamicAlbums = allAlbums.filter((album) => album.dynamic);
-
-    // Get assets from regular albums using the existing logic
-    const regularAlbumIds = regularAlbums.map((album) => album.id);
-    let regularAssetsStream: any = undefined;
-    if (regularAlbumIds.length > 0) {
-      regularAssetsStream = this.db
-        .selectFrom('assets')
-        .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
-        .select(columns.syncAsset)
-        .select('assets.updateId')
-        .where('assets.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
-        .$if(!!ack, (qb) => qb.where('assets.updateId', '>', ack!.updateId))
-        .orderBy('assets.updateId', 'asc')
-        .innerJoin('albums', 'albums.id', 'album_assets.albumsId')
-        .leftJoin('albums_shared_users_users as album_users', 'album_users.albumsId', 'album_assets.albumsId')
-        .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
-        .where('albums.dynamic', '=', false) // Only regular albums
-        .stream();
-    }
-
-    // Get assets from dynamic albums
-    const dynamicAssetsArrays = await Promise.all(
-      dynamicAlbums.map(async (album) => {
-        if (!album.filters) return [];
-
-        try {
-          const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-          const searchResult = await this.searchRepository.searchMetadata(
-            { page: 1, size: 50000 },
-            { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
-          );
-
-          return searchResult.items
-            .filter((asset: any) => {
-              const updateCondition = !ack || asset.updateId > ack.updateId;
-              const timeCondition = new Date(asset.updatedAt) < new Date(Date.now() - 1000); // 1 second ago
-              return updateCondition && timeCondition;
-            })
-            .map((asset: any) => ({
-              ...asset,
-              updateId: asset.updateId,
-            }));
-        } catch (error) {
-          console.error(`Failed to get dynamic album assets for album ${album.id}:`, error);
-          return [];
-        }
-      }),
+  /**
+   * Get dynamic album upserts using pre-processed search options
+   */
+  async getDynamicAlbumUpserts(albumId: string, ownerId: string, searchOptions: any, ack?: SyncAck) {
+    const searchResult = await this.searchRepository.searchMetadata(
+      { page: 1, size: 50000 },
+      {
+        ...searchOptions,
+        withDeleted: false,
+        orderDirection: AssetOrder.DESC,
+      },
     );
 
-    // Flatten and sort dynamic assets
-    const dynamicAssets = dynamicAssetsArrays.flat().sort((a: any, b: any) => a.updateId.localeCompare(b.updateId));
-
-    // Combine regular and dynamic assets streams
-    async function* combinedStream() {
-      // Yield regular assets
-      if (regularAssetsStream) {
-        for await (const asset of regularAssetsStream) {
-          yield asset;
-        }
-      }
-
-      // Yield dynamic assets
-      for (const asset of dynamicAssets) {
-        yield asset;
-      }
-    }
-
-    return combinedStream();
+    // Convert search results to asset format for sync
+    return searchResult.items
+      .filter((asset: any) => {
+        const updateCondition = !ack || asset.updateId > ack.updateId;
+        const timeCondition = new Date(asset.updatedAt) < new Date(Date.now() - 1000); // 1 second ago
+        return updateCondition && timeCondition;
+      })
+      .map((asset: any) => ({
+        ...asset,
+        albumId,
+        ownerId,
+      }));
   }
 }
 
@@ -318,7 +255,6 @@ class AlbumAssetExifSync extends BaseSync {
     super(db);
   }
 
-  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID], stream: true })
   getBackfill(albumId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
     return this.getBackfillInternal(albumId, afterUpdateId, beforeUpdateId);
   }
@@ -328,15 +264,16 @@ class AlbumAssetExifSync extends BaseSync {
     const album = await this.albumRepository.getById(albumId, { withAssets: false });
 
     if (album?.dynamic && album.filters) {
-      // For dynamic albums, use search functionality to get asset exif data
-      return this.getDynamicAlbumAssetExifForBackfill(album, afterUpdateId, beforeUpdateId);
+      // For dynamic albums, this will be handled by service layer with search options
+      return [];
     }
 
     // For regular albums, use the existing logic
     return this.db
       .selectFrom('exif')
-      .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'exif.assetId')
-      .select(columns.syncAssetExif)
+      .innerJoin('assets', 'exif.assetId', 'assets.id')
+      .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
+      .select(columns.syncExif)
       .select('exif.updateId')
       .where('album_assets.albumsId', '=', albumId)
       .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
@@ -346,50 +283,41 @@ class AlbumAssetExifSync extends BaseSync {
       .stream();
   }
 
-  private async getDynamicAlbumAssetExifForBackfill(
-    album: any,
+  /**
+   * Get dynamic album asset EXIF for backfill using pre-processed search options
+   */
+  async getDynamicAlbumAssetExifForBackfill(
+    albumId: string,
+    searchOptions: any,
     afterUpdateId: string | undefined,
     beforeUpdateId: string,
   ) {
-    // Convert album filters to search options
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-
-    // Get assets that match the dynamic album filters
     const searchResult = await this.searchRepository.searchMetadata(
       { page: 1, size: 50000 },
-      { ...searchOptions, withExif: true, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+      {
+        ...searchOptions,
+        withDeleted: false,
+        orderDirection: AssetOrder.DESC,
+      },
     );
 
-    // Get exif data for matching assets and filter by updateId range
+    // Get EXIF data for matching assets
     const assetIds = searchResult.items.map((asset: any) => asset.id);
-    if (assetIds.length === 0) {
-      async function* emptyStream() {}
-      return emptyStream();
-    }
+    if (assetIds.length === 0) return [];
 
-    // Query exif data for the assets
-    const exifData = await this.db
+    return this.db
       .selectFrom('exif')
-      .select(columns.syncAssetExif)
+      .innerJoin('assets', 'exif.assetId', 'assets.id')
+      .select(columns.syncExif)
       .select('exif.updateId')
-      .where('exif.assetId', 'in', assetIds)
+      .where('assets.id', 'in', assetIds)
       .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
       .where('exif.updateId', '<=', beforeUpdateId)
       .$if(!!afterUpdateId, (eb) => eb.where('exif.updateId', '>=', afterUpdateId!))
       .orderBy('exif.updateId', 'asc')
       .execute();
-
-    // Convert to async generator to match the stream interface
-    async function* streamExifData() {
-      for (const exif of exifData) {
-        yield exif;
-      }
-    }
-
-    return streamExifData();
   }
 
-  @GenerateSql({ params: [DummyValue.UUID], stream: true })
   getUpserts(userId: string, ack?: SyncAck) {
     return this.getUpsertsInternal(userId, ack);
   }
@@ -403,16 +331,16 @@ class AlbumAssetExifSync extends BaseSync {
 
     const allAlbums = [...ownedAlbums, ...sharedAlbums];
     const regularAlbums = allAlbums.filter((album) => !album.dynamic);
-    const dynamicAlbums = allAlbums.filter((album) => album.dynamic);
 
-    // Get exif data from regular albums using the existing logic
+    // Get EXIF from regular albums using the existing logic
     const regularAlbumIds = regularAlbums.map((album) => album.id);
     let regularExifStream: any = undefined;
     if (regularAlbumIds.length > 0) {
       regularExifStream = this.db
         .selectFrom('exif')
-        .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'exif.assetId')
-        .select(columns.syncAssetExif)
+        .innerJoin('assets', 'exif.assetId', 'assets.id')
+        .innerJoin('albums_assets_assets as album_assets', 'album_assets.assetsId', 'assets.id')
+        .select(columns.syncExif)
         .select('exif.updateId')
         .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
         .$if(!!ack, (qb) => qb.where('exif.updateId', '>', ack!.updateId))
@@ -424,59 +352,37 @@ class AlbumAssetExifSync extends BaseSync {
         .stream();
     }
 
-    // Get exif data from dynamic albums
-    const dynamicExifArrays = await Promise.all(
-      dynamicAlbums.map(async (album) => {
-        if (!album.filters) return [];
+    // Dynamic albums will be handled by service layer
+    return regularExifStream || [];
+  }
 
-        try {
-          const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-          const searchResult = await this.searchRepository.searchMetadata(
-            { page: 1, size: 50000 },
-            { ...searchOptions, withExif: true, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
-          );
-
-          const assetIds = searchResult.items.map((asset: any) => asset.id);
-          if (assetIds.length === 0) return [];
-
-          // Query exif data for these assets
-          const exifData = await this.db
-            .selectFrom('exif')
-            .select(columns.syncAssetExif)
-            .select('exif.updateId')
-            .where('exif.assetId', 'in', assetIds)
-            .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
-            .$if(!!ack, (qb) => qb.where('exif.updateId', '>', ack!.updateId))
-            .orderBy('exif.updateId', 'asc')
-            .execute();
-
-          return exifData;
-        } catch (error) {
-          console.error(`Failed to get dynamic album exif data for album ${album.id}:`, error);
-          return [];
-        }
-      }),
+  /**
+   * Get dynamic album EXIF upserts using pre-processed search options
+   */
+  async getDynamicAlbumExifUpserts(albumId: string, searchOptions: any, ack?: SyncAck) {
+    const searchResult = await this.searchRepository.searchMetadata(
+      { page: 1, size: 50000 },
+      {
+        ...searchOptions,
+        withDeleted: false,
+        orderDirection: AssetOrder.DESC,
+      },
     );
 
-    // Flatten and sort dynamic exif data
-    const dynamicExifData = dynamicExifArrays.flat().sort((a: any, b: any) => a.updateId.localeCompare(b.updateId));
+    // Get EXIF data for matching assets
+    const assetIds = searchResult.items.map((asset: any) => asset.id);
+    if (assetIds.length === 0) return [];
 
-    // Combine regular and dynamic exif streams
-    async function* combinedStream() {
-      // Yield regular exif data
-      if (regularExifStream) {
-        for await (const exif of regularExifStream) {
-          yield exif;
-        }
-      }
-
-      // Yield dynamic exif data
-      for (const exif of dynamicExifData) {
-        yield exif;
-      }
-    }
-
-    return combinedStream();
+    return this.db
+      .selectFrom('exif')
+      .innerJoin('assets', 'exif.assetId', 'assets.id')
+      .select(columns.syncExif)
+      .select('exif.updateId')
+      .where('assets.id', 'in', assetIds)
+      .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .$if(!!ack, (qb) => qb.where('exif.updateId', '>', ack!.updateId))
+      .orderBy('exif.updateId', 'asc')
+      .execute();
   }
 }
 
@@ -516,29 +422,37 @@ class AlbumToAssetSync extends BaseSync {
   }
 
   private async getDynamicAlbumToAssetBackfill(album: any, afterUpdateId: string | undefined, beforeUpdateId: string) {
-    // Convert album filters to search options
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-
-    // Get assets that match the dynamic album filters
-    const searchResult = await this.searchRepository.searchMetadata(
-      { page: 1, size: 50000 },
-      { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+    const searchResult = await this.searchRepository.getAssetsForDynamicAlbum(
+      album.filters,
+      album.ownerId,
+      {
+        page: 1,
+        size: 50000,
+        order: album.order === 'asc' ? AssetOrder.ASC : AssetOrder.DESC,
+      },
+      {
+        throwOnError: false, // Don't throw on sync errors
+        timeout: 30000, // 30 second timeout for sync operations
+      },
     );
+
+    if (!searchResult || !searchResult.items) {
+      return [];
+    }
 
     // Create virtual album-to-asset relationships
     const relationships = searchResult.items
       .filter((asset: any) => {
-        const updateId = asset.updateId;
-        const afterCondition = !afterUpdateId || updateId >= afterUpdateId;
-        const beforeCondition = updateId <= beforeUpdateId;
-        return afterCondition && beforeCondition;
+        if (afterUpdateId && asset.updatedAt <= afterUpdateId) return false;
+        if (beforeUpdateId && asset.updatedAt > beforeUpdateId) return false;
+        return true;
       })
       .map((asset: any) => ({
-        assetId: asset.id,
         albumId: album.id,
-        updateId: asset.updateId, // Use asset's updateId since there's no album_assets entry
-      }))
-      .sort((a: any, b: any) => a.updateId.localeCompare(b.updateId));
+        assetId: asset.id,
+        createdAt: new Date(),
+        updatedAt: asset.updatedAt,
+      }));
 
     // Convert to async generator to match the stream interface
     async function* streamRelationships() {
@@ -616,11 +530,23 @@ class AlbumToAssetSync extends BaseSync {
         if (!album.filters) return [];
 
         try {
-          const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, album.ownerId);
-          const searchResult = await this.searchRepository.searchMetadata(
-            { page: 1, size: 50000 },
-            { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+          const searchResult = await this.searchRepository.getAssetsForDynamicAlbum(
+            album.filters,
+            album.ownerId,
+            {
+              page: 1,
+              size: 50000,
+              order: album.order === 'asc' ? AssetOrder.ASC : AssetOrder.DESC,
+            },
+            {
+              throwOnError: false, // Don't throw on sync errors
+              timeout: 30000, // 30 second timeout for sync operations
+            },
           );
+
+          if (!searchResult || !searchResult.items) {
+            return [];
+          }
 
           return searchResult.items
             .filter((asset: any) => {
@@ -629,12 +555,14 @@ class AlbumToAssetSync extends BaseSync {
               return updateCondition && timeCondition;
             })
             .map((asset: any) => ({
-              assetId: asset.id,
               albumId: album.id,
-              updateId: asset.updateId, // Use asset's updateId since there's no album_assets entry
+              assetId: asset.id,
+              createdAt: new Date(),
+              updatedAt: asset.updatedAt,
+              updateId: asset.updateId,
             }));
         } catch (error) {
-          console.error(`Failed to get dynamic album relationships for album ${album.id}:`, error);
+          console.error(`Failed to get to-asset relationships for dynamic album ${album.id}:`, error);
           return [];
         }
       }),

@@ -21,7 +21,6 @@ import { BaseService } from 'src/services/base.service';
 import { DynamicAlbumService } from 'src/services/dynamic-album.service';
 import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
-import { FilterUtil } from 'src/utils/filter.util';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
@@ -211,20 +210,14 @@ export class AlbumService extends BaseService {
     let dynamicAlbumThumbnailAssetId = null;
     if (dto.dynamic && dto.filters) {
       try {
-        const searchOptions = FilterUtil.convertFiltersToSearchOptions(dto.filters, auth.user.id);
-        const searchResult = await this.searchRepository.searchMetadata(
-          { page: 1, size: 1 }, // Just get the first asset
-          {
-            ...searchOptions,
-            orderDirection: getPreferences(userMetadata).albums.defaultAssetOrder === 'asc' ? 'asc' : 'desc',
-          },
-        );
-        if (searchResult.items.length > 0) {
-          dynamicAlbumThumbnailAssetId = searchResult.items[0].id;
-        }
+        // Use DynamicAlbumService to get thumbnail asset
+        dynamicAlbumThumbnailAssetId = await this.dynamicAlbumService.getThumbnailAssetId(dto.filters, auth.user.id, {
+          throwOnError: false, // Don't throw on thumbnail selection errors
+          timeout: 10000, // 10 second timeout for thumbnail selection
+        });
       } catch (error) {
-        // If search fails, continue without thumbnail
-        this.logger.warn(`Failed to get thumbnail for dynamic album: ${error}`);
+        this.logger.warn('Failed to get thumbnail for dynamic album:', error);
+        // Continue without thumbnail - will be set later if needed
       }
     }
 
@@ -264,13 +257,19 @@ export class AlbumService extends BaseService {
       } else {
         // For dynamic albums, validate thumbnail asset matches current filters
         if (album.filters) {
-          const searchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, auth.user.id);
-          const searchResult = await this.searchRepository.searchMetadata(
-            { page: 1, size: 50000 },
-            { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+          // Use DynamicAlbumService to validate thumbnail
+          const isValid = await this.dynamicAlbumService.validateThumbnail(
+            id,
+            dto.albumThumbnailAssetId,
+            album.filters,
+            auth.user.id,
+            {
+              throwOnError: false, // Don't throw, we'll handle validation ourselves
+              timeout: 10000, // 10 second timeout for validation
+            },
           );
-          const assetIds = searchResult.items.map((asset: any) => asset.id);
-          if (!assetIds.includes(dto.albumThumbnailAssetId)) {
+
+          if (!isValid) {
             throw new BadRequestException('Invalid album thumbnail - asset does not match album filters');
           }
         }
@@ -281,20 +280,25 @@ export class AlbumService extends BaseService {
     let finalAlbumThumbnailAssetId = dto.albumThumbnailAssetId;
 
     if (album.dynamic && dto.filters && JSON.stringify(dto.filters) !== JSON.stringify(album.filters)) {
-      // Filters have changed, check if current thumbnail is still valid
-      const searchOptions = FilterUtil.convertFiltersToSearchOptions(dto.filters, auth.user.id);
-      const searchResult = await this.searchRepository.searchMetadata(
-        { page: 1, size: 50000 },
-        { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
-      );
-      const assetIds = searchResult.items.map((asset: any) => asset.id);
-
-      // If current thumbnail is no longer in the album, set it to the first asset
-      if (album.albumThumbnailAssetId && !assetIds.includes(album.albumThumbnailAssetId)) {
-        finalAlbumThumbnailAssetId = assetIds.length > 0 ? assetIds[0] : null;
-      } else if (!album.albumThumbnailAssetId && assetIds.length > 0) {
-        // If no thumbnail was set and we have assets, set the first one
-        finalAlbumThumbnailAssetId = assetIds[0];
+      // Use DynamicAlbumService to update thumbnail if needed
+      try {
+        const updatedThumbnailId = await this.dynamicAlbumService.updateThumbnailIfNeeded(
+          id,
+          dto.filters,
+          dto.albumThumbnailAssetId ?? null, // Convert undefined to null for the method
+          auth.user.id,
+          {
+            throwOnError: true, // Throw on filter validation errors
+            timeout: 15000, // 15 second timeout for filter processing
+          },
+        );
+        finalAlbumThumbnailAssetId = updatedThumbnailId ?? undefined; // Convert null back to undefined
+      } catch (error) {
+        if (error instanceof BadRequestException) {
+          throw error; // Re-throw validation errors
+        }
+        this.logger.error('Failed to update thumbnail for dynamic album:', error);
+        throw new BadRequestException('Failed to process album filters');
       }
     }
 

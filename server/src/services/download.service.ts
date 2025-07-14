@@ -7,11 +7,20 @@ import { DownloadArchiveInfo, DownloadInfoDto, DownloadResponseDto } from 'src/d
 import { Permission } from 'src/enum';
 import { ImmichReadStream } from 'src/repositories/storage.repository';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { HumanReadableSize } from 'src/utils/bytes';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
 export class DownloadService extends BaseService {
+  constructor(
+    private dynamicAlbumService: DynamicAlbumService,
+    ...args: ConstructorParameters<typeof BaseService>
+  ) {
+    super(...args);
+  }
+
   async getDownloadInfo(auth: AuthDto, dto: DownloadInfoDto): Promise<DownloadResponseDto> {
     let assets;
 
@@ -30,8 +39,13 @@ export class DownloadService extends BaseService {
       }
 
       if (album.dynamic && album.filters) {
-        // For dynamic albums, use the search-based approach
-        assets = this.downloadRepository.downloadAlbumId(albumId, true, album.filters, auth.user.id);
+        // For dynamic albums, get search options and use downloadSearchResults
+        const searchOptions = await this.dynamicAlbumService.getSearchOptionsForDynamicAlbum(
+          album.filters as DynamicAlbumFilters,
+          auth.user.id,
+          { throwOnError: false, timeout: 10000 },
+        );
+        assets = this.downloadRepository.downloadSearchResults(searchOptions);
       } else {
         // For regular albums, use the existing logic
         assets = this.downloadRepository.downloadAlbumId(albumId);
