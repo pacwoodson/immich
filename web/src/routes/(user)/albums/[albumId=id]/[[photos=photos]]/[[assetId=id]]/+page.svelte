@@ -184,6 +184,18 @@
 
   const refreshAlbum = async () => {
     album = await getAlbumInfo({ id: album.id, withoutAssets: true });
+
+    // For dynamic albums, also refresh the timeline manager to get new filtered assets
+    if (album.dynamic && viewMode === AlbumPageViewMode.VIEW) {
+      // Clear the timeline manager's cache and force a complete reload
+      timelineManager.months = [];
+      await timelineManager.updateOptions({
+        albumId: album.id,
+        order: albumOrder,
+        // Add a unique timestamp to ensure options are always different
+        _forceReload: Date.now(),
+      });
+    }
   };
   const handleAddAssets = async () => {
     const assetIds = timelineInteraction.selectedAssets.map((asset) => asset.id);
@@ -457,7 +469,12 @@
       'album' in result
     ) {
       album = result.album as AlbumResponseDto;
-      await refreshAlbum();
+
+      // For dynamic albums, refresh the album data and timeline manager to get new filtered assets
+      if (album.dynamic && viewMode === AlbumPageViewMode.VIEW) {
+        // First refresh the album data to get updated assetCount
+        await refreshAlbum();
+      }
     }
   };
 </script>

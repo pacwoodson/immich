@@ -364,7 +364,7 @@ export type AlbumResponseDto = {
     description: string;
     dynamic: boolean;
     endDate?: string;
-    filters?: object;
+    filters: object | null;
     hasSharedLink: boolean;
     id: string;
     isActivityEnabled: boolean;
@@ -386,7 +386,7 @@ export type CreateAlbumDto = {
     assetIds?: string[];
     description?: string;
     dynamic?: boolean;
-    filters?: object;
+    filters?: object | null;
 };
 export type AlbumStatisticsResponseDto = {
     notShared: number;
@@ -398,7 +398,7 @@ export type UpdateAlbumDto = {
     albumThumbnailAssetId?: string;
     description?: string;
     dynamic?: boolean;
-    filters?: object;
+    filters?: object | null;
     isActivityEnabled?: boolean;
     order?: AssetOrder;
 };
@@ -579,7 +579,6 @@ export type DownloadInfoDto = {
     albumId?: string;
     archiveSize?: number;
     assetIds?: string[];
-    dynamicAlbumId?: string;
     userId?: string;
 };
 export type DownloadArchiveInfo = {
@@ -593,55 +592,6 @@ export type DownloadResponseDto = {
 export type DuplicateResponseDto = {
     assets: AssetResponseDto[];
     duplicateId: string;
-};
-export type DynamicAlbumFilterDto = {
-    "type": object;
-    value: {
-        [key: string]: any;
-    };
-};
-export type DynamicAlbumShareDto = {
-    createdAt: string;
-    role: object;
-    userId: string;
-};
-export type DynamicAlbumResponseDto = {
-    albumThumbnailAssetId?: string;
-    assetCount: number;
-    createdAt: string;
-    description: string;
-    endDate?: string;
-    filters: DynamicAlbumFilterDto[];
-    id: string;
-    isActivityEnabled: boolean;
-    name: string;
-    order: Order;
-    ownerId: string;
-    sharedUsers: DynamicAlbumShareDto[];
-    startDate?: string;
-    updatedAt: string;
-};
-export type CreateDynamicAlbumDto = {
-    description?: string;
-    filters: DynamicAlbumFilterDto[];
-    isActivityEnabled?: boolean;
-    name: string;
-    order?: Order;
-};
-export type UpdateDynamicAlbumDto = {
-    albumThumbnailAssetId?: string;
-    description?: string;
-    filters?: DynamicAlbumFilterDto[];
-    isActivityEnabled?: boolean;
-    name?: string;
-    order?: Order;
-};
-export type ShareDynamicAlbumDto = {
-    role: object;
-    userId: string;
-};
-export type UpdateDynamicAlbumShareDto = {
-    role: object;
 };
 export type PersonResponseDto = {
     birthDate: string | null;
@@ -2367,131 +2317,6 @@ export function deleteDuplicate({ id }: {
         method: "DELETE"
     }));
 }
-export function getAllDynamicAlbums(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: DynamicAlbumResponseDto[];
-    }>("/dynamic-albums", {
-        ...opts
-    }));
-}
-export function createDynamicAlbum({ createDynamicAlbumDto }: {
-    createDynamicAlbumDto: CreateDynamicAlbumDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 201;
-        data: DynamicAlbumResponseDto;
-    }>("/dynamic-albums", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: createDynamicAlbumDto
-    })));
-}
-export function getSharedDynamicAlbums(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: DynamicAlbumResponseDto[];
-    }>("/dynamic-albums/shared", {
-        ...opts
-    }));
-}
-export function deleteDynamicAlbum({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-export function getDynamicAlbumInfo({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: DynamicAlbumResponseDto;
-    }>(`/dynamic-albums/${encodeURIComponent(id)}`, {
-        ...opts
-    }));
-}
-export function updateDynamicAlbumInfo({ id, updateDynamicAlbumDto }: {
-    id: string;
-    updateDynamicAlbumDto: UpdateDynamicAlbumDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: DynamicAlbumResponseDto;
-    }>(`/dynamic-albums/${encodeURIComponent(id)}`, oazapfts.json({
-        ...opts,
-        method: "PATCH",
-        body: updateDynamicAlbumDto
-    })));
-}
-export function getDynamicAlbumAssets({ id, skip, take }: {
-    id: string;
-    skip: number;
-    take: number;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: object[];
-    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets${QS.query(QS.explode({
-        skip,
-        take
-    }))}`, {
-        ...opts
-    }));
-}
-export function getDynamicAlbumAssetCount({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: number;
-    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets/count`, {
-        ...opts
-    }));
-}
-export function getDynamicAlbumAssetsByTimeBucket({ id, timeBucket }: {
-    id: string;
-    timeBucket: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: object[];
-    }>(`/dynamic-albums/${encodeURIComponent(id)}/assets/time-bucket/${encodeURIComponent(timeBucket)}`, {
-        ...opts
-    }));
-}
-export function shareDynamicAlbum({ id, shareDynamicAlbumDto }: {
-    id: string;
-    shareDynamicAlbumDto: ShareDynamicAlbumDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: shareDynamicAlbumDto
-    })));
-}
-export function removeDynamicAlbumShare({ id, userId }: {
-    id: string;
-    userId: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share/${encodeURIComponent(userId)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-export function updateDynamicAlbumShare({ id, userId, updateDynamicAlbumShareDto }: {
-    id: string;
-    userId: string;
-    updateDynamicAlbumShareDto: UpdateDynamicAlbumShareDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/dynamic-albums/${encodeURIComponent(id)}/share/${encodeURIComponent(userId)}`, oazapfts.json({
-        ...opts,
-        method: "PUT",
-        body: updateDynamicAlbumShareDto
-    })));
-}
 export function getFaces({ id }: {
     id: string;
 }, opts?: Oazapfts.RequestOpts) {
@@ -3754,9 +3579,8 @@ export function tagAssets({ id, bulkIdsDto }: {
         body: bulkIdsDto
     })));
 }
-export function getTimeBucket({ albumId, dynamicAlbumId, isFavorite, isTrashed, key, order, personId, tagId, timeBucket, userId, visibility, withPartners, withStacked }: {
+export function getTimeBucket({ albumId, isFavorite, isTrashed, key, order, personId, tagId, timeBucket, userId, visibility, withPartners, withStacked }: {
     albumId?: string;
-    dynamicAlbumId?: string;
     isFavorite?: boolean;
     isTrashed?: boolean;
     key?: string;
@@ -3774,7 +3598,6 @@ export function getTimeBucket({ albumId, dynamicAlbumId, isFavorite, isTrashed, 
         data: TimeBucketAssetResponseDto;
     }>(`/timeline/bucket${QS.query(QS.explode({
         albumId,
-        dynamicAlbumId,
         isFavorite,
         isTrashed,
         key,
@@ -3790,9 +3613,8 @@ export function getTimeBucket({ albumId, dynamicAlbumId, isFavorite, isTrashed, 
         ...opts
     }));
 }
-export function getTimeBuckets({ albumId, dynamicAlbumId, isFavorite, isTrashed, key, order, personId, tagId, userId, visibility, withPartners, withStacked }: {
+export function getTimeBuckets({ albumId, isFavorite, isTrashed, key, order, personId, tagId, userId, visibility, withPartners, withStacked }: {
     albumId?: string;
-    dynamicAlbumId?: string;
     isFavorite?: boolean;
     isTrashed?: boolean;
     key?: string;
@@ -3809,7 +3631,6 @@ export function getTimeBuckets({ albumId, dynamicAlbumId, isFavorite, isTrashed,
         data: TimeBucketsResponseDto[];
     }>(`/timeline/buckets${QS.query(QS.explode({
         albumId,
-        dynamicAlbumId,
         isFavorite,
         isTrashed,
         key,
@@ -4189,10 +4010,6 @@ export enum AssetMediaSize {
     Fullsize = "fullsize",
     Preview = "preview",
     Thumbnail = "thumbnail"
-}
-export enum Order {
-    Asc = "asc",
-    Desc = "desc"
 }
 export enum ManualJobName {
     PersonCleanup = "person-cleanup",
