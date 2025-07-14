@@ -188,6 +188,34 @@ export class DynamicAlbumRepository {
   }
 
   /**
+   * Check if a specific asset belongs to a dynamic album
+   */
+  async isAssetInDynamicAlbum(
+    assetId: string,
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+    operationOptions: DynamicAlbumOperationOptions = {},
+  ): Promise<boolean> {
+    const operation = async (): Promise<boolean> => {
+      const searchOptions = await this.getSearchOptions(filters, ownerId, operationOptions);
+
+      // Search for the specific asset with the dynamic album filters
+      const searchResult = await this.searchRepository.searchMetadata(
+        { page: 1, size: 1 },
+        {
+          ...searchOptions,
+          id: assetId, // Use 'id' instead of 'assetIds' to filter by specific asset
+        },
+      );
+
+      // If we find the asset with the given filters, it belongs to the dynamic album
+      return (searchResult.items || []).length > 0;
+    };
+
+    return this.executeSafely(operation, 'check if asset belongs to dynamic album', false, operationOptions);
+  }
+
+  /**
    * Get search options for a dynamic album
    */
   async getSearchOptions(

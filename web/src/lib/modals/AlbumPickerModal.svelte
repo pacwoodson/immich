@@ -28,6 +28,8 @@
 
   onMount(async () => {
     albums = await getAllAlbums({ shared: shared || undefined });
+    // Filter out dynamic albums - they cannot have assets added to them
+    albums = albums.filter((album) => !album.dynamic);
     recentAlbums = albums.sort((a, b) => (new Date(a.createdAt) > new Date(b.createdAt) ? -1 : 1)).slice(0, 3);
     loading = false;
   });
