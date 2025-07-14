@@ -109,7 +109,6 @@
   let isCreatingSharedAlbum = $state(false);
   let isShowActivity = $state(false);
   let albumOrder: AssetOrder | undefined = $state(data.album.order);
-  let showDynamicAlbumEditModal = $state(false);
 
   const assetInteraction = new AssetInteraction();
   const timelineInteraction = new AssetInteraction();
@@ -511,20 +510,8 @@
               {/if}
 
               <!-- ALBUM SHARING -->
-              {#if album.albumUsers.length > 0 || (album.hasSharedLink && isOwned)}
+              {#if album.albumUsers.length > 0}
                 <div class="my-3 flex gap-x-1">
-                  <!-- link -->
-                  {#if album.hasSharedLink && isOwned}
-                    <IconButton
-                      aria-label={$t('create_link_to_share')}
-                      color="secondary"
-                      size="medium"
-                      shape="round"
-                      icon={mdiLink}
-                      onclick={handleShareLink}
-                    />
-                  {/if}
-
                   <!-- owner -->
                   <button type="button" onclick={handleEditUsers}>
                     <UserAvatar user={album.owner} size="md" />
