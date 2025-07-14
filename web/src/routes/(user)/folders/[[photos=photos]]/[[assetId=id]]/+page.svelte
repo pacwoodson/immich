@@ -21,14 +21,14 @@
   import TreeItems from '$lib/components/shared-components/tree/tree-items.svelte';
   import Sidebar from '$lib/components/sidebar/sidebar.svelte';
   import { AppRoute, QueryParameter } from '$lib/constants';
-  import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import type { Viewport } from '$lib/managers/timeline-manager/types';
+  import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import { foldersStore } from '$lib/stores/folders.svelte';
   import { preferences } from '$lib/stores/user.store';
   import { cancelMultiselect } from '$lib/utils/asset-utils';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
   import { joinPaths } from '$lib/utils/tree-utils';
-  import { IconButton } from '@immich/ui';
+  import { HStack, IconButton } from '@immich/ui';
   import { mdiDotsVertical, mdiFolder, mdiFolderHome, mdiFolderOutline, mdiPlus, mdiSelectAll } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
@@ -78,7 +78,9 @@
 </script>
 
 <UserPageLayout title={data.meta.title}>
-  {#snippet sidebar()}
+  <Breadcrumbs node={data.tree} icon={mdiFolderHome} title={$t('folders')} getLink={getLinkForPath} />
+
+  <HStack class="mt-2 h-full items-start">
     <Sidebar>
       <SkipLink target={`#${headerId}`} text={$t('skip_to_folders')} breakpoint="md" />
       <section>
@@ -93,27 +95,25 @@
         </div>
       </section>
     </Sidebar>
-  {/snippet}
 
-  <Breadcrumbs node={data.tree} icon={mdiFolderHome} title={$t('folders')} getLink={getLinkForPath} />
+    <section class="flex-1 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
+      <TreeItemThumbnails items={data.tree.children} icon={mdiFolder} onClick={handleNavigateToFolder} />
 
-  <section class="mt-2 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
-    <TreeItemThumbnails items={data.tree.children} icon={mdiFolder} onClick={handleNavigateToFolder} />
-
-    <!-- Assets -->
-    {#if data.pathAssets && data.pathAssets.length > 0}
-      <div bind:clientHeight={viewport.height} bind:clientWidth={viewport.width} class="mt-2">
-        <GalleryViewer
-          assets={data.pathAssets}
-          {assetInteraction}
-          {viewport}
-          showAssetName={true}
-          pageHeaderOffset={54}
-          onReload={triggerAssetUpdate}
-        />
-      </div>
-    {/if}
-  </section>
+      <!-- Assets -->
+      {#if data.pathAssets && data.pathAssets.length > 0}
+        <div bind:clientHeight={viewport.height} bind:clientWidth={viewport.width} class="mt-2">
+          <GalleryViewer
+            assets={data.pathAssets}
+            {assetInteraction}
+            {viewport}
+            showAssetName={true}
+            pageHeaderOffset={54}
+            onReload={triggerAssetUpdate}
+          />
+        </div>
+      {/if}
+    </section>
+  </HStack>
 </UserPageLayout>
 
 {#if assetInteraction.selectionActive}

@@ -18,6 +18,7 @@
     use?: ActionArray;
     header?: Snippet;
     sidebar?: Snippet;
+    additionalSidebarContent?: Snippet;
     buttons?: Snippet;
     children?: Snippet;
   }
@@ -31,6 +32,7 @@
     use = [],
     header,
     sidebar,
+    additionalSidebarContent,
     buttons,
     children,
   }: Props = $props();
@@ -57,6 +59,9 @@
     {@render sidebar()}
   {:else}
     <UserSidebar />
+    {#if additionalSidebarContent}
+      {@render additionalSidebarContent()}
+    {/if}
   {/if}
 
   <main class="relative">

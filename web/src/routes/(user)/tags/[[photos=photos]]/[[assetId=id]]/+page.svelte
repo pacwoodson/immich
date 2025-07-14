@@ -103,18 +103,6 @@
 </script>
 
 <UserPageLayout title={data.meta.title}>
-  {#snippet sidebar()}
-    <Sidebar>
-      <SkipLink target={`#${headerId}`} text={$t('skip_to_tags')} breakpoint="md" />
-      <section>
-        <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
-        <div class="h-full">
-          <TreeItems icons={{ default: mdiTag, active: mdiTag }} {tree} active={tag.path} {getLink} />
-        </div>
-      </section>
-    </Sidebar>
-  {/snippet}
-
   {#snippet buttons()}
     <HStack>
       <Button leadingIcon={mdiPlus} onclick={handleCreate} size="small" variant="ghost" color="secondary">
@@ -143,15 +131,27 @@
 
   <Breadcrumbs node={tag} icon={mdiTagMultiple} title={$t('tags')} {getLink} />
 
-  <section class="mt-2 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
-    {#if tag.hasAssets}
-      <AssetGrid enableRouting={true} {timelineManager} {assetInteraction} removeAction={AssetAction.UNARCHIVE}>
-        {#snippet empty()}
-          <TreeItemThumbnails items={tag.children} icon={mdiTag} onClick={handleNavigation} />
-        {/snippet}
-      </AssetGrid>
-    {:else}
-      <TreeItemThumbnails items={tag.children} icon={mdiTag} onClick={handleNavigation} />
-    {/if}
-  </section>
+  <HStack class="mt-2 h-full items-start">
+    <Sidebar>
+      <SkipLink target={`#${headerId}`} text={$t('skip_to_tags')} breakpoint="md" />
+      <section>
+        <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
+        <div class="h-full">
+          <TreeItems icons={{ default: mdiTag, active: mdiTag }} {tree} active={tag.path} {getLink} />
+        </div>
+      </section>
+    </Sidebar>
+
+    <section class="flex-1 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
+      {#if tag.hasAssets}
+        <AssetGrid enableRouting={true} {timelineManager} {assetInteraction} removeAction={AssetAction.UNARCHIVE}>
+          {#snippet empty()}
+            <TreeItemThumbnails items={tag.children} icon={mdiTag} onClick={handleNavigation} />
+          {/snippet}
+        </AssetGrid>
+      {:else}
+        <TreeItemThumbnails items={tag.children} icon={mdiTag} onClick={handleNavigation} />
+      {/if}
+    </section>
+  </HStack>
 </UserPageLayout>
