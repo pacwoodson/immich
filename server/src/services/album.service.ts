@@ -445,6 +445,10 @@ export class AlbumService extends BaseService {
     // Handle the actual filter structure: {tags: [...], operator: "and", ...}
     if (filters.tags && Array.isArray(filters.tags)) {
       searchOptions.tagIds = filters.tags;
+      // Include the operator for tag filtering
+      if (filters.operator) {
+        searchOptions.tagOperator = filters.operator;
+      }
     }
 
     if (filters.people && Array.isArray(filters.people)) {
