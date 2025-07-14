@@ -131,18 +131,20 @@
 
   <Breadcrumbs node={tag} icon={mdiTagMultiple} title={$t('tags')} {getLink} />
 
-  <HStack class="mt-2 h-full items-start">
-    <Sidebar>
-      <SkipLink target={`#${headerId}`} text={$t('skip_to_tags')} breakpoint="md" />
-      <section>
-        <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
-        <div class="h-full">
-          <TreeItems icons={{ default: mdiTag, active: mdiTag }} {tree} active={tag.path} {getLink} />
-        </div>
-      </section>
-    </Sidebar>
+  <HStack class="mt-2 h-[calc(100%-(--spacing(25)))] items-start">
+    <div class="h-full overflow-auto immich-scrollbar">
+      <Sidebar>
+        <SkipLink target={`#${headerId}`} text={$t('skip_to_tags')} breakpoint="md" />
+        <section>
+          <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
+          <div class="h-full">
+            <TreeItems icons={{ default: mdiTag, active: mdiTag }} {tree} active={tag.path} {getLink} />
+          </div>
+        </section>
+      </Sidebar>
+    </div>
 
-    <section class="flex-1 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
+    <section class="flex-1 h-full overflow-auto immich-scrollbar">
       {#if tag.hasAssets}
         <AssetGrid enableRouting={true} {timelineManager} {assetInteraction} removeAction={AssetAction.UNARCHIVE}>
           {#snippet empty()}

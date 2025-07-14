@@ -80,23 +80,25 @@
 <UserPageLayout title={data.meta.title}>
   <Breadcrumbs node={data.tree} icon={mdiFolderHome} title={$t('folders')} getLink={getLinkForPath} />
 
-  <HStack class="mt-2 h-full items-start">
-    <Sidebar>
-      <SkipLink target={`#${headerId}`} text={$t('skip_to_folders')} breakpoint="md" />
-      <section>
-        <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
-        <div class="h-full">
-          <TreeItems
-            icons={{ default: mdiFolderOutline, active: mdiFolder }}
-            tree={foldersStore.folders!}
-            active={data.tree.path}
-            getLink={getLinkForPath}
-          />
-        </div>
-      </section>
-    </Sidebar>
+  <HStack class="mt-2 h-[calc(100%-(--spacing(25)))] items-start">
+    <div class="h-full overflow-auto immich-scrollbar">
+      <Sidebar>
+        <SkipLink target={`#${headerId}`} text={$t('skip_to_folders')} breakpoint="md" />
+        <section>
+          <div class="text-xs ps-4 mb-2 dark:text-white">{$t('explorer').toUpperCase()}</div>
+          <div class="h-full">
+            <TreeItems
+              icons={{ default: mdiFolderOutline, active: mdiFolder }}
+              tree={foldersStore.folders!}
+              active={data.tree.path}
+              getLink={getLinkForPath}
+            />
+          </div>
+        </section>
+      </Sidebar>
+    </div>
 
-    <section class="flex-1 h-[calc(100%-(--spacing(20)))] overflow-auto immich-scrollbar">
+    <section class="flex-1 h-full overflow-auto immich-scrollbar">
       <TreeItemThumbnails items={data.tree.children} icon={mdiFolder} onClick={handleNavigateToFolder} />
 
       <!-- Assets -->
