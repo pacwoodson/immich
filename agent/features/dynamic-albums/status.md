@@ -26,14 +26,18 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ Added dynamic album metadata calculation using search functionality
 - ✅ Prevented asset add/remove operations for dynamic albums
 - ✅ Enhanced `TimelineService` to support dynamic albums
-- ❌ **ISSUE**: Shared link functionality not working for dynamic albums
-- ❌ **ISSUE**: Download functionality not working for dynamic albums
+- ✅ Enhanced `SharedLinkService` to support dynamic albums
+- ✅ Enhanced `DownloadService` to support dynamic albums
+- ✅ Enhanced `MapService` to support dynamic albums using search functionality
 
 #### Repositories
 - ✅ Enhanced `AlbumRepository` to handle dynamic vs regular albums
 - ✅ Updated `SearchRepository` to support tag operators (AND/OR)
 - ✅ Enhanced `AssetRepository` with dynamic album support
 - ✅ Updated database utilities to support tag filtering operators
+- ✅ Enhanced `DownloadRepository` to support dynamic albums
+- ✅ MapRepository no changes needed - MapService handles dynamic albums
+- ❌ **ISSUE**: SyncRepository does not handle dynamic albums
 
 #### Utilities
 - ✅ Created `FilterUtil` class for filter processing and validation
@@ -47,7 +51,7 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ Updated `AlbumViewer` to disable upload for dynamic albums
 - ✅ Enhanced `AlbumsControls` to use new create album modal
 - ✅ Updated album page to handle dynamic album display and editing
-- ❌ **ISSUE**: Filter count not displaying correctly in albums list page
+- ✅: Filter count displaying correctly in albums list page
 
 #### New Components
 - ✅ Created `FilterDisplay` component for showing active filters
@@ -81,40 +85,96 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ Filter editing and updating
 - ✅ Automatic asset population based on filters
 - ✅ Disabled manual asset management for dynamic albums
-- ❌ **ISSUE**: Dynamic album thumbnails not working
+- ❌ **ISSUE**: Dynamic album thumbnails
 
 #### User Experience 🟡
 - ✅ Unified interface for both album types
 - ✅ Clear visual indicators for dynamic albums
 - ✅ Intuitive filter management
-- ❌ **ISSUE**: Shared album links don't work for dynamic albums
-- ❌ **ISSUE**: Download assets functionality not working for dynamic albums
+- ❌ **ISSUE**: Map markers not showing for dynamic albums
+- ❌ **ISSUE**: Mobile sync not working for dynamic albums
 
 #### Technical Implementation 🟡
 - ✅ Efficient search-based asset retrieval
 - ✅ Proper metadata calculation for dynamic albums
 - ✅ Timeline support for dynamic albums
-- ❌ **ISSUE**: Shared link compatibility broken for dynamic albums
-- ❌ **ISSUE**: Download functionality broken for dynamic albums
+- ✅ Shared link support for dynamic albums
+- ✅ Download support for dynamic albums
+- ❌ **ISSUE**: Map functionality broken for dynamic albums
+- ❌ **ISSUE**: Mobile sync broken for dynamic albums
+
+## Backend Analysis Results ✅
+
+### Services Analysis
+**✅ GOOD: Most services properly handle both regular and dynamic albums**
+
+#### AlbumService (`server/src/services/album.service.ts`)
+- ✅ **`getAll()`**: Separates regular and dynamic albums, uses different approaches for metadata calculation
+- ✅ **`get()`**: Has specific logic for dynamic albums using search functionality
+- ✅ **`create()`**: Handles dynamic album creation without requiring initial assets
+- ✅ **`update()`**: Prevents thumbnail setting for dynamic albums
+- ✅ **`addAssets()`/`removeAssets()`**: Explicitly blocks operations on dynamic albums
+
+#### TimelineService (`server/src/services/timeline.service.ts`)
+- ✅ **`getTimeBuckets()`**: Checks for dynamic albums and uses search-based approach
+- ✅ **`getTimeBucket()`**: Handles dynamic albums with custom time bucket logic
+- ✅ Has dedicated methods: `getTimeBucketsForDynamicAlbum()` and `getTimeBucketForDynamicAlbum()`
+
+#### SharedLinkService (`server/src/services/shared-link.service.ts`)
+- ✅ **`mapToSharedLink()`**: Has specific logic for dynamic albums using search
+- ✅ Uses album owner's ID correctly for search, not shared link user
+
+#### DownloadService (`server/src/services/download.service.ts`)
+- ✅ **`getDownloadInfo()`**: Checks for dynamic albums and uses appropriate download method
+- ✅ Uses `downloadAlbumId()` with `isDynamic` parameter for different handling
+
+#### MapService (`server/src/services/map.service.ts`)
+- ✅ **FIXED**: Now handles dynamic albums properly
+- ✅ **`getMapMarkers()`**: Separates regular and dynamic albums, uses search functionality for dynamic albums
+- ✅ **`getMapMarkersForDynamicAlbums()`**: New method to get map markers for dynamic albums using search
+- ✅ **`convertFiltersToSearchOptions()`**: Converts dynamic album filters to search options
+
+### Repositories Analysis
+**🟡 MIXED: Some repositories properly handle both types, others don't**
+
+#### AlbumRepository (`server/src/repositories/album.repository.ts`)
+- ✅ **`getMetadataForIds()`**: Explicitly states it only handles regular albums
+- ✅ Standard CRUD operations work for both types
+- ✅ **`updateThumbnails()`**: Only affects regular albums (uses `albums_assets_assets` join)
+
+#### DownloadRepository (`server/src/repositories/download.repository.ts`)
+- ✅ **`downloadAlbumId()`**: Has `isDynamic` parameter and dedicated `downloadDynamicAlbum()` method
+- ✅ Uses search functionality for dynamic albums
+
+#### MapRepository (`server/src/repositories/map.repository.ts`)
+- ✅ **FIXED**: No changes needed - MapService now handles dynamic albums using search functionality
+- ✅ **`getMapMarkers()`**: Still handles regular albums correctly via `albums_assets_assets` join
+- ✅ Dynamic albums are now handled by MapService using search functionality instead
+
+#### SyncRepository (`server/src/repositories/sync.repository.ts`)
+- ❌ **PROBLEM**: Does NOT handle dynamic albums
+- ❌ **`AlbumSync`**: Only syncs regular albums via `albums_assets_assets` table
+- ❌ **`AlbumAssetSync`**: Only handles regular album assets
+- ❌ No dynamic album sync functionality
 
 ## Known Issues ❌
 
 ### Critical Issues
-1. **Shared Album Links**: Dynamic albums cannot be shared via links
-2. **Download Assets**: Download functionality is broken for dynamic albums
+1. **Map Markers for Dynamic Albums**: ✅ Fixed - MapService now handles dynamic albums using search functionality
+2. **Mobile Sync for Dynamic Albums**: Dynamic albums are not synced to mobile clients because SyncRepository only handles regular albums
 3. **Dynamic Album Thumbnails**: Thumbnail generation/display not working for dynamic albums
 4. **Filter Count Display**: ✅ Fixed - Filter count now displaying correctly in albums list page
 
 ### Technical Debt
-- Shared link service needs updates for dynamic album support
-- Download service needs to handle dynamic album asset retrieval
+- ✅ MapService/Repository updated for dynamic album support
+- SyncRepository needs dynamic album sync functionality
 - Thumbnail generation logic needs to work with dynamic albums
 - Frontend filter count calculation needs fixing
 
 ## Testing Status 🟡
 - ✅ Backend unit tests updated with new fields
 - ✅ Frontend components tested for dynamic album functionality
-- ❌ **ISSUE**: Integration testing incomplete for shared links and downloads
+- ❌ **ISSUE**: Integration testing incomplete for map functionality and mobile sync
 - ❌ **ISSUE**: End-to-end testing needed for dynamic album workflows
 
 ## Documentation Status ✅
@@ -122,16 +182,9 @@ The Enhanced Albums feature has been implemented as a unified album system that 
 - ✅ Removed references to separate dynamic album system
 - ✅ Documented new filter structure and processing
 
-## Next Steps
-1. **Fix Shared Link Functionality**: Update shared link service to properly handle dynamic albums
-2. **Fix Download Functionality**: Implement proper asset download for dynamic albums
-3. **Fix Thumbnail Generation**: Ensure dynamic albums can generate and display thumbnails
-4. **Fix Filter Count Display**: Correct the filter count calculation in albums list
-5. **Complete Integration Testing**: Test all dynamic album workflows end-to-end
+DO NOT FIX unit / integration / end to end tests for now. 
 
-## Migration Notes
-- All existing albums remain as regular albums (`dynamic = false`)
-- No data migration required for existing albums
-- New dynamic albums can be created alongside existing regular albums
-- API remains backward compatible
-- **WARNING**: Dynamic album sharing and downloads are currently broken
+## Next Steps
+1. **Fix Map Functionality**: ✅ Completed - MapService now handles dynamic albums using search functionality
+2. **Fix Mobile Sync**: Add dynamic album sync to SyncRepository for mobile client support
+

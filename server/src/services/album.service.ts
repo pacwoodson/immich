@@ -88,6 +88,16 @@ export class AlbumService extends BaseService {
               .map((date: any) => new Date(date))
               .sort((a: Date, b: Date) => b.getTime() - a.getTime());
 
+            // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
+            if (!dynamicAlbum.albumThumbnailAssetId && assets.length > 0) {
+              const thumbnailAssetId = assets[0].id;
+              await this.albumRepository.update(dynamicAlbum.id, {
+                id: dynamicAlbum.id,
+                albumThumbnailAssetId: thumbnailAssetId,
+              });
+              dynamicAlbum.albumThumbnailAssetId = thumbnailAssetId;
+            }
+
             albumMetadata[dynamicAlbum.id] = {
               albumId: dynamicAlbum.id,
               assetCount: assets.length,
@@ -200,6 +210,16 @@ export class AlbumService extends BaseService {
         if (updatedDates.length > 0) {
           lastModifiedAssetTimestamp = updatedDates[0];
         }
+
+        // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
+        if (!album.albumThumbnailAssetId && foundAssets.length > 0) {
+          const thumbnailAssetId = foundAssets[0].id;
+          await this.albumRepository.update(album.id, {
+            id: album.id,
+            albumThumbnailAssetId: thumbnailAssetId,
+          });
+          album.albumThumbnailAssetId = thumbnailAssetId;
+        }
       }
 
       return {
@@ -251,12 +271,33 @@ export class AlbumService extends BaseService {
 
     const userMetadata = await this.userRepository.getMetadata(auth.user.id);
 
+    // For dynamic albums, get the first asset that matches the filters to use as thumbnail
+    let dynamicAlbumThumbnailAssetId = null;
+    if (dto.dynamic && dto.filters) {
+      try {
+        const searchOptions = this.convertFiltersToSearchOptions(dto.filters, auth.user.id);
+        const searchResult = await this.searchRepository.searchMetadata(
+          { page: 1, size: 1 }, // Just get the first asset
+          {
+            ...searchOptions,
+            orderDirection: getPreferences(userMetadata).albums.defaultAssetOrder === 'asc' ? 'asc' : 'desc',
+          },
+        );
+        if (searchResult.items.length > 0) {
+          dynamicAlbumThumbnailAssetId = searchResult.items[0].id;
+        }
+      } catch (error) {
+        // If search fails, continue without thumbnail
+        this.logger.warn(`Failed to get thumbnail for dynamic album: ${error}`);
+      }
+    }
+
     const album = await this.albumRepository.create(
       {
         ownerId: auth.user.id,
         albumName: dto.albumName,
         description: dto.description,
-        albumThumbnailAssetId: dto.dynamic ? null : assetIds[0] || null,
+        albumThumbnailAssetId: dto.dynamic ? dynamicAlbumThumbnailAssetId : assetIds[0] || null,
         order: getPreferences(userMetadata).albums.defaultAssetOrder,
         dynamic: dto.dynamic || false,
         filters: dto.filters || null,
@@ -277,22 +318,53 @@ export class AlbumService extends BaseService {
 
     const album = await this.findOrFail(id, { withAssets: false });
 
-    // For dynamic albums, don't allow setting thumbnail from assets
-    if (dto.albumThumbnailAssetId && !album.dynamic) {
+    // For dynamic albums, validate thumbnail asset exists in filtered results
+    if (dto.albumThumbnailAssetId && album.dynamic) {
+      if (album.filters) {
+        const searchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+        const searchResult = await this.searchRepository.searchMetadata(
+          { page: 1, size: 50000 },
+          { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+        );
+        const assetIds = searchResult.items.map((asset: any) => asset.id);
+        if (!assetIds.includes(dto.albumThumbnailAssetId)) {
+          throw new BadRequestException('Invalid album thumbnail - asset not found in dynamic album filters');
+        }
+      }
+    } else if (dto.albumThumbnailAssetId && !album.dynamic) {
+      // For regular albums, validate thumbnail asset exists in album
       const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
       if (results.size === 0) {
         throw new BadRequestException('Invalid album thumbnail');
       }
     }
 
-    // For dynamic albums, clear thumbnail if trying to set one
-    const albumThumbnailAssetId = album.dynamic ? null : dto.albumThumbnailAssetId;
+    // For dynamic albums, handle thumbnail updates when filters change
+    let finalAlbumThumbnailAssetId = dto.albumThumbnailAssetId;
+
+    if (album.dynamic && dto.filters && JSON.stringify(dto.filters) !== JSON.stringify(album.filters)) {
+      // Filters have changed, check if current thumbnail is still valid
+      const searchOptions = this.convertFiltersToSearchOptions(dto.filters, auth.user.id);
+      const searchResult = await this.searchRepository.searchMetadata(
+        { page: 1, size: 50000 },
+        { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+      );
+      const assetIds = searchResult.items.map((asset: any) => asset.id);
+
+      // If current thumbnail is no longer in the album, set it to the first asset
+      if (album.albumThumbnailAssetId && !assetIds.includes(album.albumThumbnailAssetId)) {
+        finalAlbumThumbnailAssetId = assetIds.length > 0 ? assetIds[0] : null;
+      } else if (!album.albumThumbnailAssetId && assetIds.length > 0) {
+        // If no thumbnail was set and we have assets, set the first one
+        finalAlbumThumbnailAssetId = assetIds[0];
+      }
+    }
 
     const updatedAlbum = await this.albumRepository.update(album.id, {
       id: album.id,
       albumName: dto.albumName,
       description: dto.description,
-      albumThumbnailAssetId: albumThumbnailAssetId,
+      albumThumbnailAssetId: finalAlbumThumbnailAssetId,
       isActivityEnabled: dto.isActivityEnabled,
       order: dto.order,
       dynamic: dto.dynamic ?? album.dynamic,
@@ -431,6 +503,43 @@ export class AlbumService extends BaseService {
   async updateUser(auth: AuthDto, id: string, userId: string, dto: UpdateAlbumUserDto): Promise<void> {
     await this.requireAccess({ auth, permission: Permission.ALBUM_SHARE, ids: [id] });
     await this.albumUserRepository.update({ albumsId: id, usersId: userId }, { role: dto.role });
+  }
+
+  /**
+   * Set thumbnail for a dynamic album by validating the asset is in the filtered results
+   */
+  async setDynamicAlbumThumbnail(auth: AuthDto, id: string, assetId: string): Promise<AlbumResponseDto> {
+    await this.requireAccess({ auth, permission: Permission.ALBUM_UPDATE, ids: [id] });
+
+    const album = await this.findOrFail(id, { withAssets: false });
+
+    if (!album.dynamic) {
+      throw new BadRequestException('This method is only for dynamic albums');
+    }
+
+    if (!album.filters) {
+      throw new BadRequestException('Dynamic album has no filters');
+    }
+
+    // Validate that the asset is in the filtered results
+    const searchOptions = this.convertFiltersToSearchOptions(album.filters, auth.user.id);
+    const searchResult = await this.searchRepository.searchMetadata(
+      { page: 1, size: 50000 },
+      { ...searchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+    );
+    const assetIds = searchResult.items.map((asset: any) => asset.id);
+
+    if (!assetIds.includes(assetId)) {
+      throw new BadRequestException('Asset not found in dynamic album filters');
+    }
+
+    // Update the thumbnail
+    const updatedAlbum = await this.albumRepository.update(album.id, {
+      id: album.id,
+      albumThumbnailAssetId: assetId,
+    });
+
+    return mapAlbumWithoutAssets({ ...updatedAlbum, assets: [] });
   }
 
   /**

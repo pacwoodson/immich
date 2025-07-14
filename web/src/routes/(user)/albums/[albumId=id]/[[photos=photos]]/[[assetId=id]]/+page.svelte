@@ -69,6 +69,7 @@
     addUsersToAlbum,
     deleteAlbum,
     getAlbumInfo,
+    setDynamicAlbumThumbnail,
     updateAlbumInfo,
     type AlbumResponseDto,
     type AlbumUserAddDto,
@@ -316,12 +317,22 @@
 
   const updateThumbnail = async (assetId: string) => {
     try {
-      await updateAlbumInfo({
-        id: album.id,
-        updateAlbumDto: {
-          albumThumbnailAssetId: assetId,
-        },
-      });
+      if (album.dynamic) {
+        // For dynamic albums, use the new endpoint
+        await setDynamicAlbumThumbnail({
+          id: album.id,
+          assetId,
+        });
+      } else {
+        // For regular albums, use the existing method
+        await updateAlbumInfo({
+          id: album.id,
+          updateAlbumDto: {
+            albumThumbnailAssetId: assetId,
+          },
+        });
+      }
+
       notificationController.show({
         type: NotificationType.Info,
         message: $t('album_cover_updated'),

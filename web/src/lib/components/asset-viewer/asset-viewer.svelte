@@ -11,6 +11,7 @@
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
   import { closeEditorCofirm } from '$lib/stores/asset-editor.store';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
+  import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
   import { isShowDetail } from '$lib/stores/preferences.store';
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
   import { user } from '$lib/stores/user.store';
@@ -44,7 +45,6 @@
   import PhotoViewer from './photo-viewer.svelte';
   import SlideshowBar from './slideshow-bar.svelte';
   import VideoViewer from './video-wrapper-viewer.svelte';
-  import { isFaceEditMode } from '$lib/stores/face-edit.svelte';
 
   type HasAsset = boolean;
 
