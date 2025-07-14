@@ -22,7 +22,20 @@ export class DownloadService extends BaseService {
     } else if (dto.albumId) {
       const albumId = dto.albumId;
       await this.requireAccess({ auth, permission: Permission.ALBUM_DOWNLOAD, ids: [albumId] });
-      assets = this.downloadRepository.downloadAlbumId(albumId);
+
+      // Check if this is a dynamic album
+      const album = await this.albumRepository.getById(albumId, { withAssets: false });
+      if (!album) {
+        throw new BadRequestException('Album not found');
+      }
+
+      if (album.dynamic && album.filters) {
+        // For dynamic albums, use the search-based approach
+        assets = this.downloadRepository.downloadAlbumId(albumId, true, album.filters, auth.user.id);
+      } else {
+        // For regular albums, use the existing logic
+        assets = this.downloadRepository.downloadAlbumId(albumId);
+      }
     } else if (dto.userId) {
       const userId = dto.userId;
       await this.requireAccess({ auth, permission: Permission.TIMELINE_DOWNLOAD, ids: [userId] });
