@@ -4,13 +4,21 @@ import { TimeBucketAssetDto, TimeBucketDto, TimeBucketsResponseDto } from 'src/d
 import { AssetVisibility, Permission } from 'src/enum';
 import { TimeBucketOptions } from 'src/repositories/asset.repository';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { requireElevatedPermission } from 'src/utils/access';
 import { getMyPartnerIds } from 'src/utils/asset.util';
 import { hexOrBufferToBase64 } from 'src/utils/bytes';
-import { FilterUtil } from 'src/utils/filter.util';
 
 @Injectable()
 export class TimelineService extends BaseService {
+  constructor(
+    private dynamicAlbumService: DynamicAlbumService,
+    ...args: ConstructorParameters<typeof BaseService>
+  ) {
+    super(...args);
+  }
+
   async getTimeBuckets(auth: AuthDto, dto: TimeBucketDto): Promise<TimeBucketsResponseDto[]> {
     await this.timeBucketChecks(auth, dto);
 
@@ -19,7 +27,7 @@ export class TimelineService extends BaseService {
       const album = await this.albumRepository.getById(dto.albumId, { withAssets: false });
       if (album?.dynamic && album.filters) {
         // For dynamic albums, get assets via search and then create buckets manually
-        return this.getTimeBucketsForDynamicAlbum(auth, dto, album.filters);
+        return this.getTimeBucketsForDynamicAlbum(auth, dto, album.filters as DynamicAlbumFilters);
       }
     }
 
@@ -36,7 +44,7 @@ export class TimelineService extends BaseService {
       const album = await this.albumRepository.getById(dto.albumId, { withAssets: false });
       if (album?.dynamic && album.filters) {
         // For dynamic albums, get assets via search and then filter by time bucket
-        return this.getTimeBucketForDynamicAlbum(auth, dto, album.filters);
+        return this.getTimeBucketForDynamicAlbum(auth, dto, album.filters as DynamicAlbumFilters);
       }
     }
 
@@ -50,21 +58,20 @@ export class TimelineService extends BaseService {
   private async getTimeBucketsForDynamicAlbum(
     auth: AuthDto,
     dto: TimeBucketDto,
-    filters: any,
+    filters: DynamicAlbumFilters,
   ): Promise<TimeBucketsResponseDto[]> {
-    // Convert album filters to search options
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(filters, auth.user.id);
-
-    // Get all matching assets
-    const searchResult = await this.searchRepository.searchMetadata(
-      { page: 1, size: 50000 }, // Large page size to get all matching assets
-      { ...searchOptions, orderDirection: dto.order === 'asc' ? 'asc' : 'desc' },
+    // Use the centralized service to get assets
+    const searchResult = await this.dynamicAlbumService.getAssetsForDynamicAlbum(
+      filters,
+      auth.user.id,
+      { order: dto.order },
+      { throwOnError: false },
     );
 
     // Group assets by time bucket
     const buckets = new Map<string, number>();
 
-    for (const asset of searchResult.items) {
+    for (const asset of searchResult.items || []) {
       const assetDate = new Date(asset.fileCreatedAt || asset.localDateTime);
       // Create time bucket in YYYY-MM format
       const timeBucket = `${assetDate.getFullYear()}-${String(assetDate.getMonth() + 1).padStart(2, '0')}-01`;
@@ -77,25 +84,19 @@ export class TimelineService extends BaseService {
       .sort((a, b) => b.timeBucket.localeCompare(a.timeBucket)); // Newest first
   }
 
-  private async getTimeBucketForDynamicAlbum(auth: AuthDto, dto: TimeBucketAssetDto, filters: any): Promise<string> {
-    // Convert album filters to search options
-    const searchOptions = FilterUtil.convertFiltersToSearchOptions(filters, auth.user.id);
-
-    // Get all matching assets
-    const searchResult = await this.searchRepository.searchMetadata(
-      { page: 1, size: 50000 }, // Large page size to get all matching assets
-      { ...searchOptions, orderDirection: dto.order === 'asc' ? 'asc' : 'desc' },
+  private async getTimeBucketForDynamicAlbum(
+    auth: AuthDto,
+    dto: TimeBucketAssetDto,
+    filters: DynamicAlbumFilters,
+  ): Promise<string> {
+    // Use the centralized service to get assets for the specific time bucket
+    const bucketAssets = await this.dynamicAlbumService.getAssetsForTimeBucket(
+      filters,
+      auth.user.id,
+      dto.timeBucket,
+      dto.order,
+      { throwOnError: false },
     );
-
-    // Filter assets by the specific time bucket
-    const [year, month] = dto.timeBucket.split('-').map(Number);
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-
-    const bucketAssets = searchResult.items.filter((asset: any) => {
-      const assetDate = new Date(asset.fileCreatedAt || asset.localDateTime);
-      return assetDate >= startDate && assetDate <= endDate;
-    });
 
     // Format the response to match AssetRepository.getTimeBucket structure
     // This needs to be in the same aggregated array format

@@ -18,24 +18,28 @@ import { AuthDto } from 'src/dtos/auth.dto';
 import { Permission } from 'src/enum';
 import { AlbumAssetCount, AlbumInfoOptions } from 'src/repositories/album.repository';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumService } from 'src/services/dynamic-album.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
 import { FilterUtil } from 'src/utils/filter.util';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
 export class AlbumService extends BaseService {
-  async getStatistics(auth: AuthDto): Promise<AlbumStatisticsResponseDto> {
-    const [owned, shared, notShared] = await Promise.all([
-      this.albumRepository.getOwned(auth.user.id),
-      this.albumRepository.getShared(auth.user.id),
-      this.albumRepository.getNotShared(auth.user.id),
-    ]);
+  constructor(
+    private dynamicAlbumService: DynamicAlbumService,
+    ...args: ConstructorParameters<typeof BaseService>
+  ) {
+    super(...args);
+  }
 
-    return {
-      owned: owned.length,
-      shared: shared.length,
-      notShared: notShared.length,
-    };
+  async getStatistics({ user: { id: ownerId } }: AuthDto): Promise<AlbumStatisticsResponseDto> {
+    const [owned, shared, notShared] = await Promise.all([
+      this.albumRepository.getOwned(ownerId).then((albums) => albums.length),
+      this.albumRepository.getShared(ownerId).then((albums) => albums.length),
+      this.albumRepository.getNotShared(ownerId).then((albums) => albums.length),
+    ]);
+    return { owned, shared, notShared };
   }
 
   async getAll({ user: { id: ownerId } }: AuthDto, { assetId, shared }: GetAlbumsDto): Promise<AlbumResponseDto[]> {
@@ -64,67 +68,39 @@ export class AlbumService extends BaseService {
       albumMetadata[metadata.albumId] = metadata;
     }
 
-    // Calculate metadata for dynamic albums using search
+    // Calculate metadata for dynamic albums using the centralized service
     for (const dynamicAlbum of dynamicAlbums) {
       if (dynamicAlbum.filters) {
-        try {
-          const searchOptions = FilterUtil.convertFiltersToSearchOptions(dynamicAlbum.filters, ownerId);
-          const searchResult = await this.searchRepository.searchMetadata(
-            { page: 1, size: 50000 }, // Large page size to get all matching assets
-            { ...searchOptions, orderDirection: dynamicAlbum.order === 'asc' ? 'asc' : 'desc' },
+        const metadata = await this.dynamicAlbumService.calculateMetadata(
+          dynamicAlbum.filters as DynamicAlbumFilters,
+          ownerId,
+          { throwOnError: false },
+        );
+
+        // Update thumbnail if needed and no thumbnail is set
+        if (!dynamicAlbum.albumThumbnailAssetId && metadata.assetCount > 0) {
+          const thumbnailAssetId = await this.dynamicAlbumService.getThumbnailAssetId(
+            dynamicAlbum.filters as DynamicAlbumFilters,
+            ownerId,
+            { throwOnError: false },
           );
 
-          const assets = searchResult.items;
-
-          if (assets.length > 0) {
-            const dates = assets
-              .map((asset: any) => asset.fileCreatedAt || asset.localDateTime)
-              .filter(Boolean)
-              .map((date: any) => new Date(date))
-              .sort((a: Date, b: Date) => a.getTime() - b.getTime());
-
-            const updatedDates = assets
-              .map((asset: any) => asset.updatedAt)
-              .filter(Boolean)
-              .map((date: any) => new Date(date))
-              .sort((a: Date, b: Date) => b.getTime() - a.getTime());
-
-            // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
-            if (!dynamicAlbum.albumThumbnailAssetId && assets.length > 0) {
-              const thumbnailAssetId = assets[0].id;
-              await this.albumRepository.update(dynamicAlbum.id, {
-                id: dynamicAlbum.id,
-                albumThumbnailAssetId: thumbnailAssetId,
-              });
-              dynamicAlbum.albumThumbnailAssetId = thumbnailAssetId;
-            }
-
-            albumMetadata[dynamicAlbum.id] = {
-              albumId: dynamicAlbum.id,
-              assetCount: assets.length,
-              startDate: dates.length > 0 ? dates[0] : null,
-              endDate: dates.length > 0 ? dates[dates.length - 1] : null,
-              lastModifiedAssetTimestamp: updatedDates.length > 0 ? updatedDates[0] : null,
-            };
-          } else {
-            albumMetadata[dynamicAlbum.id] = {
-              albumId: dynamicAlbum.id,
-              assetCount: 0,
-              startDate: null,
-              endDate: null,
-              lastModifiedAssetTimestamp: null,
-            };
+          if (thumbnailAssetId) {
+            await this.albumRepository.update(dynamicAlbum.id, {
+              id: dynamicAlbum.id,
+              albumThumbnailAssetId: thumbnailAssetId,
+            });
+            dynamicAlbum.albumThumbnailAssetId = thumbnailAssetId;
           }
-        } catch (error) {
-          // If search fails, use empty metadata
-          albumMetadata[dynamicAlbum.id] = {
-            albumId: dynamicAlbum.id,
-            assetCount: 0,
-            startDate: null,
-            endDate: null,
-            lastModifiedAssetTimestamp: null,
-          };
         }
+
+        albumMetadata[dynamicAlbum.id] = {
+          albumId: dynamicAlbum.id,
+          assetCount: metadata.assetCount,
+          startDate: metadata.startDate,
+          endDate: metadata.endDate,
+          lastModifiedAssetTimestamp: metadata.lastModifiedAssetTimestamp,
+        };
       } else {
         // No filters, so no assets
         albumMetadata[dynamicAlbum.id] = {
@@ -142,14 +118,12 @@ export class AlbumService extends BaseService {
       sharedLinks: undefined,
       startDate: albumMetadata[album.id]?.startDate ?? undefined,
       endDate: albumMetadata[album.id]?.endDate ?? undefined,
-      assetCount: albumMetadata[album.id]?.assetCount ?? 0,
-      // lastModifiedAssetTimestamp is only used in mobile app, please remove if not need
+      assetCount: albumMetadata[album.id]?.assetCount || 0,
       lastModifiedAssetTimestamp: albumMetadata[album.id]?.lastModifiedAssetTimestamp ?? undefined,
     }));
   }
 
   async get(auth: AuthDto, id: string, dto: AlbumInfoDto): Promise<AlbumResponseDto> {
-    // throw new Error('Not implemented');
     await this.requireAccess({ auth, permission: Permission.ALBUM_READ, ids: [id] });
     await this.albumRepository.updateThumbnails();
     const withAssets = dto.withoutAssets === undefined ? true : !dto.withoutAssets;
@@ -157,61 +131,39 @@ export class AlbumService extends BaseService {
 
     // Check if this is a dynamic album
     if (album.dynamic && album.filters) {
-      // Convert album filters to search options for SearchRepository
-      const dynamicSearchOptions = FilterUtil.convertFiltersToSearchOptions(album.filters, auth.user.id);
-
-      // Always get the search result to calculate metadata, even if we don't need full assets
-      const searchResult = await this.searchRepository.searchMetadata(
-        { page: 1, size: 50000 }, // Large page size to get all matching assets
-        { ...dynamicSearchOptions, orderDirection: album.order === 'asc' ? 'asc' : 'desc' },
+      // Use the centralized service to get assets and metadata
+      const searchResult = await this.dynamicAlbumService.getAssetsForDynamicAlbum(
+        album.filters as DynamicAlbumFilters,
+        auth.user.id,
+        { size: 50000, order: album.order },
+        { throwOnError: false },
       );
 
-      const foundAssets = searchResult.items;
+      const foundAssets = searchResult.items || [];
 
-      // For dynamic albums, calculate metadata from the actual search results
-      let startDate: Date | undefined;
-      let endDate: Date | undefined;
-      let lastModifiedAssetTimestamp: Date | undefined;
+      // Calculate metadata using the centralized service
+      const metadata = await this.dynamicAlbumService.calculateMetadata(
+        album.filters as DynamicAlbumFilters,
+        auth.user.id,
+        { throwOnError: false },
+      );
 
-      if (foundAssets.length > 0) {
-        const dates = foundAssets
-          .map((asset: any) => asset.fileCreatedAt || asset.localDateTime)
-          .filter(Boolean)
-          .map((date: any) => new Date(date))
-          .sort((a: Date, b: Date) => a.getTime() - b.getTime());
-
-        if (dates.length > 0) {
-          startDate = dates[0];
-          endDate = dates[dates.length - 1];
-        }
-
-        const updatedDates = foundAssets
-          .map((asset: any) => asset.updatedAt)
-          .filter(Boolean)
-          .map((date: any) => new Date(date))
-          .sort((a: Date, b: Date) => b.getTime() - a.getTime());
-
-        if (updatedDates.length > 0) {
-          lastModifiedAssetTimestamp = updatedDates[0];
-        }
-
-        // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
-        if (!album.albumThumbnailAssetId && foundAssets.length > 0) {
-          const thumbnailAssetId = foundAssets[0].id;
-          await this.albumRepository.update(album.id, {
-            id: album.id,
-            albumThumbnailAssetId: thumbnailAssetId,
-          });
-          album.albumThumbnailAssetId = thumbnailAssetId;
-        }
+      // Update thumbnail if needed
+      if (!album.albumThumbnailAssetId && foundAssets.length > 0) {
+        const thumbnailAssetId = foundAssets[0].id;
+        await this.albumRepository.update(album.id, {
+          id: album.id,
+          albumThumbnailAssetId: thumbnailAssetId,
+        });
+        album.albumThumbnailAssetId = thumbnailAssetId;
       }
 
       return {
         ...mapAlbum({ ...album, assets: withAssets ? foundAssets : [] }, withAssets, auth),
-        startDate,
-        endDate,
-        assetCount: foundAssets.length,
-        lastModifiedAssetTimestamp,
+        startDate: metadata.startDate ?? undefined,
+        endDate: metadata.endDate ?? undefined,
+        assetCount: metadata.assetCount,
+        lastModifiedAssetTimestamp: metadata.lastModifiedAssetTimestamp ?? undefined,
       };
     }
 
