@@ -89,21 +89,13 @@ export class AlbumService extends BaseService {
               .sort((a: Date, b: Date) => b.getTime() - a.getTime());
 
             // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
-            // Refresh from database to ensure we have the latest thumbnail value
-            if (assets.length > 0) {
-              const freshAlbum = await this.albumRepository.getById(dynamicAlbum.id, { withAssets: false });
-              if (!freshAlbum?.albumThumbnailAssetId) {
-                // Only auto-assign if no thumbnail is set in the database
-                const thumbnailAssetId = assets[0].id;
-                await this.albumRepository.update(dynamicAlbum.id, {
-                  id: dynamicAlbum.id,
-                  albumThumbnailAssetId: thumbnailAssetId,
-                });
-                dynamicAlbum.albumThumbnailAssetId = thumbnailAssetId;
-              } else {
-                // Use the thumbnail from the database
-                dynamicAlbum.albumThumbnailAssetId = freshAlbum.albumThumbnailAssetId;
-              }
+            if (!dynamicAlbum.albumThumbnailAssetId && assets.length > 0) {
+              const thumbnailAssetId = assets[0].id;
+              await this.albumRepository.update(dynamicAlbum.id, {
+                id: dynamicAlbum.id,
+                albumThumbnailAssetId: thumbnailAssetId,
+              });
+              dynamicAlbum.albumThumbnailAssetId = thumbnailAssetId;
             }
 
             albumMetadata[dynamicAlbum.id] = {
@@ -203,21 +195,13 @@ export class AlbumService extends BaseService {
         }
 
         // For dynamic albums, assign thumbnail from the first asset if no thumbnail is set
-        // Refresh from database to ensure we have the latest thumbnail value
-        if (foundAssets.length > 0) {
-          const freshAlbum = await this.albumRepository.getById(album.id, { withAssets: false });
-          if (!freshAlbum?.albumThumbnailAssetId) {
-            // Only auto-assign if no thumbnail is set in the database
-            const thumbnailAssetId = foundAssets[0].id;
-            await this.albumRepository.update(album.id, {
-              id: album.id,
-              albumThumbnailAssetId: thumbnailAssetId,
-            });
-            album.albumThumbnailAssetId = thumbnailAssetId;
-          } else {
-            // Use the thumbnail from the database
-            album.albumThumbnailAssetId = freshAlbum.albumThumbnailAssetId;
-          }
+        if (!album.albumThumbnailAssetId && foundAssets.length > 0) {
+          const thumbnailAssetId = foundAssets[0].id;
+          await this.albumRepository.update(album.id, {
+            id: album.id,
+            albumThumbnailAssetId: thumbnailAssetId,
+          });
+          album.albumThumbnailAssetId = thumbnailAssetId;
         }
       }
 
@@ -317,8 +301,7 @@ export class AlbumService extends BaseService {
 
     const album = await this.findOrFail(id, { withAssets: false });
 
-    // For regular albums, validate thumbnail asset exists in album
-    if (dto.albumThumbnailAssetId && !album.dynamic) {
+    if (dto.albumThumbnailAssetId) {
       // For regular albums, validate thumbnail asset exists in album
       const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
       if (results.size === 0) {
