@@ -82,7 +82,7 @@
 </script>
 
 <UserPageLayout title={data.meta.title}>
-  {#snippet sidebar()}
+  {#snippet secondarySidebar()}
     <Sidebar>
       <SkipLink target={`#${headerId}`} text={$t('skip_to_tags')} breakpoint="md" />
       <section>
