@@ -1,4 +1,5 @@
 import { UpdatedAtTrigger, UpdateIdColumn } from 'src/decorators';
+import { AssetTable } from 'src/schema/tables/asset.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import {
   Column,
@@ -41,6 +42,9 @@ export class TagTable {
 
   @ForeignKeyColumn(() => TagTable, { nullable: true, onDelete: 'CASCADE' })
   parentId!: string | null;
+
+  @ForeignKeyColumn(() => AssetTable, { nullable: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
+  thumbnailAssetId!: string | null;
 
   @UpdateIdColumn({ index: true })
   updateId!: Generated<string>;
