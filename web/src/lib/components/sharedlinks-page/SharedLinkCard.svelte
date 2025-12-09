@@ -96,6 +96,14 @@
         {#if sharedLink.description}
           <Text size="small" class="line-clamp-1">{sharedLink.description}</Text>
         {/if}
+
+        {#if sharedLink.type === SharedLinkType.Album}
+          <Badge size="small" color="primary">{$t('album')}</Badge>
+        {:else if sharedLink.type === SharedLinkType.Tag}
+          <Badge size="small" color="info"> {$t('tag')}</Badge>
+        {:else if sharedLink.type === SharedLinkType.Individual}
+          <Badge size="small" color="warning"> {$t('individual_share')}</Badge>
+        {/if}
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
