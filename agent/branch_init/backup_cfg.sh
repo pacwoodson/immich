@@ -1,0 +1,1 @@
+docker compose exec -e PGPASSWORD=postgres database pg_dump immich -h database -U postgres --column-inserts --data-only -t system_metadata -t user -t user_metadata -t library > library/backup_cfg.sql
