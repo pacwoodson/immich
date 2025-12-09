@@ -69,16 +69,18 @@ export class SharedLinkService extends BaseService {
           throw new BadRequestException('Invalid tagId');
         }
 
-        // Check tag ownership
-        const tag = await this.tagRepository.get(auth.user.id, dto.tagId);
+        // Check tag exists and verify ownership
+        const tag = await this.tagRepository.get(dto.tagId);
         if (!tag) {
-          throw new BadRequestException('Tag not found or access denied');
+          throw new BadRequestException('Tag not found');
+        }
+        if (tag.userId !== auth.user.id) {
+          throw new BadRequestException('Access denied - you do not own this tag');
         }
 
-        // Get all assets in the tag and verify share permissions
-        const tagAssets = await this.tagRepository.getAssets(auth.user.id, dto.tagId);
-        if (tagAssets.length > 0) {
-          const assetIds = tagAssets.map((asset) => asset.id);
+        // Get all asset IDs for this tag and verify share permissions
+        const assetIds = await this.tagRepository.getAllAssetIds(dto.tagId);
+        if (assetIds.length > 0) {
           await this.requireAccess({ auth, permission: Permission.AssetShare, ids: assetIds });
         }
 

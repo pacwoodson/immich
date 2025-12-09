@@ -9,13 +9,14 @@
   import { AppRoute, AssetAction, QueryParameter } from '$lib/constants';
   import SkipLink from '$lib/elements/SkipLink.svelte';
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
+  import SharedLinkCreateModal from '$lib/modals/SharedLinkCreateModal.svelte';
   import TagCreateModal from '$lib/modals/TagCreateModal.svelte';
   import TagEditModal from '$lib/modals/TagEditModal.svelte';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import { joinPaths, TreeNode } from '$lib/utils/tree-utils';
   import { deleteTag, getAllTags, type TagResponseDto } from '@immich/sdk';
   import { Button, HStack, modalManager, Text } from '@immich/ui';
-  import { mdiPencil, mdiPlus, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
+  import { mdiPencil, mdiPlus, mdiShareVariantOutline, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
 
@@ -79,6 +80,14 @@
     // navigate to parent
     await navigateToView(tag.parent ? tag.parent.path : '');
   };
+
+  const handleShareLink = async () => {
+    if (!tag || !tag.id) {
+      return;
+    }
+
+    await modalManager.show(SharedLinkCreateModal, { tagId: tag.id });
+  };
 </script>
 
 <UserPageLayout title={data.meta.title}>
@@ -101,6 +110,9 @@
       </Button>
 
       {#if tag.path.length > 0}
+        <Button leadingIcon={mdiShareVariantOutline} onclick={handleShareLink} size="small" variant="ghost" color="secondary">
+          <Text class="hidden md:block">{$t('share')}</Text>
+        </Button>
         <Button leadingIcon={mdiPencil} onclick={handleEdit} size="small" variant="ghost" color="secondary">
           <Text class="hidden md:block">{$t('edit_tag')}</Text>
         </Button>

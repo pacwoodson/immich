@@ -88,6 +88,17 @@ export class TagRepository {
     await this.db.deleteFrom('tag').where('id', '=', id).execute();
   }
 
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async getAllAssetIds(tagId: string): Promise<string[]> {
+    const results = await this.db
+      .selectFrom('tag_asset')
+      .select('assetId')
+      .where('tagId', '=', tagId)
+      .execute();
+
+    return results.map((r) => r.assetId);
+  }
+
   @ChunkedSet({ paramIndex: 1 })
   @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID]] })
   async getAssetIds(tagId: string, assetIds: string[]): Promise<Set<string>> {
