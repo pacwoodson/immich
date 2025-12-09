@@ -63,6 +63,27 @@ export class SharedLinkService extends BaseService {
 
         break;
       }
+
+      case SharedLinkType.Tag: {
+        if (!dto.tagId) {
+          throw new BadRequestException('Invalid tagId');
+        }
+
+        // Check tag ownership
+        const tag = await this.tagRepository.get(auth.user.id, dto.tagId);
+        if (!tag) {
+          throw new BadRequestException('Tag not found or access denied');
+        }
+
+        // Get all assets in the tag and verify share permissions
+        const tagAssets = await this.tagRepository.getAssets(auth.user.id, dto.tagId);
+        if (tagAssets.length > 0) {
+          const assetIds = tagAssets.map((asset) => asset.id);
+          await this.requireAccess({ auth, permission: Permission.AssetShare, ids: assetIds });
+        }
+
+        break;
+      }
     }
 
     try {
@@ -71,6 +92,7 @@ export class SharedLinkService extends BaseService {
         userId: auth.user.id,
         type: dto.type,
         albumId: dto.albumId || null,
+        tagId: dto.tagId || null,
         assetIds: dto.assetIds,
         description: dto.description || null,
         password: dto.password,
