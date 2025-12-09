@@ -1,9 +1,11 @@
 <script lang="ts">
   import AlbumCover from '$lib/components/album-page/album-cover.svelte';
+  import FilterDisplay from '$lib/components/album-page/filter-display.svelte';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import { handleError } from '$lib/utils/handle-error';
   import { updateAlbumInfo, type AlbumResponseDto } from '@immich/sdk';
-  import { Button, Field, HStack, Input, Modal, ModalBody, ModalFooter, Textarea } from '@immich/ui';
-  import { mdiRenameOutline } from '@mdi/js';
+  import { Button, Field, HStack, Icon, Input, Modal, ModalBody, ModalFooter, Textarea, modalManager } from '@immich/ui';
+  import { mdiFilterOutline, mdiRenameOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
 
   type Props = {
@@ -33,6 +35,26 @@
       isSubmitting = false;
     }
   };
+
+  const handleEditFilters = () => {
+    modalManager.open(DynamicAlbumFiltersModal, {
+      albumId: album.id,
+      initialFilters: album.filters as any,
+      albumName: album.albumName,
+      description: album.description,
+      onClose: (updatedAlbum) => {
+        if (updatedAlbum) {
+          // Update the local album object with the new values
+          album.filters = updatedAlbum.filters;
+          album.albumName = updatedAlbum.albumName;
+          album.description = updatedAlbum.description;
+          // Update the local state to match
+          albumName = updatedAlbum.albumName;
+          description = updatedAlbum.description || '';
+        }
+      },
+    });
+  };
 </script>
 
 <Modal icon={mdiRenameOutline} title={$t('edit_album')} size="medium" {onClose}>
@@ -49,6 +71,28 @@
           <Field label={$t('description')}>
             <Textarea bind:value={description} />
           </Field>
+
+          {#if album.dynamic}
+            <div class="flex items-center gap-2 pt-2 pb-1 border-t border-gray-200 dark:border-gray-700">
+              <Icon icon={mdiFilterOutline} size="18" />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('dynamic_album')}</span>
+            </div>
+
+            {#if album.filters}
+              <FilterDisplay filters={album.filters} compact={true} />
+            {/if}
+
+            <Button
+              leadingIcon={mdiFilterOutline}
+              onclick={handleEditFilters}
+              size="small"
+              variant="outlined"
+              color="primary"
+              fullWidth
+            >
+              {$t('edit_filters')}
+            </Button>
+          {/if}
         </div>
       </div>
     </form>
