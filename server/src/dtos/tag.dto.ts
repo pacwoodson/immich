@@ -51,6 +51,7 @@ export class TagResponseDto {
   createdAt!: Date;
   updatedAt!: Date;
   color?: string;
+  thumbnailAssetId?: string | null;
   assets?: AssetResponseDto[];
 }
 
@@ -63,6 +64,7 @@ export function mapTag(entity: Tag, auth?: AuthDto): TagResponseDto {
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
     color: entity.color ?? undefined,
+    thumbnailAssetId: entity.thumbnailAssetId,
     assets: entity.assets?.map((asset) => mapAsset(asset, { auth })),
   };
 }

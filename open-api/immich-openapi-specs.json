@@ -22204,6 +22204,10 @@
           "parentId": {
             "type": "string"
           },
+          "thumbnailAssetId": {
+            "nullable": true,
+            "type": "string"
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string"
