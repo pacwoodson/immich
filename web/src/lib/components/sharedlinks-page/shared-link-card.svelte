@@ -90,6 +90,14 @@
         {#if sharedLink.password}
           <Badge size="small" color="secondary">{$t('password')}</Badge>
         {/if}
+
+        {#if sharedLink.type === SharedLinkType.Album}
+          <Badge size="small" color="primary">{$t('album')}</Badge>
+        {:else if sharedLink.type === SharedLinkType.Tag}
+          <Badge size="small" color="info"> {$t('tag')}</Badge>
+        {:else if sharedLink.type === SharedLinkType.Individual}
+          <Badge size="small" color="warning"> {$t('individual_share')}</Badge>
+        {/if}
       </div>
 
       {#if sharedLink.description}
