@@ -43,7 +43,7 @@ export const loadSharedLink = async ({
       sharedLink,
       asset,
       meta: {
-        title: sharedLink.album ? sharedLink.album.albumName : $t('public_share'),
+        title: sharedLink.album ? sharedLink.album.albumName : sharedLink.tag ? sharedLink.tag.name : $t('public_share'),
         description: sharedLink.description || $t('shared_photos_and_videos_count', { values: { assetCount } }),
         imageUrl: assetPath,
       },
