@@ -231,15 +231,22 @@ class AssetAccess {
       .leftJoin('asset as albumAssets', (join) =>
         join.onRef('albumAssets.id', '=', 'album_asset.assetId').on('albumAssets.deletedAt', 'is', null),
       )
+      .leftJoin('tag', 'tag.id', 'shared_link.tagId')
+      .leftJoin('tag_asset', 'tag_asset.tagId', 'tag.id')
+      .leftJoin('asset as tagAssets', (join) =>
+        join.onRef('tagAssets.id', '=', 'tag_asset.assetId').on('tagAssets.deletedAt', 'is', null),
+      )
       .select([
         'asset.id as assetId',
         'asset.livePhotoVideoId as assetLivePhotoVideoId',
         'albumAssets.id as albumAssetId',
         'albumAssets.livePhotoVideoId as albumAssetLivePhotoVideoId',
+        'tagAssets.id as tagAssetId',
+        'tagAssets.livePhotoVideoId as tagAssetLivePhotoVideoId',
       ])
       .where('shared_link.id', '=', sharedLinkId)
       .where(
-        sql`array["asset"."id", "asset"."livePhotoVideoId", "albumAssets"."id", "albumAssets"."livePhotoVideoId"]`,
+        sql`array["asset"."id", "asset"."livePhotoVideoId", "albumAssets"."id", "albumAssets"."livePhotoVideoId", "tagAssets"."id", "tagAssets"."livePhotoVideoId"]`,
         '&&',
         sql`array[${sql.join([...assetIds])}]::uuid[] `,
       )
@@ -258,6 +265,12 @@ class AssetAccess {
           }
           if (row.albumAssetLivePhotoVideoId && assetIds.has(row.albumAssetLivePhotoVideoId)) {
             allowedIds.add(row.albumAssetLivePhotoVideoId);
+          }
+          if (row.tagAssetId && assetIds.has(row.tagAssetId)) {
+            allowedIds.add(row.tagAssetId);
+          }
+          if (row.tagAssetLivePhotoVideoId && assetIds.has(row.tagAssetLivePhotoVideoId)) {
+            allowedIds.add(row.tagAssetLivePhotoVideoId);
           }
         }
         return allowedIds;
