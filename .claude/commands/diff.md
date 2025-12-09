@@ -1,0 +1,2 @@
+- Analyse what files have been changed: `git diff main --name-only`
+- For each file, read the diff from the main branch and analyse what has been done
