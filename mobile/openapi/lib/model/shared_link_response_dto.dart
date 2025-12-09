@@ -25,6 +25,7 @@ class SharedLinkResponseDto {
     required this.password,
     required this.showMetadata,
     required this.slug,
+    this.tag,
     this.token,
     required this.type,
     required this.userId,
@@ -60,6 +61,14 @@ class SharedLinkResponseDto {
 
   String? slug;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  TagResponseDto? tag;
+
   String? token;
 
   SharedLinkType type;
@@ -80,6 +89,7 @@ class SharedLinkResponseDto {
     other.password == password &&
     other.showMetadata == showMetadata &&
     other.slug == slug &&
+    other.tag == tag &&
     other.token == token &&
     other.type == type &&
     other.userId == userId;
@@ -99,12 +109,13 @@ class SharedLinkResponseDto {
     (password == null ? 0 : password!.hashCode) +
     (showMetadata.hashCode) +
     (slug == null ? 0 : slug!.hashCode) +
+    (tag == null ? 0 : tag!.hashCode) +
     (token == null ? 0 : token!.hashCode) +
     (type.hashCode) +
     (userId.hashCode);
 
   @override
-  String toString() => 'SharedLinkResponseDto[album=$album, allowDownload=$allowDownload, allowUpload=$allowUpload, assets=$assets, createdAt=$createdAt, description=$description, expiresAt=$expiresAt, id=$id, key=$key, password=$password, showMetadata=$showMetadata, slug=$slug, token=$token, type=$type, userId=$userId]';
+  String toString() => 'SharedLinkResponseDto[album=$album, allowDownload=$allowDownload, allowUpload=$allowUpload, assets=$assets, createdAt=$createdAt, description=$description, expiresAt=$expiresAt, id=$id, key=$key, password=$password, showMetadata=$showMetadata, slug=$slug, tag=$tag, token=$token, type=$type, userId=$userId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -140,6 +151,11 @@ class SharedLinkResponseDto {
     } else {
     //  json[r'slug'] = null;
     }
+    if (this.tag != null) {
+      json[r'tag'] = this.tag;
+    } else {
+    //  json[r'tag'] = null;
+    }
     if (this.token != null) {
       json[r'token'] = this.token;
     } else {
@@ -171,6 +187,7 @@ class SharedLinkResponseDto {
         password: mapValueOfType<String>(json, r'password'),
         showMetadata: mapValueOfType<bool>(json, r'showMetadata')!,
         slug: mapValueOfType<String>(json, r'slug'),
+        tag: TagResponseDto.fromJson(json[r'tag']),
         token: mapValueOfType<String>(json, r'token'),
         type: SharedLinkType.fromJson(json[r'type'])!,
         userId: mapValueOfType<String>(json, r'userId')!,
