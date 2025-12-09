@@ -89,6 +89,7 @@ export type Tag = {
   updatedAt: Date;
   color: string | null;
   parentId: string | null;
+  assets?: MapAsset[];
 };
 
 export type Memory = {
@@ -178,6 +179,8 @@ export type SharedLink = {
   id: string;
   album?: Album | null;
   albumId: string | null;
+  tag?: Tag | null;
+  tagId: string | null;
   allowDownload: boolean;
   allowUpload: boolean;
   assets: MapAsset[];
@@ -370,7 +373,7 @@ export const columns = {
     'quotaSizeInBytes',
     'quotaUsageInBytes',
   ],
-  tag: ['tag.id', 'tag.value', 'tag.createdAt', 'tag.updatedAt', 'tag.color', 'tag.parentId'],
+  tag: ['tag.id', 'tag.userId', 'tag.value', 'tag.createdAt', 'tag.updatedAt', 'tag.color', 'tag.parentId'],
   apiKey: ['id', 'name', 'userId', 'createdAt', 'updatedAt', 'permissions'],
   notification: ['id', 'createdAt', 'level', 'type', 'title', 'description', 'data', 'readAt'],
   syncAsset: [

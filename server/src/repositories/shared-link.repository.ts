@@ -145,6 +145,7 @@ export class SharedLinkRepository {
                     .filterWhere('tagAssets.id', 'is not', null),
                   sql`'[]'`,
                 )
+                .$castTo<MapAsset[]>()
                 .as('assets'),
             )
             .groupBy('tag.id')

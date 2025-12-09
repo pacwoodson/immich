@@ -326,6 +326,7 @@ export type AssetStackResponseDto = {
     primaryAssetId: string;
 };
 export type TagResponseDto = {
+    assets?: object[];
     color?: string;
     createdAt: string;
     id: string;

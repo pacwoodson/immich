@@ -13,6 +13,7 @@ part of openapi.api;
 class TagResponseDto {
   /// Returns a new [TagResponseDto] instance.
   TagResponseDto({
+    this.assets = const [],
     this.color,
     required this.createdAt,
     required this.id,
@@ -21,6 +22,8 @@ class TagResponseDto {
     required this.updatedAt,
     required this.value,
   });
+
+  List<Object> assets;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -50,6 +53,7 @@ class TagResponseDto {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is TagResponseDto &&
+    _deepEquality.equals(other.assets, assets) &&
     other.color == color &&
     other.createdAt == createdAt &&
     other.id == id &&
@@ -61,6 +65,7 @@ class TagResponseDto {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
+    (assets.hashCode) +
     (color == null ? 0 : color!.hashCode) +
     (createdAt.hashCode) +
     (id.hashCode) +
@@ -70,10 +75,11 @@ class TagResponseDto {
     (value.hashCode);
 
   @override
-  String toString() => 'TagResponseDto[color=$color, createdAt=$createdAt, id=$id, name=$name, parentId=$parentId, updatedAt=$updatedAt, value=$value]';
+  String toString() => 'TagResponseDto[assets=$assets, color=$color, createdAt=$createdAt, id=$id, name=$name, parentId=$parentId, updatedAt=$updatedAt, value=$value]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+      json[r'assets'] = this.assets;
     if (this.color != null) {
       json[r'color'] = this.color;
     } else {
@@ -101,6 +107,7 @@ class TagResponseDto {
       final json = value.cast<String, dynamic>();
 
       return TagResponseDto(
+        assets: Object.listFromJson(json[r'assets']),
         color: mapValueOfType<String>(json, r'color'),
         createdAt: mapDateTime(json, r'createdAt', r'')!,
         id: mapValueOfType<String>(json, r'id')!,

@@ -22182,6 +22182,12 @@
       },
       "TagResponseDto": {
         "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetResponseDto"
+            },
+            "type": "array"
+          },
           "color": {
             "type": "string"
           },
