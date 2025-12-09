@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsHexColor, IsNotEmpty, IsString } from 'class-validator';
 import { Tag } from 'src/database';
+import { AssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
+import { AuthDto } from 'src/dtos/auth.dto';
 import { Optional, ValidateHexColor, ValidateUUID } from 'src/validation';
 
 export class TagCreateDto {
@@ -49,9 +51,11 @@ export class TagResponseDto {
   createdAt!: Date;
   updatedAt!: Date;
   color?: string;
+  thumbnailAssetId?: string | null;
+  assets?: AssetResponseDto[];
 }
 
-export function mapTag(entity: Tag): TagResponseDto {
+export function mapTag(entity: Tag, auth?: AuthDto): TagResponseDto {
   return {
     id: entity.id,
     parentId: entity.parentId ?? undefined,
@@ -60,5 +64,7 @@ export function mapTag(entity: Tag): TagResponseDto {
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
     color: entity.color ?? undefined,
+    thumbnailAssetId: entity.thumbnailAssetId,
+    assets: entity.assets?.map((asset) => mapAsset(asset, { auth })),
   };
 }

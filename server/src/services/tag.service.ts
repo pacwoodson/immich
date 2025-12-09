@@ -21,12 +21,14 @@ import { upsertTags } from 'src/utils/tag';
 @Injectable()
 export class TagService extends BaseService {
   async getAll(auth: AuthDto) {
+    await this.tagRepository.updateThumbnails();
     const tags = await this.tagRepository.getAll(auth.user.id);
     return tags.map((tag) => mapTag(tag));
   }
 
   async get(auth: AuthDto, id: string): Promise<TagResponseDto> {
     await this.requireAccess({ auth, permission: Permission.TagRead, ids: [id] });
+    await this.tagRepository.updateThumbnails();
     const tag = await this.findOrFail(id);
     return mapTag(tag);
   }
@@ -105,6 +107,11 @@ export class TagService extends BaseService {
       { parentId: id, assetIds: dto.ids },
     );
 
+    const hasSuccessfulAdds = results.some(({ success }) => success);
+    if (hasSuccessfulAdds) {
+      await this.tagRepository.updateThumbnails();
+    }
+
     for (const { id: assetId, success } of results) {
       if (success) {
         await this.eventRepository.emit('AssetTag', { assetId });
@@ -116,12 +123,18 @@ export class TagService extends BaseService {
 
   async removeAssets(auth: AuthDto, id: string, dto: BulkIdsDto): Promise<BulkIdResponseDto[]> {
     await this.requireAccess({ auth, permission: Permission.TagAsset, ids: [id] });
+    const tag = await this.findOrFail(id);
 
     const results = await removeAssets(
       auth,
       { access: this.accessRepository, bulk: this.tagRepository },
       { parentId: id, assetIds: dto.ids, canAlwaysRemove: Permission.TagDelete },
     );
+
+    const removedIds = results.filter(({ success }) => success).map(({ id }) => id);
+    if (removedIds.length > 0 && tag.thumbnailAssetId && removedIds.includes(tag.thumbnailAssetId)) {
+      await this.tagRepository.updateThumbnails();
+    }
 
     for (const { id: assetId, success } of results) {
       if (success) {

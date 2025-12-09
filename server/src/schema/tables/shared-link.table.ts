@@ -1,5 +1,6 @@
 import { SharedLinkType } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
+import { TagTable } from 'src/schema/tables/tag.table';
 import { UserTable } from 'src/schema/tables/user.table';
 import {
   Column,
@@ -39,6 +40,9 @@ export class SharedLinkTable {
 
   @ForeignKeyColumn(() => AlbumTable, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   albumId!: string | null;
+
+  @ForeignKeyColumn(() => TagTable, { nullable: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  tagId!: string | null;
 
   @Column({ type: 'boolean', default: true })
   allowDownload!: Generated<boolean>;

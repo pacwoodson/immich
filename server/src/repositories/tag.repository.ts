@@ -88,6 +88,17 @@ export class TagRepository {
     await this.db.deleteFrom('tag').where('id', '=', id).execute();
   }
 
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async getAllAssetIds(tagId: string): Promise<string[]> {
+    const results = await this.db
+      .selectFrom('tag_asset')
+      .select('assetId')
+      .where('tagId', '=', tagId)
+      .execute();
+
+    return results.map((r) => r.assetId);
+  }
+
   @ChunkedSet({ paramIndex: 1 })
   @GenerateSql({ params: [DummyValue.UUID, [DummyValue.UUID]] })
   async getAssetIds(tagId: string, assetIds: string[]): Promise<Set<string>> {
@@ -180,5 +191,54 @@ export class TagRepository {
     if (deletedRows > 0) {
       this.logger.log(`Deleted ${deletedRows} empty tags`);
     }
+  }
+
+  /**
+   * Makes sure all thumbnails for tags are updated by:
+   * - Removing thumbnails from tags without assets
+   * - Removing references of thumbnails to assets outside the tag
+   * - Setting a thumbnail when none is set and the tag contains assets
+   *
+   * @returns Amount of updated tag thumbnails or undefined when unknown
+   */
+  async updateThumbnails(): Promise<number | undefined> {
+    const result = await this.db
+      .updateTable('tag')
+      .set((eb) => ({
+        thumbnailAssetId: this.updateThumbnailBuilder(eb)
+          .select('tag_asset.assetId')
+          .orderBy('asset.fileCreatedAt', 'desc')
+          .limit(1),
+      }))
+      .where((eb) =>
+        eb.or([
+          eb.and([
+            eb('thumbnailAssetId', 'is', null),
+            eb.exists(this.updateThumbnailBuilder(eb).select(sql`1`.as('1'))), // Has assets
+          ]),
+          eb.and([
+            eb('thumbnailAssetId', 'is not', null),
+            eb.not(
+              eb.exists(
+                this.updateThumbnailBuilder(eb)
+                  .select(sql`1`.as('1'))
+                  .whereRef('tag.thumbnailAssetId', '=', 'tag_asset.assetId'), // Has invalid assets
+              ),
+            ),
+          ]),
+        ]),
+      )
+      .execute();
+
+    return Number(result[0].numUpdatedRows);
+  }
+
+  private updateThumbnailBuilder(eb: any) {
+    return eb
+      .selectFrom('tag_asset')
+      .innerJoin('asset', (join: any) =>
+        join.onRef('tag_asset.assetId', '=', 'asset.id').on('asset.deletedAt', 'is', null),
+      )
+      .whereRef('tag_asset.tagId', '=', 'tag.id');
   }
 }

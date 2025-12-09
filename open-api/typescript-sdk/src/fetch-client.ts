@@ -326,6 +326,7 @@ export type AssetStackResponseDto = {
     primaryAssetId: string;
 };
 export type TagResponseDto = {
+    assets?: object[];
     color?: string;
     createdAt: string;
     id: string;
@@ -1331,6 +1332,7 @@ export type SharedLinkResponseDto = {
     password: string | null;
     showMetadata: boolean;
     slug: string | null;
+    tag?: TagResponseDto;
     token?: string | null;
     "type": SharedLinkType;
     userId: string;
@@ -1345,6 +1347,7 @@ export type SharedLinkCreateDto = {
     password?: string | null;
     showMetadata?: boolean;
     slug?: string | null;
+    tagId?: string;
     "type": SharedLinkType;
 };
 export type SharedLinkEditDto = {
@@ -5498,7 +5501,8 @@ export enum SearchSuggestionType {
 }
 export enum SharedLinkType {
     Album = "ALBUM",
-    Individual = "INDIVIDUAL"
+    Individual = "INDIVIDUAL",
+    Tag = "TAG"
 }
 export enum Error2 {
     Duplicate = "duplicate",

@@ -13,11 +13,22 @@
   }
 
   let { sharedLink, preload = false, class: className = '' }: Props = $props();
+
+  let tagThumbnailUrl = $derived(
+    sharedLink?.tag?.thumbnailAssetId ? getAssetThumbnailUrl({ id: sharedLink.tag.thumbnailAssetId }) : null,
+  );
 </script>
 
 <div class="relative shrink-0 size-22">
   {#if sharedLink?.album}
     <AlbumCover album={sharedLink.album} class={className} {preload} />
+  {:else if sharedLink?.tag && tagThumbnailUrl}
+    <AssetCover
+      alt={sharedLink.tag.name}
+      class={className}
+      {preload}
+      src={tagThumbnailUrl}
+    />
   {:else if sharedLink.assets[0]}
     <AssetCover
       alt={$t('individual_share')}
