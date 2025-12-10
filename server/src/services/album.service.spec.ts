@@ -4,6 +4,7 @@ import { BulkIdErrorReason } from 'src/dtos/asset-ids.response.dto';
 import { AlbumUserRole, AssetOrder, UserMetadataKey } from 'src/enum';
 import { AlbumService } from 'src/services/album.service';
 import { albumStub } from 'test/fixtures/album.stub';
+import { assetStub } from 'test/fixtures/asset.stub';
 import { authStub } from 'test/fixtures/auth.stub';
 import { userStub } from 'test/fixtures/user.stub';
 import { newTestService, ServiceMocks } from 'test/utils';
@@ -1201,4 +1202,355 @@ describe(AlbumService.name, () => {
 
   //   await expect(sut.removeAssets(auth, albumId, { ids: ['1'] })).rejects.toBeInstanceOf(ForbiddenException);
   // });
+
+  describe('Dynamic Albums', () => {
+    describe('create', () => {
+      it('should create a dynamic album with filters', async () => {
+        mocks.access.album.checkCreateAccess.mockResolvedValue();
+        mocks.album.create.mockResolvedValue(albumStub.dynamicWithTags);
+
+        await expect(
+          sut.create(authStub.admin, {
+            albumName: 'Dynamic album',
+            dynamic: true,
+            filters: {
+              tags: ['tag-1', 'tag-2'],
+              operator: 'or',
+            },
+          }),
+        ).resolves.toEqual(albumStub.dynamicWithTags);
+
+        expect(mocks.album.create).toHaveBeenCalledWith({
+          ownerId: authStub.admin.user.id,
+          albumName: 'Dynamic album',
+          dynamic: true,
+          filters: {
+            tags: ['tag-1', 'tag-2'],
+            operator: 'or',
+          },
+        });
+      });
+
+      it('should reject dynamic album without filters', async () => {
+        mocks.access.album.checkCreateAccess.mockResolvedValue();
+
+        await expect(
+          sut.create(authStub.admin, {
+            albumName: 'Dynamic album',
+            dynamic: true,
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should reject dynamic album with manual assets', async () => {
+        mocks.access.album.checkCreateAccess.mockResolvedValue();
+
+        await expect(
+          sut.create(authStub.admin, {
+            albumName: 'Dynamic album',
+            dynamic: true,
+            filters: { tags: ['tag-1'] },
+            assetIds: ['asset-1'],
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should reject dynamic album with invalid filters', async () => {
+        mocks.access.album.checkCreateAccess.mockResolvedValue();
+
+        await expect(
+          sut.create(authStub.admin, {
+            albumName: 'Dynamic album',
+            dynamic: true,
+            filters: { tags: 'invalid' }, // Should be array
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should sanitize filters when creating dynamic album', async () => {
+        mocks.access.album.checkCreateAccess.mockResolvedValue();
+        mocks.album.create.mockResolvedValue(albumStub.dynamicWithTags);
+
+        await sut.create(authStub.admin, {
+          albumName: 'Dynamic album',
+          dynamic: true,
+          filters: {
+            tags: ['tag-1', 'tag-1', '  tag-2  '], // Duplicates and whitespace
+            operator: 'or',
+          },
+        });
+
+        expect(mocks.album.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filters: expect.objectContaining({
+              tags: ['tag-1', 'tag-2'], // Deduplicated and trimmed
+            }),
+          }),
+        );
+      });
+    });
+
+    describe('update', () => {
+      it('should allow updating filters on dynamic album', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+        mocks.album.update.mockResolvedValue(albumStub.dynamicWithTags);
+
+        await expect(
+          sut.update(authStub.admin, 'album-dynamic-1', {
+            filters: {
+              tags: ['tag-3'],
+              operator: 'and',
+            },
+          }),
+        ).resolves.toEqual(albumStub.dynamicWithTags);
+
+        expect(mocks.album.update).toHaveBeenCalled();
+      });
+
+      it('should reject converting album with assets to dynamic', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.oneAsset);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+
+        await expect(
+          sut.update(authStub.admin, 'album-4', {
+            dynamic: true,
+            filters: { tags: ['tag-1'] },
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should reject dynamic album conversion without filters', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.empty);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+
+        await expect(
+          sut.update(authStub.admin, 'album-1', {
+            dynamic: true,
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should allow converting dynamic album to regular by clearing filters', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+        mocks.album.update.mockResolvedValue(albumStub.empty);
+
+        await expect(
+          sut.update(authStub.admin, 'album-dynamic-1', {
+            filters: null,
+          }),
+        ).resolves.toBeDefined();
+      });
+    });
+
+    describe('addAssets', () => {
+      it('should reject adding assets to dynamic albums', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+
+        await expect(
+          sut.addAssets(authStub.admin, 'album-dynamic-1', {
+            ids: ['asset-1'],
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+    });
+
+    describe('removeAssets', () => {
+      it('should reject removing assets from dynamic albums', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+
+        await expect(
+          sut.removeAssets(authStub.admin, 'album-dynamic-1', {
+            ids: ['asset-1'],
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+    });
+
+    describe('get', () => {
+      it('should compute assets for dynamic album', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+        mocks.dynamicAlbum.getAssets.mockResolvedValue({
+          items: [assetStub.image],
+          hasNextPage: false,
+        });
+        mocks.dynamicAlbum.getMetadata.mockResolvedValue({
+          assetCount: 1,
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-12-31'),
+          lastModifiedAssetTimestamp: new Date(),
+        });
+
+        const result = await sut.get(authStub.admin, 'album-dynamic-1', {});
+
+        expect(result.assets).toEqual([assetStub.image]);
+        expect(result.assetCount).toBe(1);
+        expect(mocks.dynamicAlbum.getAssets).toHaveBeenCalledWith(
+          albumStub.dynamicWithTags.filters,
+          authStub.admin.user.id,
+          expect.any(Object),
+        );
+        expect(mocks.dynamicAlbum.getMetadata).toHaveBeenCalledWith(
+          albumStub.dynamicWithTags.filters,
+          authStub.admin.user.id,
+        );
+      });
+
+      it('should handle errors when fetching dynamic album assets', async () => {
+        mocks.album.get.mockResolvedValue(albumStub.dynamicWithTags);
+        mocks.access.album.checkOwnerAccess.mockResolvedValue();
+        mocks.dynamicAlbum.getAssets.mockRejectedValue(new Error('Database error'));
+
+        const result = await sut.get(authStub.admin, 'album-dynamic-1', {});
+
+        expect(result.assets).toEqual([]);
+        expect(result.assetCount).toBe(0);
+      });
+    });
+
+    describe('getAll', () => {
+      it('should compute metadata for dynamic albums', async () => {
+        mocks.album.getOwned.mockResolvedValue([albumStub.dynamicWithTags]);
+        mocks.dynamicAlbum.getMetadata.mockResolvedValue({
+          assetCount: 5,
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-12-31'),
+          lastModifiedAssetTimestamp: new Date(),
+        });
+
+        const result = await sut.getAll(authStub.admin, {});
+
+        expect(result).toHaveLength(1);
+        expect(result[0].assetCount).toBe(5);
+        expect(mocks.dynamicAlbum.getMetadata).toHaveBeenCalledWith(
+          albumStub.dynamicWithTags.filters,
+          authStub.admin.user.id,
+        );
+      });
+
+      it('should set thumbnail for dynamic album if missing', async () => {
+        mocks.album.getOwned.mockResolvedValue([albumStub.dynamicWithTags]);
+        mocks.dynamicAlbum.getMetadata.mockResolvedValue({
+          assetCount: 5,
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-12-31'),
+          lastModifiedAssetTimestamp: new Date(),
+        });
+        mocks.dynamicAlbum.getThumbnailAssetId.mockResolvedValue('asset-1');
+        mocks.album.update.mockResolvedValue(albumStub.dynamicWithTags);
+
+        await sut.getAll(authStub.admin, {});
+
+        expect(mocks.dynamicAlbum.getThumbnailAssetId).toHaveBeenCalledWith(
+          albumStub.dynamicWithTags.filters,
+          authStub.admin.user.id,
+        );
+        expect(mocks.album.update).toHaveBeenCalledWith('album-dynamic-1', {
+          id: 'album-dynamic-1',
+          albumThumbnailAssetId: 'asset-1',
+        });
+      });
+
+      it('should handle errors when computing dynamic album metadata', async () => {
+        mocks.album.getOwned.mockResolvedValue([albumStub.dynamicWithTags]);
+        mocks.dynamicAlbum.getMetadata.mockRejectedValue(new Error('Database error'));
+
+        const result = await sut.getAll(authStub.admin, {});
+
+        expect(result).toHaveLength(1);
+        expect(result[0].assetCount).toBe(0);
+      });
+    });
+
+    describe('previewDynamicAlbum', () => {
+      it('should preview dynamic album with filters', async () => {
+        mocks.dynamicAlbum.getAssets.mockResolvedValue({
+          items: [assetStub.image],
+          hasNextPage: false,
+        });
+        mocks.dynamicAlbum.getMetadata.mockResolvedValue({
+          assetCount: 1,
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-12-31'),
+          lastModifiedAssetTimestamp: new Date(),
+        });
+
+        const result = await sut.previewDynamicAlbum(authStub.admin, {
+          tags: ['tag-1'],
+          operator: 'or',
+        });
+
+        expect(result.assets).toEqual([assetStub.image]);
+        expect(result.assetCount).toBe(1);
+        expect(mocks.dynamicAlbum.getAssets).toHaveBeenCalled();
+        expect(mocks.dynamicAlbum.getMetadata).toHaveBeenCalled();
+      });
+
+      it('should reject preview with invalid filters', async () => {
+        await expect(
+          sut.previewDynamicAlbum(authStub.admin, {
+            tags: 'invalid', // Should be array
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('should sanitize filters in preview', async () => {
+        mocks.dynamicAlbum.getAssets.mockResolvedValue({
+          items: [],
+          hasNextPage: false,
+        });
+        mocks.dynamicAlbum.getMetadata.mockResolvedValue({
+          assetCount: 0,
+          startDate: null,
+          endDate: null,
+          lastModifiedAssetTimestamp: null,
+        });
+
+        await sut.previewDynamicAlbum(authStub.admin, {
+          tags: ['tag-1', 'tag-1', '  tag-2  '], // Duplicates and whitespace
+          operator: 'or',
+        });
+
+        expect(mocks.dynamicAlbum.getAssets).toHaveBeenCalledWith(
+          expect.objectContaining({
+            tags: ['tag-1', 'tag-2'], // Deduplicated and trimmed
+          }),
+          authStub.admin.user.id,
+          expect.any(Object),
+        );
+      });
+    });
+
+    describe('validateFilters', () => {
+      it('should validate correct filters', async () => {
+        const result = await sut.validateFilters({
+          tags: ['tag-1', 'tag-2'],
+          operator: 'or',
+        });
+
+        expect(result.isValid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      it('should return errors for invalid filters', async () => {
+        const result = await sut.validateFilters({
+          tags: 'invalid',
+        });
+
+        expect(result.isValid).toBe(false);
+        expect(result.errors.length).toBeGreaterThan(0);
+      });
+
+      it('should warn when no filters are specified', async () => {
+        const result = await sut.validateFilters({});
+
+        expect(result.isValid).toBe(true);
+        expect(result.warnings).toContain('No filters specified - dynamic album will include all assets');
+      });
+    });
+  });
 });

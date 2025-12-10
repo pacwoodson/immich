@@ -29,6 +29,7 @@ import { CryptoRepository } from 'src/repositories/crypto.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
 import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
+import { DynamicAlbumRepository } from 'src/repositories/dynamic-album.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
 import { JobRepository } from 'src/repositories/job.repository';
@@ -75,6 +76,7 @@ import { newAssetRepositoryMock } from 'test/repositories/asset.repository.mock'
 import { newConfigRepositoryMock } from 'test/repositories/config.repository.mock';
 import { newCryptoRepositoryMock } from 'test/repositories/crypto.repository.mock';
 import { newDatabaseRepositoryMock } from 'test/repositories/database.repository.mock';
+import { newDynamicAlbumRepositoryMock } from 'test/repositories/dynamic-album.repository.mock';
 import { newJobRepositoryMock } from 'test/repositories/job.repository.mock';
 import { newMediaRepositoryMock } from 'test/repositories/media.repository.mock';
 import { newMetadataRepositoryMock } from 'test/repositories/metadata.repository.mock';
@@ -223,6 +225,7 @@ export type ServiceOverrides = {
   database: DatabaseRepository;
   downloadRepository: DownloadRepository;
   duplicateRepository: DuplicateRepository;
+  dynamicAlbum: DynamicAlbumRepository;
   email: EmailRepository;
   event: EventRepository;
   job: JobRepository;
@@ -295,6 +298,7 @@ export const getMocks = () => {
     database: newDatabaseRepositoryMock(),
     downloadRepository: automock(DownloadRepository, { strict: false }),
     duplicateRepository: automock(DuplicateRepository),
+    dynamicAlbum: newDynamicAlbumRepositoryMock(),
     email: automock(EmailRepository, { args: [loggerMock] }),
     // eslint-disable-next-line no-sparse-arrays
     event: automock(EventRepository, { args: [, , loggerMock], strict: false }),
