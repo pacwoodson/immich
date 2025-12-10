@@ -253,19 +253,35 @@ export function inAlbums<O>(qb: SelectQueryBuilder<DB, 'asset', O>, albumIds: st
   );
 }
 
-export function hasTags<O>(qb: SelectQueryBuilder<DB, 'asset', O>, tagIds: string[]) {
-  return qb.innerJoin(
-    (eb) =>
-      eb
-        .selectFrom('tag_asset')
-        .select('assetId')
-        .innerJoin('tag_closure', 'tag_asset.tagId', 'tag_closure.id_descendant')
-        .where('tag_closure.id_ancestor', '=', anyUuid(tagIds))
-        .groupBy('assetId')
-        .having((eb) => eb.fn.count('tag_closure.id_ancestor').distinct(), '>=', tagIds.length)
-        .as('has_tags'),
-    (join) => join.onRef('has_tags.assetId', '=', 'asset.id'),
-  );
+export function hasTags<O>(qb: SelectQueryBuilder<DB, 'asset', O>, tagIds: string[], operator: 'and' | 'or' = 'and') {
+  if (operator === 'or') {
+    // OR logic: Asset must have at least ONE of the specified tags
+    return qb.innerJoin(
+      (eb) =>
+        eb
+          .selectFrom('tag_asset')
+          .select('assetId')
+          .innerJoin('tag_closure', 'tag_asset.tagId', 'tag_closure.id_descendant')
+          .where('tag_closure.id_ancestor', '=', anyUuid(tagIds))
+          .groupBy('assetId')
+          .as('has_tags'),
+      (join) => join.onRef('has_tags.assetId', '=', 'asset.id'),
+    );
+  } else {
+    // AND logic: Asset must have ALL specified tags (existing behavior)
+    return qb.innerJoin(
+      (eb) =>
+        eb
+          .selectFrom('tag_asset')
+          .select('assetId')
+          .innerJoin('tag_closure', 'tag_asset.tagId', 'tag_closure.id_descendant')
+          .where('tag_closure.id_ancestor', '=', anyUuid(tagIds))
+          .groupBy('assetId')
+          .having((eb) => eb.fn.count('tag_closure.id_ancestor').distinct(), '>=', tagIds.length)
+          .as('has_tags'),
+      (join) => join.onRef('has_tags.assetId', '=', 'asset.id'),
+    );
+  }
 }
 
 export function withOwner(eb: ExpressionBuilder<DB, 'asset'>) {
@@ -358,7 +374,7 @@ export function searchAssetBuilder(kysely: Kysely<DB>, options: AssetSearchBuild
     .selectFrom('asset')
     .where('asset.visibility', '=', visibility)
     .$if(!!options.albumIds && options.albumIds.length > 0, (qb) => inAlbums(qb, options.albumIds!))
-    .$if(!!options.tagIds && options.tagIds.length > 0, (qb) => hasTags(qb, options.tagIds!))
+    .$if(!!options.tagIds && options.tagIds.length > 0, (qb) => hasTags(qb, options.tagIds!, options.tagOperator || 'and'))
     .$if(options.tagIds === null, (qb) =>
       qb.where((eb) => eb.not(eb.exists((eb) => eb.selectFrom('tag_asset').whereRef('assetId', '=', 'asset.id')))),
     )

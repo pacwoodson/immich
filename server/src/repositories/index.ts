@@ -13,6 +13,7 @@ import { CryptoRepository } from 'src/repositories/crypto.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
 import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
+import { DynamicAlbumRepository } from 'src/repositories/dynamic-album.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
 import { JobRepository } from 'src/repositories/job.repository';
@@ -66,6 +67,7 @@ export const repositories = [
   DatabaseRepository,
   DownloadRepository,
   DuplicateRepository,
+  DynamicAlbumRepository,
   EmailRepository,
   EventRepository,
   JobRepository,

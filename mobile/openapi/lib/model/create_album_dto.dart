@@ -17,6 +17,8 @@ class CreateAlbumDto {
     this.albumUsers = const [],
     this.assetIds = const [],
     this.description,
+    this.dynamic_,
+    this.filters,
   });
 
   String albumName;
@@ -33,12 +35,24 @@ class CreateAlbumDto {
   ///
   String? description;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  bool? dynamic_;
+
+  Object? filters;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is CreateAlbumDto &&
     other.albumName == albumName &&
     _deepEquality.equals(other.albumUsers, albumUsers) &&
     _deepEquality.equals(other.assetIds, assetIds) &&
-    other.description == description;
+    other.description == description &&
+    other.dynamic_ == dynamic_ &&
+    other.filters == filters;
 
   @override
   int get hashCode =>
@@ -46,10 +60,12 @@ class CreateAlbumDto {
     (albumName.hashCode) +
     (albumUsers.hashCode) +
     (assetIds.hashCode) +
-    (description == null ? 0 : description!.hashCode);
+    (description == null ? 0 : description!.hashCode) +
+    (dynamic_ == null ? 0 : dynamic_!.hashCode) +
+    (filters == null ? 0 : filters!.hashCode);
 
   @override
-  String toString() => 'CreateAlbumDto[albumName=$albumName, albumUsers=$albumUsers, assetIds=$assetIds, description=$description]';
+  String toString() => 'CreateAlbumDto[albumName=$albumName, albumUsers=$albumUsers, assetIds=$assetIds, description=$description, dynamic_=$dynamic_, filters=$filters]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -60,6 +76,16 @@ class CreateAlbumDto {
       json[r'description'] = this.description;
     } else {
     //  json[r'description'] = null;
+    }
+    if (this.dynamic_ != null) {
+      json[r'dynamic'] = this.dynamic_;
+    } else {
+    //  json[r'dynamic'] = null;
+    }
+    if (this.filters != null) {
+      json[r'filters'] = this.filters;
+    } else {
+    //  json[r'filters'] = null;
     }
     return json;
   }
@@ -79,6 +105,8 @@ class CreateAlbumDto {
             ? (json[r'assetIds'] as Iterable).cast<String>().toList(growable: false)
             : const [],
         description: mapValueOfType<String>(json, r'description'),
+        dynamic_: mapValueOfType<bool>(json, r'dynamic'),
+        filters: mapValueOfType<Object>(json, r'filters'),
       );
     }
     return null;

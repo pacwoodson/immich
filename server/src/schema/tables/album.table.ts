@@ -62,4 +62,10 @@ export class AlbumTable {
 
   @UpdateIdColumn({ index: true })
   updateId!: Generated<string>;
+
+  @Column({ type: 'boolean', default: false, index: true })
+  dynamic!: Generated<boolean>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  filters!: object | null;
 }

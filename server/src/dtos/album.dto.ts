@@ -53,6 +53,12 @@ export class CreateAlbumDto {
 
   @ValidateUUID({ optional: true, each: true })
   assetIds?: string[];
+
+  @ValidateBoolean({ optional: true })
+  dynamic?: boolean;
+
+  @Optional()
+  filters?: object | null;
 }
 
 export class AlbumsAddAssetsDto {
@@ -86,6 +92,12 @@ export class UpdateAlbumDto {
 
   @ValidateEnum({ enum: AssetOrder, name: 'AssetOrder', optional: true })
   order?: AssetOrder;
+
+  @ValidateBoolean({ optional: true })
+  dynamic?: boolean;
+
+  @Optional()
+  filters?: object | null;
 }
 
 export class GetAlbumsDto {
@@ -147,7 +159,7 @@ export class AlbumResponseDto {
   shared!: boolean;
   albumUsers!: AlbumUserResponseDto[];
   hasSharedLink!: boolean;
-  assets!: AssetResponseDto[];
+  assets?: AssetResponseDto[];
   owner!: UserResponseDto;
   @ApiProperty({ type: 'integer' })
   assetCount!: number;
@@ -157,6 +169,8 @@ export class AlbumResponseDto {
   isActivityEnabled!: boolean;
   @ValidateEnum({ enum: AssetOrder, name: 'AssetOrder', optional: true })
   order?: AssetOrder;
+  dynamic?: boolean;
+  filters?: object | null;
 
   // Optional per-user contribution counts for shared albums
   @Type(() => ContributorCountResponseDto)
@@ -178,6 +192,8 @@ export type MapAlbumDto = {
   owner: User;
   isActivityEnabled: boolean;
   order: AssetOrder;
+  dynamic: boolean;
+  filters: object | null;
 };
 
 export const mapAlbum = (entity: MapAlbumDto, withAssets: boolean, auth?: AuthDto): AlbumResponseDto => {

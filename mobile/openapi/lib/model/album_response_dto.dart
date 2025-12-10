@@ -21,7 +21,9 @@ class AlbumResponseDto {
     this.contributorCounts = const [],
     required this.createdAt,
     required this.description,
+    this.dynamic_,
     this.endDate,
+    this.filters,
     required this.hasSharedLink,
     required this.id,
     required this.isActivityEnabled,
@@ -56,7 +58,17 @@ class AlbumResponseDto {
   /// source code must fall back to having a nullable type.
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
+  bool? dynamic_;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
   DateTime? endDate;
+
+  Object? filters;
 
   bool hasSharedLink;
 
@@ -106,7 +118,9 @@ class AlbumResponseDto {
     _deepEquality.equals(other.contributorCounts, contributorCounts) &&
     other.createdAt == createdAt &&
     other.description == description &&
+    other.dynamic_ == dynamic_ &&
     other.endDate == endDate &&
+    other.filters == filters &&
     other.hasSharedLink == hasSharedLink &&
     other.id == id &&
     other.isActivityEnabled == isActivityEnabled &&
@@ -129,7 +143,9 @@ class AlbumResponseDto {
     (contributorCounts.hashCode) +
     (createdAt.hashCode) +
     (description.hashCode) +
+    (dynamic_ == null ? 0 : dynamic_!.hashCode) +
     (endDate == null ? 0 : endDate!.hashCode) +
+    (filters == null ? 0 : filters!.hashCode) +
     (hasSharedLink.hashCode) +
     (id.hashCode) +
     (isActivityEnabled.hashCode) +
@@ -142,7 +158,7 @@ class AlbumResponseDto {
     (updatedAt.hashCode);
 
   @override
-  String toString() => 'AlbumResponseDto[albumName=$albumName, albumThumbnailAssetId=$albumThumbnailAssetId, albumUsers=$albumUsers, assetCount=$assetCount, assets=$assets, contributorCounts=$contributorCounts, createdAt=$createdAt, description=$description, endDate=$endDate, hasSharedLink=$hasSharedLink, id=$id, isActivityEnabled=$isActivityEnabled, lastModifiedAssetTimestamp=$lastModifiedAssetTimestamp, order=$order, owner=$owner, ownerId=$ownerId, shared=$shared, startDate=$startDate, updatedAt=$updatedAt]';
+  String toString() => 'AlbumResponseDto[albumName=$albumName, albumThumbnailAssetId=$albumThumbnailAssetId, albumUsers=$albumUsers, assetCount=$assetCount, assets=$assets, contributorCounts=$contributorCounts, createdAt=$createdAt, description=$description, dynamic_=$dynamic_, endDate=$endDate, filters=$filters, hasSharedLink=$hasSharedLink, id=$id, isActivityEnabled=$isActivityEnabled, lastModifiedAssetTimestamp=$lastModifiedAssetTimestamp, order=$order, owner=$owner, ownerId=$ownerId, shared=$shared, startDate=$startDate, updatedAt=$updatedAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -158,10 +174,20 @@ class AlbumResponseDto {
       json[r'contributorCounts'] = this.contributorCounts;
       json[r'createdAt'] = this.createdAt.toUtc().toIso8601String();
       json[r'description'] = this.description;
+    if (this.dynamic_ != null) {
+      json[r'dynamic'] = this.dynamic_;
+    } else {
+    //  json[r'dynamic'] = null;
+    }
     if (this.endDate != null) {
       json[r'endDate'] = this.endDate!.toUtc().toIso8601String();
     } else {
     //  json[r'endDate'] = null;
+    }
+    if (this.filters != null) {
+      json[r'filters'] = this.filters;
+    } else {
+    //  json[r'filters'] = null;
     }
       json[r'hasSharedLink'] = this.hasSharedLink;
       json[r'id'] = this.id;
@@ -205,7 +231,9 @@ class AlbumResponseDto {
         contributorCounts: ContributorCountResponseDto.listFromJson(json[r'contributorCounts']),
         createdAt: mapDateTime(json, r'createdAt', r'')!,
         description: mapValueOfType<String>(json, r'description')!,
+        dynamic_: mapValueOfType<bool>(json, r'dynamic'),
         endDate: mapDateTime(json, r'endDate', r''),
+        filters: mapValueOfType<Object>(json, r'filters'),
         hasSharedLink: mapValueOfType<bool>(json, r'hasSharedLink')!,
         id: mapValueOfType<String>(json, r'id')!,
         isActivityEnabled: mapValueOfType<bool>(json, r'isActivityEnabled')!,
@@ -267,7 +295,6 @@ class AlbumResponseDto {
     'albumThumbnailAssetId',
     'albumUsers',
     'assetCount',
-    'assets',
     'createdAt',
     'description',
     'hasSharedLink',

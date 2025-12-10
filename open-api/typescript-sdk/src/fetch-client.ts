@@ -383,11 +383,13 @@ export type AlbumResponseDto = {
     albumThumbnailAssetId: string | null;
     albumUsers: AlbumUserResponseDto[];
     assetCount: number;
-    assets: AssetResponseDto[];
+    assets?: AssetResponseDto[];
     contributorCounts?: ContributorCountResponseDto[];
     createdAt: string;
     description: string;
+    dynamic?: boolean;
     endDate?: string;
+    filters?: object | null;
     hasSharedLink: boolean;
     id: string;
     isActivityEnabled: boolean;
@@ -408,6 +410,8 @@ export type CreateAlbumDto = {
     albumUsers?: AlbumUserCreateDto[];
     assetIds?: string[];
     description?: string;
+    dynamic?: boolean;
+    filters?: object | null;
 };
 export type AlbumsAddAssetsDto = {
     albumIds: string[];
@@ -426,6 +430,8 @@ export type UpdateAlbumDto = {
     albumName?: string;
     albumThumbnailAssetId?: string;
     description?: string;
+    dynamic?: boolean;
+    filters?: object | null;
     isActivityEnabled?: boolean;
     order?: AssetOrder;
 };

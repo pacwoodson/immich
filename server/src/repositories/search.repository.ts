@@ -94,6 +94,7 @@ export interface SearchPeopleOptions {
 
 export interface SearchTagOptions {
   tagIds?: string[] | null;
+  tagOperator?: 'and' | 'or';
 }
 
 export interface SearchAlbumOptions {

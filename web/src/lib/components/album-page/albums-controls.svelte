@@ -2,6 +2,7 @@
   import Dropdown from '$lib/elements/Dropdown.svelte';
   import GroupTab from '$lib/elements/GroupTab.svelte';
   import SearchBar from '$lib/elements/SearchBar.svelte';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import {
     AlbumFilter,
     AlbumGroupBy,
@@ -10,6 +11,7 @@
     albumViewSettings,
     SortOrder,
   } from '$lib/stores/preferences.store';
+  import { modalManager } from '@immich/ui';
   import {
     type AlbumGroupOptionMetadata,
     type AlbumSortOptionMetadata,
@@ -27,10 +29,13 @@
   import {
     mdiArrowDownThin,
     mdiArrowUpThin,
+    mdiChevronDown,
+    mdiFilterOutline,
     mdiFolderArrowDownOutline,
     mdiFolderArrowUpOutline,
     mdiFolderRemoveOutline,
     mdiFormatListBulletedSquare,
+    mdiFolderPlusOutline,
     mdiPlusBoxOutline,
     mdiUnfoldLessHorizontal,
     mdiUnfoldMoreHorizontal,
@@ -110,6 +115,17 @@
     [AlbumGroupBy.Owner]: $t('group_owner'),
     [AlbumGroupBy.Year]: $t('group_year'),
   });
+
+  const handleCreateDynamicAlbum = () => {
+    modalManager.open(DynamicAlbumFiltersModal, {
+      onClose: (album) => {
+        if (album) {
+          window.location.href = `/albums/${album.id}`;
+        }
+      },
+    });
+  };
+
 </script>
 
 <!-- Filter Albums by Sharing Status (All, Owned, Shared) -->
@@ -128,15 +144,39 @@
 </div>
 
 <!-- Create Album -->
-<Button
-  leadingIcon={mdiPlusBoxOutline}
-  onclick={() => createAlbumAndRedirect()}
-  size="small"
-  variant="ghost"
-  color="secondary"
->
-  <p class="hidden md:block">{$t('create_album')}</p>
-</Button>
+<div class="relative group">
+  <Button
+    leadingIcon={mdiPlusBoxOutline}
+    trailingIcon={mdiChevronDown}
+    size="small"
+    variant="ghost"
+    color="secondary"
+    onclick={() => createAlbumAndRedirect()}
+  >
+    <p class="hidden md:block">{$t('create_album')}</p>
+  </Button>
+
+  <div
+    class="absolute right-0 top-full mt-1 z-10 hidden group-hover:block bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 min-w-48"
+  >
+    <button
+      type="button"
+      class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors"
+      onclick={() => createAlbumAndRedirect()}
+    >
+      <Icon icon={mdiFolderPlusOutline} size="18" />
+      <span class="text-sm">{$t('create_album')}</span>
+    </button>
+    <button
+      type="button"
+      class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg transition-colors"
+      onclick={handleCreateDynamicAlbum}
+    >
+      <Icon icon={mdiFilterOutline} size="18" />
+      <span class="text-sm">{$t('create_dynamic_album')}</span>
+    </button>
+  </div>
+</div>
 
 <!-- Sort Albums -->
 <Dropdown

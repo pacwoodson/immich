@@ -14664,9 +14664,16 @@
           "description": {
             "type": "string"
           },
+          "dynamic": {
+            "type": "boolean"
+          },
           "endDate": {
             "format": "date-time",
             "type": "string"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
           },
           "hasSharedLink": {
             "type": "boolean"
@@ -14711,7 +14718,6 @@
           "albumThumbnailAssetId",
           "albumUsers",
           "assetCount",
-          "assets",
           "createdAt",
           "description",
           "hasSharedLink",
@@ -16143,6 +16149,13 @@
           },
           "description": {
             "type": "string"
+          },
+          "dynamic": {
+            "type": "boolean"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
@@ -22527,6 +22540,13 @@
           },
           "description": {
             "type": "string"
+          },
+          "dynamic": {
+            "type": "boolean"
+          },
+          "filters": {
+            "nullable": true,
+            "type": "object"
           },
           "isActivityEnabled": {
             "type": "boolean"

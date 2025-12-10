@@ -15,11 +15,18 @@ import {
   UpdateAlbumDto,
   UpdateAlbumUserDto,
 } from 'src/dtos/album.dto';
+import { mapAsset } from 'src/dtos/asset-response.dto';
 import { BulkIdErrorReason, BulkIdResponseDto, BulkIdsDto } from 'src/dtos/asset-ids.response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { Permission } from 'src/enum';
 import { AlbumAssetCount, AlbumInfoOptions } from 'src/repositories/album.repository';
 import { BaseService } from 'src/services/base.service';
+import {
+  DynamicAlbumFilters,
+  DynamicAlbumFilterValidationResult,
+  sanitizeDynamicAlbumFilters,
+  validateDynamicAlbumFilters,
+} from 'src/types/dynamic-album.types';
 import { addAssets, removeAssets } from 'src/utils/asset.util';
 import { getPreferences } from 'src/utils/preferences';
 
@@ -53,12 +60,61 @@ export class AlbumService extends BaseService {
       albums = await this.albumRepository.getOwned(ownerId);
     }
 
-    // Get asset count for each album. Then map the result to an object:
-    // { [albumId]: assetCount }
-    const results = await this.albumRepository.getMetadataForIds(albums.map((album) => album.id));
+    // Separate regular and dynamic albums
+    const regularAlbums = albums.filter((album) => !album.dynamic);
+    const dynamicAlbums = albums.filter((album) => album.dynamic);
+
+    // Get metadata for regular albums (existing logic)
+    const regularAlbumIds = regularAlbums.map((a) => a.id);
+    const results = regularAlbumIds.length > 0 ? await this.albumRepository.getMetadataForIds(regularAlbumIds) : [];
     const albumMetadata: Record<string, AlbumAssetCount> = {};
     for (const metadata of results) {
       albumMetadata[metadata.albumId] = metadata;
+    }
+
+    // Calculate metadata for dynamic albums
+    for (const dynamicAlbum of dynamicAlbums) {
+      if (dynamicAlbum.filters) {
+        try {
+          const metadata = await this.dynamicAlbumRepository.getMetadata(
+            dynamicAlbum.filters as DynamicAlbumFilters,
+            ownerId,
+          );
+
+          // Update thumbnail if needed
+          if (!dynamicAlbum.albumThumbnailAssetId && metadata.assetCount > 0) {
+            const thumbnailId = await this.dynamicAlbumRepository.getThumbnailAssetId(
+              dynamicAlbum.filters as DynamicAlbumFilters,
+              ownerId,
+            );
+            if (thumbnailId) {
+              await this.albumRepository.update(dynamicAlbum.id, {
+                id: dynamicAlbum.id,
+                albumThumbnailAssetId: thumbnailId,
+              });
+              dynamicAlbum.albumThumbnailAssetId = thumbnailId;
+            }
+          }
+
+          albumMetadata[dynamicAlbum.id] = {
+            albumId: dynamicAlbum.id,
+            assetCount: metadata.assetCount,
+            startDate: metadata.startDate,
+            endDate: metadata.endDate,
+            lastModifiedAssetTimestamp: metadata.lastModifiedAssetTimestamp,
+          };
+        } catch (error) {
+          this.logger.error(`Error getting metadata for dynamic album ${dynamicAlbum.id}: ${error}`);
+          // Provide default metadata for failed album
+          albumMetadata[dynamicAlbum.id] = {
+            albumId: dynamicAlbum.id,
+            assetCount: 0,
+            startDate: null,
+            endDate: null,
+            lastModifiedAssetTimestamp: null,
+          };
+        }
+      }
     }
 
     return albums.map((album) => ({
@@ -76,15 +132,67 @@ export class AlbumService extends BaseService {
     await this.requireAccess({ auth, permission: Permission.AlbumRead, ids: [id] });
     await this.albumRepository.updateThumbnails();
     const withAssets = dto.withoutAssets === undefined ? true : !dto.withoutAssets;
-    const album = await this.findOrFail(id, { withAssets });
-    const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
+    const album = await this.findOrFail(id, { withAssets: false });
 
     const hasSharedUsers = album.albumUsers && album.albumUsers.length > 0;
     const hasSharedLink = album.sharedLinks && album.sharedLinks.length > 0;
     const isShared = hasSharedUsers || hasSharedLink;
 
+    // Handle dynamic albums
+    if (album.dynamic && album.filters) {
+      try {
+        // Fetch computed assets for dynamic album
+        const searchResult = await this.dynamicAlbumRepository.getAssets(
+          album.filters as DynamicAlbumFilters,
+          auth.user.id,
+          { size: 50000, order: album.order },
+        );
+
+        const assets = searchResult.items || [];
+
+        // Update thumbnail if needed
+        if (!album.albumThumbnailAssetId && assets.length > 0) {
+          const thumbnailId = assets[0].id;
+          await this.albumRepository.update(album.id, {
+            id: album.id,
+            albumThumbnailAssetId: thumbnailId,
+          });
+          album.albumThumbnailAssetId = thumbnailId;
+        }
+
+        // Get metadata
+        const metadata = await this.dynamicAlbumRepository.getMetadata(
+          album.filters as DynamicAlbumFilters,
+          auth.user.id,
+        );
+
+        return {
+          ...mapAlbum(album, withAssets, auth),
+          assets: withAssets ? assets.map((asset) => mapAsset(asset)) : undefined,
+          assetCount: metadata.assetCount,
+          startDate: metadata.startDate ?? undefined,
+          endDate: metadata.endDate ?? undefined,
+          lastModifiedAssetTimestamp: metadata.lastModifiedAssetTimestamp ?? undefined,
+          contributorCounts: isShared ? await this.albumRepository.getContributorCounts(album.id) : undefined,
+        };
+      } catch (error) {
+        this.logger.error(`Error getting dynamic album ${id}: ${error}`);
+        // Fallback to empty album
+        return {
+          ...mapAlbum(album, withAssets, auth),
+          assets: [],
+          assetCount: 0,
+          contributorCounts: isShared ? await this.albumRepository.getContributorCounts(album.id) : undefined,
+        };
+      }
+    }
+
+    // Regular album logic (existing)
+    const albumWithAssets = await this.findOrFail(id, { withAssets });
+    const [albumMetadataForIds] = await this.albumRepository.getMetadataForIds([album.id]);
+
     return {
-      ...mapAlbum(album, withAssets, auth),
+      ...mapAlbum(albumWithAssets, withAssets, auth),
       startDate: albumMetadataForIds?.startDate ?? undefined,
       endDate: albumMetadataForIds?.endDate ?? undefined,
       assetCount: albumMetadataForIds?.assetCount ?? 0,
@@ -95,6 +203,28 @@ export class AlbumService extends BaseService {
 
   async create(auth: AuthDto, dto: CreateAlbumDto): Promise<AlbumResponseDto> {
     const albumUsers = dto.albumUsers || [];
+
+    // Validate dynamic album filters
+    if (dto.dynamic && dto.filters) {
+      const validation = validateDynamicAlbumFilters(dto.filters);
+      if (!validation.isValid) {
+        throw new BadRequestException(
+          `Invalid filters: ${validation.errors.map((e) => e.message).join(', ')}`,
+        );
+      }
+      // Sanitize filters
+      dto.filters = sanitizeDynamicAlbumFilters(dto.filters);
+    }
+
+    // Dynamic albums cannot have manual assets
+    if (dto.dynamic && dto.assetIds && dto.assetIds.length > 0) {
+      throw new BadRequestException('Dynamic albums cannot have manually added assets');
+    }
+
+    // Dynamic albums must have filters
+    if (dto.dynamic && !dto.filters) {
+      throw new BadRequestException('Dynamic albums must have filters');
+    }
 
     for (const { userId } of albumUsers) {
       const exists = await this.userRepository.get(userId, {});
@@ -123,6 +253,8 @@ export class AlbumService extends BaseService {
         description: dto.description,
         albumThumbnailAssetId: assetIds[0] || null,
         order: getPreferences(userMetadata).albums.defaultAssetOrder,
+        dynamic: dto.dynamic || false,
+        filters: dto.filters || null,
       },
       assetIds,
       albumUsers,
@@ -140,12 +272,42 @@ export class AlbumService extends BaseService {
 
     const album = await this.findOrFail(id, { withAssets: true });
 
+    // Validate dynamic album filter updates
+    if (dto.filters !== undefined) {
+      if (dto.filters === null) {
+        // Allow clearing filters (converting to non-dynamic)
+        if (album.dynamic) {
+          this.logger.warn(`Converting dynamic album ${id} to regular album by clearing filters`);
+        }
+      } else {
+        const validation = validateDynamicAlbumFilters(dto.filters);
+        if (!validation.isValid) {
+          throw new BadRequestException(
+            `Invalid filters: ${validation.errors.map((e) => e.message).join(', ')}`,
+          );
+        }
+        // Sanitize filters
+        dto.filters = sanitizeDynamicAlbumFilters(dto.filters);
+      }
+    }
+
+    // If converting from regular to dynamic, ensure no assets are present
+    if (dto.dynamic === true && !album.dynamic) {
+      if (album.assets && album.assets.length > 0) {
+        throw new BadRequestException('Cannot convert album with existing assets to dynamic album');
+      }
+      if (!dto.filters) {
+        throw new BadRequestException('Dynamic albums must have filters');
+      }
+    }
+
     if (dto.albumThumbnailAssetId) {
       const results = await this.albumRepository.getAssetIds(id, [dto.albumThumbnailAssetId]);
       if (results.size === 0) {
         throw new BadRequestException('Invalid album thumbnail');
       }
     }
+
     const updatedAlbum = await this.albumRepository.update(album.id, {
       id: album.id,
       albumName: dto.albumName,
@@ -153,6 +315,8 @@ export class AlbumService extends BaseService {
       albumThumbnailAssetId: dto.albumThumbnailAssetId,
       isActivityEnabled: dto.isActivityEnabled,
       order: dto.order,
+      dynamic: dto.dynamic,
+      filters: dto.filters,
     });
 
     return mapAlbumWithoutAssets({ ...updatedAlbum, assets: album.assets });
@@ -166,6 +330,11 @@ export class AlbumService extends BaseService {
   async addAssets(auth: AuthDto, id: string, dto: BulkIdsDto): Promise<BulkIdResponseDto[]> {
     const album = await this.findOrFail(id, { withAssets: false });
     await this.requireAccess({ auth, permission: Permission.AlbumAssetCreate, ids: [id] });
+
+    // Cannot add assets to dynamic albums
+    if (album.dynamic) {
+      throw new BadRequestException('Cannot manually add assets to dynamic albums');
+    }
 
     const results = await addAssets(
       auth,
@@ -255,6 +424,12 @@ export class AlbumService extends BaseService {
     await this.requireAccess({ auth, permission: Permission.AlbumAssetDelete, ids: [id] });
 
     const album = await this.findOrFail(id, { withAssets: false });
+
+    // Cannot remove assets from dynamic albums
+    if (album.dynamic) {
+      throw new BadRequestException('Cannot manually remove assets from dynamic albums');
+    }
+
     const results = await removeAssets(
       auth,
       { access: this.accessRepository, bulk: this.albumRepository },
@@ -323,6 +498,41 @@ export class AlbumService extends BaseService {
   async updateUser(auth: AuthDto, id: string, userId: string, dto: UpdateAlbumUserDto): Promise<void> {
     await this.requireAccess({ auth, permission: Permission.AlbumShare, ids: [id] });
     await this.albumUserRepository.update({ albumId: id, userId }, { role: dto.role });
+  }
+
+  /**
+   * Preview assets matching filters before creating album
+   * Returns count and sample thumbnails
+   */
+  async previewDynamicAlbum(
+    auth: AuthDto,
+    filters: DynamicAlbumFilters,
+  ): Promise<{ count: number; thumbnails: any[] }> {
+    const validation = validateDynamicAlbumFilters(filters);
+    if (!validation.isValid) {
+      throw new BadRequestException(`Invalid filters: ${validation.errors.map((e) => e.message).join(', ')}`);
+    }
+
+    const sanitizedFilters = sanitizeDynamicAlbumFilters(filters);
+
+    // Get first 10 assets as thumbnails
+    const result = await this.dynamicAlbumRepository.getAssets(sanitizedFilters, auth.user.id, { size: 10 });
+
+    // Get total count
+    const metadata = await this.dynamicAlbumRepository.getMetadata(sanitizedFilters, auth.user.id);
+
+    return {
+      count: metadata.assetCount,
+      thumbnails: result.items.map((asset) => mapAsset(asset)),
+    };
+  }
+
+  /**
+   * Validate dynamic album filters
+   * Returns validation result with errors and warnings
+   */
+  async validateFilters(filters: DynamicAlbumFilters): Promise<DynamicAlbumFilterValidationResult> {
+    return validateDynamicAlbumFilters(filters);
   }
 
   private async findOrFail(id: string, options: AlbumInfoOptions) {

@@ -6,6 +6,7 @@
   import AlbumMap from '$lib/components/album-page/album-map.svelte';
   import AlbumSummary from '$lib/components/album-page/album-summary.svelte';
   import AlbumTitle from '$lib/components/album-page/album-title.svelte';
+  import FilterDisplay from '$lib/components/album-page/filter-display.svelte';
   import ActivityStatus from '$lib/components/asset-viewer/activity-status.svelte';
   import ActivityViewer from '$lib/components/asset-viewer/activity-viewer.svelte';
   import OnEvents from '$lib/components/OnEvents.svelte';
@@ -73,6 +74,7 @@
     mdiDeleteOutline,
     mdiDotsVertical,
     mdiDownload,
+    mdiFilterOutline,
     mdiImageOutline,
     mdiImagePlusOutline,
     mdiLink,
@@ -449,8 +451,34 @@
                 onUpdate={(albumName) => (album.albumName = albumName)}
               />
 
+              <!-- DYNAMIC ALBUM INDICATOR -->
+              {#if album.dynamic}
+                <div class="flex items-center gap-2 mt-3">
+                  <div
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-immich-primary/10 dark:bg-immich-dark-primary/10 text-immich-primary dark:text-immich-dark-primary rounded-full text-sm font-medium"
+                  >
+                    <Icon icon={mdiFilterOutline} size="16" />
+                    <span>{$t('dynamic_album')}</span>
+                  </div>
+                </div>
+              {/if}
+
               {#if album.assetCount > 0}
                 <AlbumSummary {album} />
+              {/if}
+
+              <!-- DYNAMIC ALBUM FILTERS -->
+              {#if album.dynamic && album.filters}
+                <div class="mt-4">
+                  <FilterDisplay
+                    filters={album.filters}
+                    onEdit={isOwned
+                      ? () => {
+                          // TODO: Open edit filters modal
+                        }
+                      : undefined}
+                  />
+                </div>
               {/if}
 
               <!-- ALBUM SHARING -->
@@ -599,7 +627,7 @@
           {#snippet trailing()}
             <CastButton />
 
-            {#if isEditor}
+            {#if isEditor && !album.dynamic}
               <IconButton
                 variant="ghost"
                 shape="round"
