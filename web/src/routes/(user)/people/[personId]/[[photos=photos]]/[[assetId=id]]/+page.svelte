@@ -28,6 +28,7 @@
   import { AppRoute, PersonPageViewMode, QueryParameter, SessionStorageKey } from '$lib/constants';
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
   import type { TimelineAsset } from '$lib/managers/timeline-manager/types';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import PersonEditBirthDateModal from '$lib/modals/PersonEditBirthDateModal.svelte';
   import PersonMergeSuggestionModal from '$lib/modals/PersonMergeSuggestionModal.svelte';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
@@ -54,6 +55,7 @@
     mdiDotsVertical,
     mdiEyeOffOutline,
     mdiEyeOutline,
+    mdiFilterOutline,
     mdiHeartMinusOutline,
     mdiHeartOutline,
     mdiPlus,
@@ -183,6 +185,21 @@
     } catch (error) {
       handleError(error, $t('errors.unable_to_add_remove_favorites', { values: { favorite: person.isFavorite } }));
     }
+  };
+
+  const handleCreateDynamicAlbum = async () => {
+    await modalManager.show(DynamicAlbumFiltersModal, {
+      albumName: person.name || $t('unnamed_person'),
+      initialFilters: {
+        people: [person.id],
+        operator: 'or',
+      },
+      onClose: (album) => {
+        if (album) {
+          goto(`/albums/${album.id}`);
+        }
+      },
+    });
   };
 
   const handleMerge = async (person: PersonResponseDto) => {
@@ -545,6 +562,11 @@
               icon={person.isFavorite ? mdiHeartMinusOutline : mdiHeartOutline}
               text={person.isFavorite ? $t('unfavorite') : $t('to_favorite')}
               onClick={handleToggleFavorite}
+            />
+            <MenuOption
+              text={$t('create_dynamic_album')}
+              icon={mdiFilterOutline}
+              onClick={handleCreateDynamicAlbum}
             />
           </ButtonContextMenu>
         {/snippet}

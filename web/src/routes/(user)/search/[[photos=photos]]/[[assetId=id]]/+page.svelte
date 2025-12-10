@@ -22,6 +22,7 @@
   import AssetSelectControlBar from '$lib/components/timeline/AssetSelectControlBar.svelte';
   import { AppRoute, QueryParameter } from '$lib/constants';
   import { featureFlagsManager } from '$lib/managers/feature-flags-manager.svelte';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import type { TimelineAsset, Viewport } from '$lib/managers/timeline-manager/types';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
@@ -42,8 +43,8 @@
     searchSmart,
     type SmartSearchDto,
   } from '@immich/sdk';
-  import { Icon, IconButton, LoadingSpinner } from '@immich/ui';
-  import { mdiArrowLeft, mdiDotsVertical, mdiImageOffOutline, mdiPlus, mdiSelectAll } from '@mdi/js';
+  import { Icon, IconButton, LoadingSpinner, modalManager } from '@immich/ui';
+  import { mdiArrowLeft, mdiDotsVertical, mdiFilterOutline, mdiImageOffOutline, mdiPlus, mdiSelectAll } from '@mdi/js';
   import { tick, untrack } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -249,6 +250,59 @@
     }
   };
 
+  const handleCreateDynamicAlbum = async () => {
+    // Convert search terms to dynamic album filters
+    const filters: any = {};
+
+    if (terms.personIds) {
+      filters.people = terms.personIds;
+    }
+
+    if (terms.tagIds) {
+      filters.tags = terms.tagIds;
+    }
+
+    if (terms.takenAfter || terms.takenBefore) {
+      filters.dateRange = {
+        ...(terms.takenAfter && { start: terms.takenAfter }),
+        ...(terms.takenBefore && { end: terms.takenBefore }),
+      };
+    }
+
+    if (terms.type) {
+      filters.assetType = terms.type;
+    }
+
+    if (terms.city || terms.state || terms.country) {
+      filters.location = {
+        ...(terms.city && { city: terms.city }),
+        ...(terms.state && { state: terms.state }),
+        ...(terms.country && { country: terms.country }),
+      };
+    }
+
+    if (terms.make || terms.model || terms.lensModel) {
+      filters.metadata = {
+        ...(terms.make && { cameraMake: terms.make }),
+        ...(terms.model && { cameraModel: terms.model }),
+        ...(terms.lensModel && { lensModel: terms.lensModel }),
+      };
+    }
+
+    // Default to OR operator
+    filters.operator = 'or';
+
+    await modalManager.show(DynamicAlbumFiltersModal, {
+      albumName: $t('search_results'),
+      initialFilters: filters,
+      onClose: (album) => {
+        if (album) {
+          goto(`/albums/${album.id}`);
+        }
+      },
+    });
+  };
+
   function getObjectKeys<T extends object>(obj: T): (keyof T)[] {
     return Object.keys(obj) as (keyof T)[];
   }
@@ -310,6 +364,19 @@
         <div class="w-full flex-1 ps-4">
           <SearchBar grayTheme={false} value={terms?.query ?? ''} searchQuery={terms} />
         </div>
+        {#snippet trailing()}
+          {#if searchResultAssets.length > 0}
+            <IconButton
+              shape="round"
+              color="secondary"
+              variant="ghost"
+              aria-label={$t('create_dynamic_album')}
+              icon={mdiFilterOutline}
+              title={$t('create_dynamic_album')}
+              onclick={handleCreateDynamicAlbum}
+            />
+          {/if}
+        {/snippet}
       </ControlAppBar>
     </div>
   {/if}
@@ -455,6 +522,19 @@
           <div class="w-full flex-1 ps-4">
             <SearchBar grayTheme={false} value={terms?.query ?? ''} searchQuery={terms} />
           </div>
+          {#snippet trailing()}
+            {#if searchResultAssets.length > 0}
+              <IconButton
+                shape="round"
+                color="secondary"
+                variant="ghost"
+                aria-label={$t('create_dynamic_album')}
+                icon={mdiFilterOutline}
+                title={$t('create_dynamic_album')}
+                onclick={handleCreateDynamicAlbum}
+              />
+            {/if}
+          {/snippet}
         </ControlAppBar>
       </div>
     {/if}

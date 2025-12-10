@@ -9,13 +9,14 @@
   import { AppRoute, AssetAction, QueryParameter } from '$lib/constants';
   import SkipLink from '$lib/elements/SkipLink.svelte';
   import { TimelineManager } from '$lib/managers/timeline-manager/timeline-manager.svelte';
+  import DynamicAlbumFiltersModal from '$lib/modals/DynamicAlbumFiltersModal.svelte';
   import TagCreateModal from '$lib/modals/TagCreateModal.svelte';
   import TagEditModal from '$lib/modals/TagEditModal.svelte';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
   import { joinPaths, TreeNode } from '$lib/utils/tree-utils';
   import { deleteTag, getAllTags, type TagResponseDto } from '@immich/sdk';
   import { Button, HStack, modalManager, Text } from '@immich/ui';
-  import { mdiPencil, mdiPlus, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
+  import { mdiFilterOutline, mdiPencil, mdiPlus, mdiTag, mdiTagMultiple, mdiTrashCanOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
 
@@ -79,6 +80,25 @@
     // navigate to parent
     await navigateToView(tag.parent ? tag.parent.path : '');
   };
+
+  const handleCreateDynamicAlbum = async () => {
+    if (!tag || !tag.id) {
+      return;
+    }
+
+    await modalManager.show(DynamicAlbumFiltersModal, {
+      albumName: tag.value,
+      initialFilters: {
+        tags: [tag.id],
+        operator: 'or',
+      },
+      onClose: (album) => {
+        if (album) {
+          goto(`/albums/${album.id}`);
+        }
+      },
+    });
+  };
 </script>
 
 <UserPageLayout title={data.meta.title}>
@@ -103,6 +123,15 @@
       {#if tag.path.length > 0}
         <Button leadingIcon={mdiPencil} onclick={handleEdit} size="small" variant="ghost" color="secondary">
           <Text class="hidden md:block">{$t('edit_tag')}</Text>
+        </Button>
+        <Button
+          leadingIcon={mdiFilterOutline}
+          onclick={handleCreateDynamicAlbum}
+          size="small"
+          variant="ghost"
+          color="secondary"
+        >
+          <Text class="hidden md:block">{$t('create_dynamic_album')}</Text>
         </Button>
         <Button leadingIcon={mdiTrashCanOutline} onclick={handleDelete} size="small" variant="ghost" color="secondary">
           <Text class="hidden md:block">{$t('delete_tag')}</Text>
