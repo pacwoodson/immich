@@ -134,10 +134,13 @@ describe(SharedLinkService.name, () => {
         albumId: albumStub.oneAsset.id,
         allowDownload: true,
         allowUpload: true,
+        assetIds: undefined,
         description: null,
         expiresAt: null,
         slug: null,
         showExif: true,
+        password: undefined,
+        tagId: null,
         key: Buffer.from('random-bytes', 'utf8'),
       });
     });
@@ -170,6 +173,8 @@ describe(SharedLinkService.name, () => {
         description: null,
         expiresAt: null,
         showExif: true,
+        password: undefined,
+        tagId: null,
         key: Buffer.from('random-bytes', 'utf8'),
       });
     });
@@ -202,6 +207,8 @@ describe(SharedLinkService.name, () => {
         expiresAt: null,
         showExif: false,
         slug: null,
+        password: undefined,
+        tagId: null,
         key: Buffer.from('random-bytes', 'utf8'),
       });
     });

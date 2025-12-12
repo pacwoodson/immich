@@ -247,6 +247,7 @@ describe(TagService.name, () => {
 
   describe('removeAssets', () => {
     it('should throw an error for an invalid id', async () => {
+      mocks.tag.get.mockResolvedValue(tagStub.tag);
       mocks.tag.getAssetIds.mockResolvedValue(new Set());
       mocks.tag.removeAssetIds.mockResolvedValue();
 
