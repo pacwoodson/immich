@@ -209,7 +209,7 @@ export class DynamicAlbumRepository {
    * @param userId - User ID for access control
    * @returns Search options for SearchRepository
    */
-  private convertFiltersToSearchOptions(
+  public convertFiltersToSearchOptions(
     filters: DynamicAlbumFilters,
     userId: string,
   ): AssetSearchBuilderOptions {

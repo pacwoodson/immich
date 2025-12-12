@@ -4,6 +4,7 @@ import { TimeBucketAssetDto, TimeBucketDto, TimeBucketsResponseDto } from 'src/d
 import { AssetVisibility, Permission } from 'src/enum';
 import { TimeBucketOptions } from 'src/repositories/asset.repository';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { requireElevatedPermission } from 'src/utils/access';
 import { getMyPartnerIds } from 'src/utils/asset.util';
 
@@ -38,6 +39,37 @@ export class TimelineService extends BaseService {
           timelineEnabled: true,
         });
         userIds.push(...partnerIds);
+      }
+    }
+
+    // Handle dynamic albums
+    if (dto.albumId) {
+      const album = await this.albumRepository.getById(dto.albumId, { withAssets: false });
+      if (album?.dynamic && album.filters) {
+        // Convert dynamic album filters to search options
+        const filters = album.filters as DynamicAlbumFilters;
+        const searchOptions = this.dynamicAlbumRepository.convertFiltersToSearchOptions(filters, album.ownerId);
+
+        // Return merged options with dynamic album filters
+        // Note: Remove albumId from options since we're using filters instead
+        const { albumId, ...restOptions } = options;
+        return {
+          ...restOptions,
+          userIds: searchOptions.userIds,
+          tagIds: searchOptions.tagIds ?? undefined,
+          tagOperator: searchOptions.tagOperator,
+          personIds: searchOptions.personIds,
+          city: searchOptions.city ?? undefined,
+          state: searchOptions.state ?? undefined,
+          country: searchOptions.country ?? undefined,
+          takenAfter: searchOptions.takenAfter,
+          takenBefore: searchOptions.takenBefore,
+          assetType: searchOptions.type,
+          isFavorite: searchOptions.isFavorite,
+          make: searchOptions.make ?? undefined,
+          model: searchOptions.model ?? undefined,
+          lensModel: searchOptions.lensModel ?? undefined,
+        };
       }
     }
 

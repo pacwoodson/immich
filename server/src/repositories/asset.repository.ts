@@ -15,6 +15,7 @@ import {
   anyUuid,
   asUuid,
   hasPeople,
+  hasTags,
   removeUndefinedKeys,
   truncatedDate,
   unnest,
@@ -53,7 +54,10 @@ interface AssetBuilderOptions {
   isDuplicate?: boolean;
   albumId?: string;
   tagId?: string;
+  tagIds?: string[];
+  tagOperator?: 'and' | 'or';
   personId?: string;
+  personIds?: string[];
   userIds?: string[];
   withStacked?: boolean;
   exifInfo?: boolean;
@@ -61,6 +65,14 @@ interface AssetBuilderOptions {
   assetType?: AssetType;
   visibility?: AssetVisibility;
   withCoordinates?: boolean;
+  city?: string;
+  state?: string;
+  country?: string;
+  takenAfter?: Date;
+  takenBefore?: Date;
+  make?: string;
+  model?: string;
+  lensModel?: string;
 }
 
 export interface TimeBucketOptions extends AssetBuilderOptions {
@@ -578,6 +590,7 @@ export class AssetRepository {
               .where('album_asset.albumId', '=', asUuid(options.albumId!)),
           )
           .$if(!!options.personId, (qb) => hasPeople(qb, [options.personId!]))
+          .$if(!!options.personIds && options.personIds.length > 0, (qb) => hasPeople(qb, options.personIds!))
           .$if(!!options.withStacked, (qb) =>
             qb
               .leftJoin('stack', (join) =>
@@ -591,7 +604,24 @@ export class AssetRepository {
           .$if(options.isDuplicate !== undefined, (qb) =>
             qb.where('asset.duplicateId', options.isDuplicate ? 'is not' : 'is', null),
           )
-          .$if(!!options.tagId, (qb) => withTagId(qb, options.tagId!)),
+          .$if(!!options.tagId, (qb) => withTagId(qb, options.tagId!))
+          .$if(!!options.tagIds && options.tagIds.length > 0, (qb) =>
+            hasTags(qb, options.tagIds!, options.tagOperator || 'or'),
+          )
+          .$if(
+            !!options.city || !!options.state || !!options.country || !!options.make || !!options.model || !!options.lensModel,
+            (qb) =>
+              qb
+                .innerJoin('asset_exif', 'asset.id', 'asset_exif.assetId')
+                .$if(!!options.city, (qb) => qb.where('asset_exif.city', '=', options.city!))
+                .$if(!!options.state, (qb) => qb.where('asset_exif.state', '=', options.state!))
+                .$if(!!options.country, (qb) => qb.where('asset_exif.country', '=', options.country!))
+                .$if(!!options.make, (qb) => qb.where('asset_exif.make', '=', options.make!))
+                .$if(!!options.model, (qb) => qb.where('asset_exif.model', '=', options.model!))
+                .$if(!!options.lensModel, (qb) => qb.where('asset_exif.lensModel', '=', options.lensModel!)),
+          )
+          .$if(!!options.takenAfter, (qb) => qb.where('asset.fileCreatedAt', '>=', options.takenAfter!))
+          .$if(!!options.takenBefore, (qb) => qb.where('asset.fileCreatedAt', '<=', options.takenBefore!)),
       )
       .selectFrom('asset')
       .select(sql<string>`("timeBucket" AT TIME ZONE 'UTC')::date::text`.as('timeBucket'))
@@ -658,6 +688,7 @@ export class AssetRepository {
             ),
           )
           .$if(!!options.personId, (qb) => hasPeople(qb, [options.personId!]))
+          .$if(!!options.personIds && options.personIds.length > 0, (qb) => hasPeople(qb, options.personIds!))
           .$if(!!options.userIds, (qb) => qb.where('asset.ownerId', '=', anyUuid(options.userIds!)))
           .$if(options.isFavorite !== undefined, (qb) => qb.where('asset.isFavorite', '=', options.isFavorite!))
           .$if(!!options.withStacked, (qb) =>
@@ -692,6 +723,17 @@ export class AssetRepository {
           )
           .$if(!!options.isTrashed, (qb) => qb.where('asset.status', '!=', AssetStatus.Deleted))
           .$if(!!options.tagId, (qb) => withTagId(qb, options.tagId!))
+          .$if(!!options.tagIds && options.tagIds.length > 0, (qb) =>
+            hasTags(qb, options.tagIds!, options.tagOperator || 'or'),
+          )
+          .$if(!!options.city, (qb) => qb.where('asset_exif.city', '=', options.city!))
+          .$if(!!options.state, (qb) => qb.where('asset_exif.state', '=', options.state!))
+          .$if(!!options.country, (qb) => qb.where('asset_exif.country', '=', options.country!))
+          .$if(!!options.make, (qb) => qb.where('asset_exif.make', '=', options.make!))
+          .$if(!!options.model, (qb) => qb.where('asset_exif.model', '=', options.model!))
+          .$if(!!options.lensModel, (qb) => qb.where('asset_exif.lensModel', '=', options.lensModel!))
+          .$if(!!options.takenAfter, (qb) => qb.where('asset.fileCreatedAt', '>=', options.takenAfter!))
+          .$if(!!options.takenBefore, (qb) => qb.where('asset.fileCreatedAt', '<=', options.takenBefore!))
           .orderBy('asset.fileCreatedAt', options.order ?? 'desc'),
       )
       .with('agg', (qb) =>
