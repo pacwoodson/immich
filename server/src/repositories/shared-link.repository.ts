@@ -3,7 +3,7 @@ import { Insertable, Kysely, NotNull, sql, Updateable } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import _ from 'lodash';
 import { InjectKysely } from 'nestjs-kysely';
-import { Album, columns, Tag } from 'src/database';
+import { Album, columns, SharedLink, Tag } from 'src/database';
 import { DummyValue, GenerateSql } from 'src/decorators';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import { SharedLinkType } from 'src/enum';
@@ -231,6 +231,41 @@ export class SharedLinkRepository {
             .selectFrom('tag')
             .selectAll('tag')
             .whereRef('tag.id', '=', 'shared_link.tagId')
+            .leftJoin('tag_asset', 'tag_asset.tagId', 'tag.id')
+            .leftJoinLateral(
+              (eb) =>
+                eb
+                  .selectFrom('asset')
+                  .selectAll('asset')
+                  .whereRef('tag_asset.assetId', '=', 'asset.id')
+                  .where('asset.deletedAt', 'is', null)
+                  .innerJoinLateral(
+                    (eb) =>
+                      eb
+                        .selectFrom('asset_exif')
+                        .selectAll('asset_exif')
+                        .whereRef('asset_exif.assetId', '=', 'asset.id')
+                        .as('exifInfo'),
+                    (join) => join.onTrue(),
+                  )
+                  .select((eb) => eb.fn.toJson(eb.table('exifInfo')).as('exifInfo'))
+                  .orderBy('asset.fileCreatedAt', 'asc')
+                  .as('tagAssets'),
+              (join) => join.onTrue(),
+            )
+            .select((eb) =>
+              eb.fn
+                .coalesce(
+                  eb.fn
+                    .jsonAgg('tagAssets')
+                    .orderBy('tagAssets.fileCreatedAt', 'asc')
+                    .filterWhere('tagAssets.id', 'is not', null),
+                  sql`'[]'`,
+                )
+                .$castTo<MapAsset[]>()
+                .as('assets'),
+            )
+            .groupBy('tag.id')
             .as('tag'),
         (join) => join.onTrue(),
       )
