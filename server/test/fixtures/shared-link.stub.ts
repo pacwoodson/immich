@@ -120,6 +120,8 @@ export const sharedLinkStub = {
     assets: [assetStub.image],
     password: 'password',
     slug: null,
+    tag: null,
+    tagId: null,
   }),
   valid: Object.freeze({
     id: '123',
@@ -138,6 +140,8 @@ export const sharedLinkStub = {
     assets: [] as MapAsset[],
     album: null,
     slug: null,
+    tag: null,
+    tagId: null,
   }),
   expired: Object.freeze({
     id: '123',
@@ -156,6 +160,8 @@ export const sharedLinkStub = {
     assets: [] as MapAsset[],
     album: null,
     slug: null,
+    tag: null,
+    tagId: null,
   }),
   readonlyNoExif: Object.freeze({
     id: '123',
@@ -260,6 +266,8 @@ export const sharedLinkStub = {
         },
       ],
     },
+    tag: null,
+    tagId: null,
   }),
   passwordRequired: Object.freeze({
     id: '123',
@@ -277,6 +285,8 @@ export const sharedLinkStub = {
     assets: [],
     albumId: null,
     album: null,
+    tag: null,
+    tagId: null,
   }),
 };
 
