@@ -15,7 +15,9 @@
   let { sharedLink, preload = false, class: className = '' }: Props = $props();
 
   let tagThumbnailUrl = $derived(
-    sharedLink?.tag?.thumbnailAssetId ? getAssetThumbnailUrl({ id: sharedLink.tag.thumbnailAssetId }) : null,
+    sharedLink?.tag?.assets?.[0]?.id
+      ? getAssetThumbnailUrl({ id: sharedLink.tag.assets[0].id })
+      : null,
   );
 </script>
 

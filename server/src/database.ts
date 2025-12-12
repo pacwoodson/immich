@@ -90,7 +90,6 @@ export type Tag = {
   updatedAt: Date;
   color: string | null;
   parentId: string | null;
-  thumbnailAssetId: string | null;
   assets?: MapAsset[];
 };
 
@@ -375,7 +374,7 @@ export const columns = {
     'quotaSizeInBytes',
     'quotaUsageInBytes',
   ],
-  tag: ['tag.id', 'tag.userId', 'tag.value', 'tag.createdAt', 'tag.updatedAt', 'tag.color', 'tag.parentId', 'tag.thumbnailAssetId'],
+  tag: ['tag.id', 'tag.userId', 'tag.value', 'tag.createdAt', 'tag.updatedAt', 'tag.color', 'tag.parentId'],
   apiKey: ['id', 'name', 'userId', 'createdAt', 'updatedAt', 'permissions'],
   notification: ['id', 'createdAt', 'level', 'type', 'title', 'description', 'data', 'readAt'],
   syncAsset: [

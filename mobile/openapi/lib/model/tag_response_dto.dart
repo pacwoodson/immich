@@ -23,7 +23,7 @@ class TagResponseDto {
     required this.value,
   });
 
-  List<Object> assets;
+  List<AssetResponseDto> assets;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -107,7 +107,7 @@ class TagResponseDto {
       final json = value.cast<String, dynamic>();
 
       return TagResponseDto(
-        assets: Object.listFromJson(json[r'assets']),
+        assets: AssetResponseDto.listFromJson(json[r'assets']),
         color: mapValueOfType<String>(json, r'color'),
         createdAt: mapDateTime(json, r'createdAt', r'')!,
         id: mapValueOfType<String>(json, r'id')!,

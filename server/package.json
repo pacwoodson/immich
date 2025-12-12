@@ -18,7 +18,7 @@
     "check": "tsc --noEmit",
     "check:code": "npm run format && npm run lint && npm run check",
     "check:all": "npm run check:code && npm run test:cov",
-    "test": "vitest --config test/vitest.config.mjs",
+    "test": "vitest run --config test/vitest.config.mjs",
     "test:cov": "vitest --config test/vitest.config.mjs --coverage",
     "test:medium": "vitest --config test/vitest.config.medium.mjs",
     "typeorm": "typeorm",
