@@ -86,18 +86,16 @@
       return;
     }
 
-    await modalManager.show(DynamicAlbumFiltersModal, {
+    const album = await modalManager.show(DynamicAlbumFiltersModal, {
       albumName: tag.value,
       initialFilters: {
         tags: [tag.id],
         operator: 'or',
       },
-      onClose: (album) => {
-        if (album) {
-          goto(`/albums/${album.id}`);
-        }
-      },
     });
+    if (album) {
+      goto(`/albums/${album.id}`);
+    }
   };
 </script>
 

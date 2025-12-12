@@ -53,7 +53,7 @@
     return parts.join(', ');
   }
 
-  const filterSections = $derived(() => {
+  const filterSections = $derived.by(() => {
     const sections: Array<{ icon: string; label: string; value: string }> = [];
 
     if (filters.tags && filters.tags.length > 0) {

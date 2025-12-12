@@ -62,7 +62,7 @@
   let operator = $state<'and' | 'or'>(initialFilters?.operator || 'or');
 
   // In edit mode, start with filters tab; in create mode, start with basic tab
-  let activeTab = $state<'basic' | 'filters' | 'metadata'>(isEditMode ? 'filters' : 'basic');
+  let activeTab = $state<'basic' | 'filters' | 'metadata'>(!!albumId ? 'filters' : 'basic');
 
   const hasFilters = $derived(
     selectedTagIds.size > 0 ||

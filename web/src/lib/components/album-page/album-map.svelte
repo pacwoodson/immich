@@ -36,7 +36,7 @@
     let albumInfo: AlbumResponseDto = await getAlbumInfo({ id: album.id, withoutAssets: false, ...authManager.params });
 
     let markers: MapMarkerResponseDto[] = [];
-    for (const asset of albumInfo.assets) {
+    for (const asset of albumInfo.assets || []) {
       if (asset.exifInfo?.latitude && asset.exifInfo?.longitude) {
         markers.push({
           id: asset.id,

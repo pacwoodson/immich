@@ -292,15 +292,13 @@
     // Default to OR operator
     filters.operator = 'or';
 
-    await modalManager.show(DynamicAlbumFiltersModal, {
+    const album = await modalManager.show(DynamicAlbumFiltersModal, {
       albumName: $t('search_results'),
       initialFilters: filters,
-      onClose: (album) => {
-        if (album) {
-          goto(`/albums/${album.id}`);
-        }
-      },
     });
+    if (album) {
+      goto(`/albums/${album.id}`);
+    }
   };
 
   function getObjectKeys<T extends object>(obj: T): (keyof T)[] {

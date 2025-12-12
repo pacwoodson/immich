@@ -188,18 +188,16 @@
   };
 
   const handleCreateDynamicAlbum = async () => {
-    await modalManager.show(DynamicAlbumFiltersModal, {
+    const album = await modalManager.show(DynamicAlbumFiltersModal, {
       albumName: person.name || $t('unnamed_person'),
       initialFilters: {
         people: [person.id],
         operator: 'or',
       },
-      onClose: (album) => {
-        if (album) {
-          goto(`/albums/${album.id}`);
-        }
-      },
     });
+    if (album) {
+      goto(`/albums/${album.id}`);
+    }
   };
 
   const handleMerge = async (person: PersonResponseDto) => {

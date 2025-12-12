@@ -36,24 +36,22 @@
     }
   };
 
-  const handleEditFilters = () => {
-    modalManager.open(DynamicAlbumFiltersModal, {
+  const handleEditFilters = async () => {
+    const updatedAlbum = await modalManager.show(DynamicAlbumFiltersModal, {
       albumId: album.id,
       initialFilters: album.filters as any,
       albumName: album.albumName,
       description: album.description,
-      onClose: (updatedAlbum) => {
-        if (updatedAlbum) {
-          // Update the local album object with the new values
-          album.filters = updatedAlbum.filters;
-          album.albumName = updatedAlbum.albumName;
-          album.description = updatedAlbum.description;
-          // Update the local state to match
-          albumName = updatedAlbum.albumName;
-          description = updatedAlbum.description || '';
-        }
-      },
     });
+    if (updatedAlbum) {
+      // Update the local album object with the new values
+      album.filters = updatedAlbum.filters;
+      album.albumName = updatedAlbum.albumName;
+      album.description = updatedAlbum.description;
+      // Update the local state to match
+      albumName = updatedAlbum.albumName;
+      description = updatedAlbum.description || '';
+    }
   };
 </script>
 
@@ -86,7 +84,7 @@
               leadingIcon={mdiFilterOutline}
               onclick={handleEditFilters}
               size="small"
-              variant="outlined"
+              variant="outline"
               color="primary"
               fullWidth
             >

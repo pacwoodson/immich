@@ -22,7 +22,7 @@
 
   let textLocation = $state(typeof location === 'string' ? location : '');
   let city = $state(typeof location === 'object' && location?.city ? location.city : '');
-  let state = $state(typeof location === 'object' && location?.state ? location.state : '');
+  let locationState = $state(typeof location === 'object' && location?.state ? location.state : '');
   let country = $state(typeof location === 'object' && location?.country ? location.country : '');
 
   function toggleMode() {
@@ -32,7 +32,7 @@
       location = '';
     } else {
       city = '';
-      state = '';
+      locationState = '';
       country = '';
       location = {};
     }
@@ -47,8 +47,8 @@
   }
 
   function handleStructuredChange() {
-    const hasValues = city || state || country;
-    location = hasValues ? { city: city || undefined, state: state || undefined, country: country || undefined } : undefined;
+    const hasValues = city || locationState || country;
+    location = hasValues ? { city: city || undefined, state: locationState || undefined, country: country || undefined } : undefined;
     onLocationChange?.(location);
   }
 
@@ -58,7 +58,7 @@
       location = undefined;
     } else {
       city = '';
-      state = '';
+      locationState = '';
       country = '';
       location = undefined;
     }
@@ -94,7 +94,7 @@
       </Field>
 
       <Field label={$t('state')}>
-        <Input type="text" bind:value={state} onchange={handleStructuredChange} placeholder={$t('enter_state')} />
+        <Input type="text" bind:value={locationState} onchange={handleStructuredChange} placeholder={$t('enter_state')} />
       </Field>
 
       <Field label={$t('country')}>
@@ -108,7 +108,7 @@
     </div>
   {/if}
 
-  {#if (mode === 'text' && textLocation) || (mode === 'structured' && (city || state || country))}
+  {#if (mode === 'text' && textLocation) || (mode === 'structured' && (city || locationState || country))}
     <button
       type="button"
       class="text-sm text-gray-600 dark:text-gray-400 hover:underline self-start"

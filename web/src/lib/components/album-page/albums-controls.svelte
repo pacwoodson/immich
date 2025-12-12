@@ -25,7 +25,7 @@
     groupOptionsMetadata,
     sortOptionsMetadata,
   } from '$lib/utils/album-utils';
-  import { Button, IconButton, Text } from '@immich/ui';
+  import { Button, Icon, IconButton, Text } from '@immich/ui';
   import {
     mdiArrowDownThin,
     mdiArrowUpThin,
@@ -116,14 +116,11 @@
     [AlbumGroupBy.Year]: $t('group_year'),
   });
 
-  const handleCreateDynamicAlbum = () => {
-    modalManager.open(DynamicAlbumFiltersModal, {
-      onClose: (album) => {
-        if (album) {
-          window.location.href = `/albums/${album.id}`;
-        }
-      },
-    });
+  const handleCreateDynamicAlbum = async () => {
+    const album = await modalManager.show(DynamicAlbumFiltersModal, {});
+    if (album) {
+      window.location.href = `/albums/${album.id}`;
+    }
   };
 
 </script>
