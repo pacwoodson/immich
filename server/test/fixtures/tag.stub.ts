@@ -9,6 +9,9 @@ const parent = Object.freeze<Tag>({
   value: 'Parent',
   color: null,
   parentId: null,
+  thumbnailAssetId: null,
+  assets: [],
+  userId: '1',
 });
 
 const child = Object.freeze<Tag>({
@@ -18,6 +21,9 @@ const child = Object.freeze<Tag>({
   value: 'Parent/Child',
   color: null,
   parentId: parent.id,
+  thumbnailAssetId: null,
+  assets: [],
+  userId: '1',
 });
 
 const tag = {
@@ -27,6 +33,9 @@ const tag = {
   value: 'Tag1',
   color: null,
   parentId: null,
+  thumbnailAssetId: null,
+  assets: [],
+  userId: '1',
 };
 
 const color = {
@@ -36,6 +45,9 @@ const color = {
   value: 'Tag1',
   color: '#000000',
   parentId: null,
+  thumbnailAssetId: null,
+  assets: [],
+  userId: '1',
 };
 
 const upsert = {

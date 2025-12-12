@@ -4,7 +4,6 @@ import _ from 'lodash';
 import { SharedLink } from 'src/database';
 import { AlbumResponseDto, mapAlbumWithoutAssets } from 'src/dtos/album.dto';
 import { AssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
-import { AuthDto } from 'src/dtos/auth.dto';
 import { mapTag, TagResponseDto } from 'src/dtos/tag.dto';
 import { SharedLinkType } from 'src/enum';
 import { Optional, ValidateBoolean, ValidateDate, ValidateEnum, ValidateUUID } from 'src/validation';
