@@ -1952,6 +1952,8 @@
   "shared_links": "Shared links",
   "shared_links_description": "Share photos and videos with a link",
   "shared_photos_and_videos_count": "{assetCount, plural, other {# shared photos & videos.}}",
+  "shared_tag": "Shared tag",
+  "no_assets_in_this_tag": "No assets in this tag",
   "shared_with_me": "Shared with me",
   "shared_with_partner": "Shared with {partner}",
   "sharing": "Sharing",

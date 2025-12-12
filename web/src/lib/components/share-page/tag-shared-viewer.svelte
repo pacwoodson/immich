@@ -26,7 +26,7 @@
   const viewport: Viewport = $state({ width: 0, height: 0 });
   const assetInteraction = new AssetInteraction();
 
-  let assets = $derived(sharedLink.tag.assets.map((a) => toTimelineAsset(a)));
+  let assets = $derived(sharedLink.tag?.assets?.map((a) => toTimelineAsset(a)) ?? []);
 
   const downloadAssets = async () => {
     const filename = sharedLink.tag?.name ? `${sharedLink.tag.name}-shared.zip` : 'immich-tag-shared.zip';
@@ -98,8 +98,8 @@
           <IconButton
             shape="round"
             color="primary"
-            variant="solid"
             icon={mdiTag}
+            aria-label={sharedLink.tag.name}
             style="background-color: {sharedLink.tag.color || '#6366f1'};"
           />
           <div>
@@ -142,10 +142,9 @@
       <IconButton
         shape="round"
         color="primary"
-        variant="solid"
         icon={mdiTag}
-        style="background-color: {sharedLink.tag?.color || '#6366f1'};"
-        size="lg"
+        aria-label={sharedLink.tag?.name || 'Tag'}
+        style="background-color: {sharedLink.tag?.color || '#6366f1'}; width: 80px; height: 80px;"
       />
       <h2 class="text-2xl text-primary font-semibold mt-4">
         {sharedLink.tag?.name || $t('shared_tag')}
