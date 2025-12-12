@@ -29,12 +29,13 @@
     await refresh();
   });
 
-  type Filter = 'all' | 'album' | 'individual';
+  type Filter = 'all' | 'album' | 'individual' | 'tag';
 
   const filterMap: Record<Filter, string> = {
     all: $t('all'),
     album: $t('albums'),
     individual: $t('individual_shares'),
+    tag: $t('tag'),
   };
 
   let filters = Object.keys(filterMap);
@@ -50,12 +51,24 @@
     await goto(`${AppRoute.SHARED_LINKS}?filter=${value}`);
   };
 
+  let searchTerm = $state('');
+
   let filteredSharedLinks = $derived(
     sharedLinks.filter(
-      ({ type }) =>
-        selectedTab === 'all' ||
-        (type === SharedLinkType.Album && selectedTab === 'album') ||
-        (type === SharedLinkType.Individual && selectedTab === 'individual'),
+      ({ type, album, tag }) => {
+        const matchesTab =
+          selectedTab === 'all' ||
+          (type === SharedLinkType.Album && selectedTab === 'album') ||
+          (type === SharedLinkType.Tag && selectedTab === 'tag') ||
+          (type === SharedLinkType.Individual && selectedTab === 'individual');
+
+        const matchesSearch =
+          !searchTerm ||
+          (album?.albumName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+          (tag?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+
+        return matchesTab && matchesSearch;
+      },
     ),
   );
 
@@ -88,10 +101,18 @@
         <p>{$t('you_dont_have_any_shared_links')}</p>
       </div>
     {:else}
-      <div class="flex flex-col gap-2">
-        {#each filteredSharedLinks as sharedLink (sharedLink.id)}
-          <SharedLinkCard {sharedLink} />
-        {/each}
+      <div class="flex flex-col gap-4">
+        <input
+          type="text"
+          placeholder={$t('search')}
+          bind:value={searchTerm}
+          class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-immich-dark-gray dark:bg-immich-dark-gray dark:text-white focus:outline-none focus:ring-2 focus:ring-immich-primary"
+        />
+        <div class="flex flex-col gap-2">
+          {#each filteredSharedLinks as sharedLink (sharedLink.id)}
+            <SharedLinkCard {sharedLink} />
+          {/each}
+        </div>
       </div>
     {/if}
 

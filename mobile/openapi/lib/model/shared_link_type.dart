@@ -25,11 +25,13 @@ class SharedLinkType {
 
   static const ALBUM = SharedLinkType._(r'ALBUM');
   static const INDIVIDUAL = SharedLinkType._(r'INDIVIDUAL');
+  static const TAG = SharedLinkType._(r'TAG');
 
   /// List of all possible values in this [enum][SharedLinkType].
   static const values = <SharedLinkType>[
     ALBUM,
     INDIVIDUAL,
+    TAG,
   ];
 
   static SharedLinkType? fromJson(dynamic value) => SharedLinkTypeTypeTransformer().decode(value);
@@ -70,6 +72,7 @@ class SharedLinkTypeTypeTransformer {
       switch (data) {
         case r'ALBUM': return SharedLinkType.ALBUM;
         case r'INDIVIDUAL': return SharedLinkType.INDIVIDUAL;
+        case r'TAG': return SharedLinkType.TAG;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');

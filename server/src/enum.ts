@@ -280,6 +280,12 @@ export enum SharedLinkType {
    * or group of assets that are not in an album
    */
   Individual = 'INDIVIDUAL',
+
+  /**
+   * Dynamic tag-based sharing
+   * Assets are automatically included/excluded based on tag membership
+   */
+  Tag = 'TAG',
 }
 
 export enum StorageFolder {
