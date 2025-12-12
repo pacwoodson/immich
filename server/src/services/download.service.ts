@@ -7,11 +7,60 @@ import { DownloadArchiveInfo, DownloadInfoDto, DownloadResponseDto } from 'src/d
 import { Permission } from 'src/enum';
 import { ImmichReadStream } from 'src/repositories/storage.repository';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { HumanReadableSize } from 'src/utils/bytes';
 import { getPreferences } from 'src/utils/preferences';
 
 @Injectable()
 export class DownloadService extends BaseService {
+  /**
+   * Get assets for a dynamic album as an async generator
+   * This provides the same interface as the download repository methods (streaming)
+   * while supporting pagination for large dynamic albums
+   */
+  private async *getDynamicAlbumAssets(
+    filters: DynamicAlbumFilters,
+    ownerId: string,
+  ): AsyncGenerator<{ id: string; livePhotoVideoId: string | null; size: number | null }> {
+    const pageSize = 1000; // Process in chunks to handle large albums
+    let page = 1;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      try {
+        // Fetch a page of assets to get their IDs
+        const result = await this.dynamicAlbumRepository.getAssets(filters, ownerId, {
+          page,
+          size: pageSize,
+        });
+
+        const assets = result.items || [];
+        hasNextPage = result.hasNextPage;
+
+        if (assets.length === 0) {
+          break;
+        }
+
+        // Get the asset IDs
+        const assetIds = assets.map((asset) => asset.id);
+
+        // Use the download repository to get assets with proper exif data
+        // This ensures we have the correct file size and other metadata
+        const downloadAssets = this.downloadRepository.downloadAssetIds(assetIds);
+
+        for await (const asset of downloadAssets) {
+          yield asset;
+        }
+
+        page++;
+      } catch (error) {
+        this.logger.error(`Failed to fetch dynamic album assets: ${error}`, error);
+        // Stop iteration on error
+        return;
+      }
+    }
+  }
+
   async getDownloadInfo(auth: AuthDto, dto: DownloadInfoDto): Promise<DownloadResponseDto> {
     let assets;
 
@@ -22,7 +71,16 @@ export class DownloadService extends BaseService {
     } else if (dto.albumId) {
       const albumId = dto.albumId;
       await this.requireAccess({ auth, permission: Permission.AlbumDownload, ids: [albumId] });
-      assets = this.downloadRepository.downloadAlbumId(albumId);
+
+      // Check if the album is dynamic
+      const album = await this.albumRepository.getById(albumId, { withAssets: false });
+      if (album && album.dynamic && album.filters) {
+        // For dynamic albums, compute assets based on filters
+        assets = this.getDynamicAlbumAssets(album.filters as DynamicAlbumFilters, album.ownerId);
+      } else {
+        // For regular albums, use the standard repository method
+        assets = this.downloadRepository.downloadAlbumId(albumId);
+      }
     } else if (dto.userId) {
       const userId = dto.userId;
       await this.requireAccess({ auth, permission: Permission.TimelineDownload, ids: [userId] });

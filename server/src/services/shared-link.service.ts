@@ -15,6 +15,7 @@ import {
 } from 'src/dtos/shared-link.dto';
 import { Permission, SharedLinkType } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
+import { DynamicAlbumFilters } from 'src/types/dynamic-album.types';
 import { getExternalDomain, OpenGraphTags } from 'src/utils/misc';
 
 @Injectable()
@@ -25,12 +26,57 @@ export class SharedLinkService extends BaseService {
       .then((links) => links.map((link) => mapSharedLink(link)));
   }
 
+  /**
+   * Populate assets for a dynamic album in a shared link
+   * Dynamic albums compute their assets based on filters, not from album_asset table
+   */
+  private async populateDynamicAlbumAssets(sharedLink: SharedLink): Promise<SharedLink> {
+    // Only process album-type shared links with dynamic albums
+    if (sharedLink.type !== SharedLinkType.Album || !sharedLink.album || !sharedLink.album.dynamic) {
+      return sharedLink;
+    }
+
+    const album = sharedLink.album;
+
+    // Check if the album has filters (required for dynamic albums)
+    if (!album.filters) {
+      this.logger.warn(`Dynamic album ${album.id} has no filters, returning empty asset list`);
+      // Ensure assets is initialized as empty array
+      if (album.assets === undefined) {
+        album.assets = [];
+      }
+      return sharedLink;
+    }
+
+    try {
+      // Compute assets using the album owner's ID for access control
+      const searchResult = await this.dynamicAlbumRepository.getAssets(
+        album.filters as DynamicAlbumFilters,
+        album.ownerId,
+        { size: 50000, order: album.order },
+      );
+
+      // Replace the empty assets array with computed assets
+      album.assets = searchResult.items || [];
+    } catch (error) {
+      this.logger.error(`Failed to compute dynamic album assets for shared link: ${error}`, error);
+      // Return the shared link with empty assets rather than failing
+      album.assets = [];
+    }
+
+    return sharedLink;
+  }
+
   async getMine(auth: AuthDto, dto: SharedLinkPasswordDto): Promise<SharedLinkResponseDto> {
     if (!auth.sharedLink) {
       throw new ForbiddenException();
     }
 
     const sharedLink = await this.findOrFail(auth.user.id, auth.sharedLink.id);
+
+    // Populate assets for dynamic albums
+    await this.populateDynamicAlbumAssets(sharedLink);
+
     const response = this.mapToSharedLink(sharedLink, { withExif: sharedLink.showExif });
     if (sharedLink.password) {
       response.token = this.validateAndRefreshToken(sharedLink, dto);
@@ -41,6 +87,10 @@ export class SharedLinkService extends BaseService {
 
   async get(auth: AuthDto, id: string): Promise<SharedLinkResponseDto> {
     const sharedLink = await this.findOrFail(auth.user.id, id);
+
+    // Populate assets for dynamic albums
+    await this.populateDynamicAlbumAssets(sharedLink);
+
     return this.mapToSharedLink(sharedLink, { withExif: true });
   }
 
@@ -201,6 +251,10 @@ export class SharedLinkService extends BaseService {
 
     const config = await this.getConfig({ withCache: true });
     const sharedLink = await this.findOrFail(auth.sharedLink.userId, auth.sharedLink.id);
+
+    // Populate assets for dynamic albums to get accurate asset count
+    await this.populateDynamicAlbumAssets(sharedLink);
+
     const assetId = sharedLink.album?.albumThumbnailAssetId || sharedLink.assets[0]?.id;
     const assetCount = sharedLink.assets.length > 0 ? sharedLink.assets.length : sharedLink.album?.assets?.length || 0;
     const imagePath = assetId
