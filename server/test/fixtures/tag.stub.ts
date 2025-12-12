@@ -71,6 +71,10 @@ export const tagResponseStub = {
     updatedAt: new Date('2021-01-01T00:00:00Z'),
     name: 'Tag1',
     value: 'Tag1',
+    assets: [],
+    color: undefined,
+    thumbnailAssetId: null,
+    parentId: undefined,
   }),
   color1: Object.freeze<TagResponseDto>({
     id: 'tag-1',
@@ -79,5 +83,8 @@ export const tagResponseStub = {
     color: '#000000',
     name: 'Tag1',
     value: 'Tag1',
+    assets: [],
+    thumbnailAssetId: null,
+    parentId: undefined,
   }),
 };
