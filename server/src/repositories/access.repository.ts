@@ -232,7 +232,8 @@ class AssetAccess {
         join.onRef('albumAssets.id', '=', 'album_asset.assetId').on('albumAssets.deletedAt', 'is', null),
       )
       .leftJoin('tag', 'tag.id', 'shared_link.tagId')
-      .leftJoin('tag_asset', 'tag_asset.tagId', 'tag.id')
+      .leftJoin('tag_closure', 'tag_closure.id_ancestor', 'tag.id')
+      .leftJoin('tag_asset', 'tag_asset.tagId', 'tag_closure.id_descendant')
       .leftJoin('asset as tagAssets', (join) =>
         join.onRef('tagAssets.id', '=', 'tag_asset.assetId').on('tagAssets.deletedAt', 'is', null),
       )
