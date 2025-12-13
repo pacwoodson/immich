@@ -1,5 +1,1 @@
-*
-
-!.claude/
-!agent/
-!.gitignore
+.DS_Store

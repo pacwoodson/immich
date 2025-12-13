@@ -34,9 +34,20 @@ This is a **pnpm monorepo** with the following key packages:
 
 Access the dev instance at http://localhost:3000
 
+#### Type checking
+
+To make sure the code is correct, run check and linters:
+
+```
+# Check the server
+make check-server
+# Check the web frontend
+make check-web
+```
+
 #### Building the app
 
-To make sure the code is correct, build the apps with the following commands
+To make sure the compiles, build them.
 
 ```
 # Build the server
