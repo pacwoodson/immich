@@ -114,7 +114,8 @@ export class SharedLinkRepository {
             .selectFrom('tag')
             .selectAll('tag')
             .whereRef('tag.id', '=', 'shared_link.tagId')
-            .leftJoin('tag_asset', 'tag_asset.tagId', 'tag.id')
+            .leftJoin('tag_closure', 'tag_closure.id_ancestor', 'tag.id')
+            .leftJoin('tag_asset', 'tag_asset.tagId', 'tag_closure.id_descendant')
             .leftJoinLateral(
               (eb) =>
                 eb
@@ -231,7 +232,8 @@ export class SharedLinkRepository {
             .selectFrom('tag')
             .selectAll('tag')
             .whereRef('tag.id', '=', 'shared_link.tagId')
-            .leftJoin('tag_asset', 'tag_asset.tagId', 'tag.id')
+            .leftJoin('tag_closure', 'tag_closure.id_ancestor', 'tag.id')
+            .leftJoin('tag_asset', 'tag_asset.tagId', 'tag_closure.id_descendant')
             .leftJoinLateral(
               (eb) =>
                 eb
