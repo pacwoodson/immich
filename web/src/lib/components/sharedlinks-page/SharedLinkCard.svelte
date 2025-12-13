@@ -86,7 +86,7 @@
               {#if sharedLink.tag?.color}
                 <span class="w-3 h-3 rounded-full" style="background-color: {sharedLink.tag.color}"></span>
               {/if}
-              {sharedLink.tag?.name || 'Tag'}
+              {sharedLink.tag?.value || sharedLink.tag?.name || 'Tag'}
             </span>
           {:else if sharedLink.type === SharedLinkType.Individual}
             {$t('individual_share')}
@@ -100,9 +100,9 @@
         {#if sharedLink.type === SharedLinkType.Album}
           <Badge size="small" color="primary">{$t('album')}</Badge>
         {:else if sharedLink.type === SharedLinkType.Tag}
-          <Badge size="small" color="info"> {$t('tag')}</Badge>
+          <Badge size="small" color="info">{$t('tag')}</Badge>
         {:else if sharedLink.type === SharedLinkType.Individual}
-          <Badge size="small" color="warning"> {$t('individual_share')}</Badge>
+          <Badge size="small" color="warning">{$t('individual_share')}</Badge>
         {/if}
       </div>
 
