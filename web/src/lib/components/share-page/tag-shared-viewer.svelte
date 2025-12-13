@@ -47,6 +47,8 @@
       }
     }
   };
+
+  let tagName = $derived(sharedLink.tag?.value || sharedLink.tag?.name || $t('shared_tag'))
 </script>
 
 <section>
@@ -65,7 +67,7 @@
           onclick={handleSelectAll}
         />
         {#if sharedLink?.allowDownload}
-          <DownloadAction filename={sharedLink.tag?.name ? `${sharedLink.tag.name}.zip` : 'immich-shared.zip'} />
+          <DownloadAction filename={`${tagName}.zip`} />
         {/if}
       </AssetSelectControlBar>
     {:else}
@@ -99,12 +101,12 @@
             shape="round"
             color="primary"
             icon={mdiTag}
-            aria-label={sharedLink.tag.name}
+            aria-label={tagName}
             style="background-color: {sharedLink.tag.color || '#6366f1'};"
           />
           <div>
             <h1 class="text-2xl md:text-4xl text-primary font-semibold">
-              {sharedLink.tag.name}
+              {tagName}
             </h1>
             {#if sharedLink.description}
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -143,11 +145,11 @@
         shape="round"
         color="primary"
         icon={mdiTag}
-        aria-label={sharedLink.tag?.name || 'Tag'}
+        aria-label={tagName}
         style="background-color: {sharedLink.tag?.color || '#6366f1'}; width: 80px; height: 80px;"
       />
       <h2 class="text-2xl text-primary font-semibold mt-4">
-        {sharedLink.tag?.name || $t('shared_tag')}
+        {tagName}
       </h2>
       <p class="text-gray-500 dark:text-gray-400 mt-2">
         {$t('no_assets_in_this_tag')}
