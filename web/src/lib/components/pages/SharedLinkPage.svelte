@@ -1,6 +1,7 @@
 <script lang="ts">
   import AlbumViewer from '$lib/components/album-page/album-viewer.svelte';
   import IndividualSharedViewer from '$lib/components/share-page/individual-shared-viewer.svelte';
+  import TagSharedViewer from '$lib/components/share-page/tag-shared-viewer.svelte';
   import ControlAppBar from '$lib/components/shared-components/control-app-bar.svelte';
   import ThemeButton from '$lib/components/shared-components/theme-button.svelte';
   import { assetViewingStore } from '$lib/stores/asset-viewing.store';
@@ -104,5 +105,10 @@
 {#if !passwordRequired && sharedLink?.type == SharedLinkType.Individual}
   <div class="immich-scrollbar">
     <IndividualSharedViewer {sharedLink} {isOwned} />
+  </div>
+{/if}
+{#if !passwordRequired && sharedLink?.type == SharedLinkType.Tag}
+  <div class="immich-scrollbar">
+    <TagSharedViewer {sharedLink} {isOwned} />
   </div>
 {/if}

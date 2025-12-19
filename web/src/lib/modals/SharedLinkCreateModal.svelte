@@ -10,9 +10,10 @@
     onClose: (success?: boolean) => void;
     albumId?: string;
     assetIds?: string[];
+    tagId?: string;
   }
 
-  let { onClose, albumId = $bindable(), assetIds = $bindable([]) }: Props = $props();
+  let { onClose, albumId = $bindable(), assetIds = $bindable([]), tagId = $bindable() }: Props = $props();
 
   let description = $state('');
   let allowDownload = $state(true);
@@ -22,7 +23,7 @@
   let slug = $state('');
   let expiresAt = $state<string | null>(null);
 
-  let shareType = $derived(albumId ? SharedLinkType.Album : SharedLinkType.Individual);
+  let shareType = $derived(albumId ? SharedLinkType.Album : tagId ? SharedLinkType.Tag : SharedLinkType.Individual);
 
   $effect(() => {
     if (!showMetadata) {
@@ -35,6 +36,7 @@
       type: shareType,
       albumId,
       assetIds,
+      tagId,
       expiresAt,
       allowUpload,
       description,
@@ -54,6 +56,13 @@
   <ModalBody>
     {#if shareType === SharedLinkType.Album}
       <div>{$t('album_with_link_access')}</div>
+    {/if}
+
+    {#if shareType === SharedLinkType.Tag}
+      <div>
+        Create a shared link for all photos with this tag. The link will automatically include any photos tagged in the
+        future.
+      </div>
     {/if}
 
     {#if shareType === SharedLinkType.Individual}

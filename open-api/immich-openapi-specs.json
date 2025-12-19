@@ -19649,6 +19649,10 @@
             "nullable": true,
             "type": "string"
           },
+          "tagId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "type": {
             "allOf": [
               {
@@ -19744,6 +19748,9 @@
             "nullable": true,
             "type": "string"
           },
+          "tag": {
+            "$ref": "#/components/schemas/TagResponseDto"
+          },
           "token": {
             "nullable": true,
             "type": "string"
@@ -19779,7 +19786,8 @@
       "SharedLinkType": {
         "enum": [
           "ALBUM",
-          "INDIVIDUAL"
+          "INDIVIDUAL",
+          "TAG"
         ],
         "type": "string"
       },
@@ -22174,6 +22182,12 @@
       },
       "TagResponseDto": {
         "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetResponseDto"
+            },
+            "type": "array"
+          },
           "color": {
             "type": "string"
           },

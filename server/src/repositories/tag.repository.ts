@@ -90,11 +90,7 @@ export class TagRepository {
 
   @GenerateSql({ params: [DummyValue.UUID] })
   async getAssetIdsForTag(tagId: string): Promise<string[]> {
-    const results = await this.db
-      .selectFrom('tag_asset')
-      .select(['assetId'])
-      .where('tagId', '=', tagId)
-      .execute();
+    const results = await this.db.selectFrom('tag_asset').select(['assetId']).where('tagId', '=', tagId).execute();
 
     return results.map(({ assetId }) => assetId);
   }

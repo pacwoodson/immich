@@ -22,6 +22,7 @@ class SharedLinkCreateDto {
     this.password,
     this.showMetadata = true,
     this.slug,
+    this.tagId,
     required this.type,
   });
 
@@ -55,6 +56,14 @@ class SharedLinkCreateDto {
 
   String? slug;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? tagId;
+
   SharedLinkType type;
 
   @override
@@ -68,6 +77,7 @@ class SharedLinkCreateDto {
     other.password == password &&
     other.showMetadata == showMetadata &&
     other.slug == slug &&
+    other.tagId == tagId &&
     other.type == type;
 
   @override
@@ -82,10 +92,11 @@ class SharedLinkCreateDto {
     (password == null ? 0 : password!.hashCode) +
     (showMetadata.hashCode) +
     (slug == null ? 0 : slug!.hashCode) +
+    (tagId == null ? 0 : tagId!.hashCode) +
     (type.hashCode);
 
   @override
-  String toString() => 'SharedLinkCreateDto[albumId=$albumId, allowDownload=$allowDownload, allowUpload=$allowUpload, assetIds=$assetIds, description=$description, expiresAt=$expiresAt, password=$password, showMetadata=$showMetadata, slug=$slug, type=$type]';
+  String toString() => 'SharedLinkCreateDto[albumId=$albumId, allowDownload=$allowDownload, allowUpload=$allowUpload, assetIds=$assetIds, description=$description, expiresAt=$expiresAt, password=$password, showMetadata=$showMetadata, slug=$slug, tagId=$tagId, type=$type]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -122,6 +133,11 @@ class SharedLinkCreateDto {
     } else {
     //  json[r'slug'] = null;
     }
+    if (this.tagId != null) {
+      json[r'tagId'] = this.tagId;
+    } else {
+    //  json[r'tagId'] = null;
+    }
       json[r'type'] = this.type;
     return json;
   }
@@ -146,6 +162,7 @@ class SharedLinkCreateDto {
         password: mapValueOfType<String>(json, r'password'),
         showMetadata: mapValueOfType<bool>(json, r'showMetadata') ?? true,
         slug: mapValueOfType<String>(json, r'slug'),
+        tagId: mapValueOfType<String>(json, r'tagId'),
         type: SharedLinkType.fromJson(json[r'type'])!,
       );
     }
