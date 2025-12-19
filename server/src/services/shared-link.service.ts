@@ -79,7 +79,7 @@ export class SharedLinkService extends BaseService {
         }
 
         // Get all asset IDs for this tag and verify share permissions
-        const assetIds = await this.tagRepository.getAllAssetIds(dto.tagId);
+        const assetIds = await this.tagRepository.getAssetIdsForTag(dto.tagId);
         if (assetIds.length > 0) {
           await this.requireAccess({ auth, permission: Permission.AssetShare, ids: assetIds });
         }
