@@ -5,7 +5,7 @@
   import { getSharedLinkActions } from '$lib/services/shared-link.service';
   import { locale } from '$lib/stores/preferences.store';
   import { SharedLinkType, type SharedLinkResponseDto } from '@immich/sdk';
-  import { ContextMenuButton, MenuItemType, Text } from '@immich/ui';
+  import { Badge, ContextMenuButton, MenuItemType, Text } from '@immich/ui';
   import { DateTime, type ToRelativeUnit } from 'luxon';
   import { t } from 'svelte-i18n';
 
@@ -68,15 +68,24 @@
 
     <div class="flex flex-col gap-4 justify-between">
       <div class="flex flex-col">
-        <Text size="tiny" color={isExpired ? 'danger' : 'muted'} class="font-medium">
-          {#if isExpired}
-            {$t('expired')}
-          {:else if expiresAt}
-            {$t('expires_date', { values: { date: getCountDownExpirationDate(expiresAt, now) } })}
-          {:else}
-            {$t('expires_date', { values: { date: '∞' } })}
+        <div class="flex items-center gap-4">
+          <Text size="tiny" color={isExpired ? 'danger' : 'muted'} class="font-medium">
+            {#if isExpired}
+              {$t('expired')}
+            {:else if expiresAt}
+              {$t('expires_date', { values: { date: getCountDownExpirationDate(expiresAt, now) } })}
+            {:else}
+              {$t('expires_date', { values: { date: '∞' } })}
+            {/if}
+          </Text>
+          {#if sharedLink.type === SharedLinkType.Album}
+            <Badge size="tiny" color="primary">{$t('album')}</Badge>
+          {:else if sharedLink.type === SharedLinkType.Tag}
+            <Badge size="tiny" color="info">{$t('tag')}</Badge>
+          {:else if sharedLink.type === SharedLinkType.Individual}
+            <Badge size="tiny" color="warning">{$t('individual_share')}</Badge>
           {/if}
-        </Text>
+        </div>
 
         <Text size="large" color="primary" class="flex place-items-center gap-2 break-all font-medium">
           {#if sharedLink.type === SharedLinkType.Album}
@@ -95,14 +104,6 @@
 
         {#if sharedLink.description}
           <Text size="small" class="line-clamp-1">{sharedLink.description}</Text>
-        {/if}
-
-        {#if sharedLink.type === SharedLinkType.Album}
-          <Badge size="small" color="primary">{$t('album')}</Badge>
-        {:else if sharedLink.type === SharedLinkType.Tag}
-          <Badge size="small" color="info">{$t('tag')}</Badge>
-        {:else if sharedLink.type === SharedLinkType.Individual}
-          <Badge size="small" color="warning">{$t('individual_share')}</Badge>
         {/if}
       </div>
 
