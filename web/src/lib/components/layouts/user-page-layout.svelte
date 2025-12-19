@@ -18,6 +18,7 @@
     use?: ActionArray;
     header?: Snippet;
     sidebar?: Snippet;
+    secondarySidebar?: Snippet;
     buttons?: Snippet;
     children?: Snippet;
   }
@@ -31,12 +32,19 @@
     use = [],
     header,
     sidebar,
+    secondarySidebar,
     buttons,
     children,
   }: Props = $props();
 
   let scrollbarClass = $derived(scrollbar ? 'immich-scrollbar' : 'scrollbar-hidden');
   let hasTitleClass = $derived(title ? 'top-16 h-[calc(100%-(--spacing(16)))]' : 'top-0 h-full');
+  let hasDualSidebar = $derived(secondarySidebar !== undefined && sidebar === undefined);
+  let gridColsClass = $derived(
+    hasDualSidebar
+      ? 'grid-cols-[--spacing(0)_--spacing(0)_auto] sidebar:grid-cols-[--spacing(64)_--spacing(64)_auto]'
+      : 'grid-cols-[--spacing(0)_auto] sidebar:grid-cols-[--spacing(64)_auto]'
+  );
 </script>
 
 <header>
@@ -48,13 +56,16 @@
 </header>
 <div
   tabindex="-1"
-  class="relative z-0 grid grid-cols-[--spacing(0)_auto] overflow-hidden sidebar:grid-cols-[--spacing(64)_auto]
+  class="relative z-0 grid {gridColsClass} overflow-hidden
     {hideNavbar ? 'h-dvh' : 'h-[calc(100dvh-var(--navbar-height))] max-md:h-[calc(100dvh-var(--navbar-height-md))]'}
     {hideNavbar ? 'pt-(--navbar-height)' : ''}
     {hideNavbar ? 'max-md:pt-(--navbar-height-md)' : ''}"
 >
   {#if sidebar}
     {@render sidebar()}
+  {:else if hasDualSidebar}
+    <UserSidebar />
+    {@render secondarySidebar()}
   {:else}
     <UserSidebar />
   {/if}
