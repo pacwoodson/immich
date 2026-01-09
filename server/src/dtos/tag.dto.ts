@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsHexColor, IsNotEmpty, IsString } from 'class-validator';
+import { IsHexColor, IsNotEmpty, IsString, IsBoolean } from 'class-validator';
 import { Tag } from 'src/database';
 import { AssetResponseDto, mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
@@ -42,6 +42,11 @@ export class TagBulkAssetsResponseDto {
   @ApiProperty({ type: 'integer' })
   count!: number;
 }
+
+export class UntagAssetsOptionsDto {
+  @IsBoolean()
+  untagDescendants?: boolean;
+} 
 
 export class TagResponseDto {
   id!: string;
